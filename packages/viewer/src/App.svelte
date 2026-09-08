@@ -749,7 +749,10 @@
 				15, 10 and 5 remaining, and lose at zero. If anyone is caught by lava or loses all stamina, the whole expedition
 				loses.
 			</p>
-			<p>Map symbols: ✦ means any value; ivory dice mean any color. Houses mark village destinations.</p>
+			<p>
+				Add all dice matching any symbol, counting each die once. ✦ means any value; ivory dice mean any color. Houses
+				mark village destinations.
+			</p>
 			<ol class="guide">
 				<li>
 					<strong>Plan a route.</strong> Move up to three adjacent locations. Longer journeys leave fewer rerolls. Your two

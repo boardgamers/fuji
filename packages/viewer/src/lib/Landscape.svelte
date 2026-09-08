@@ -75,6 +75,7 @@
 				<g
 					class="location"
 					class:inactive={state.phase === "setup"}
+					class:reserved={!!reserved[c.id]}
 					class:reachable={reachable.includes(c.id)}
 					class:out-of-range={reachable.length > 0 && !reachable.includes(c.id) && !c.lava}
 					class:selected={selected === c.id}
@@ -164,14 +165,6 @@
 							rx="4"
 							fill="#112820e6"
 						/><RequirementSymbols requirement={data.requirement} x={x(c.id)} y={y(c.id) + 26} {colorblind} />{/if}
-					{#if reserved[c.id]}<g
-							class="reserved-marker"
-							aria-hidden="true"
-							transform={`translate(${x(c.id)},${y(c.id) - 16})`}
-						>
-							<rect x="-29" y="-9" width="58" height="18" rx="4" fill="#102b25" stroke="#bac5b1" stroke-width="0.8" />
-							<text text-anchor="middle" y="3" fill="#e5e9dd" font-size="9" font-weight="600">Reserved</text>
-						</g>{/if}
 					{#if data.reroll && !c.lava}<text x={x(c.id) - 34} y={y(c.id) - 16} class="reroll-mark">↻</text>{/if}
 				</g>
 			{/each}
@@ -314,6 +307,10 @@
 	.location:not(.inactive):focus-visible .location-ring {
 		stroke: #f2d49a;
 		stroke-width: 2;
+	}
+	.location.reserved:not(.inactive):hover .location-ring {
+		stroke: #bac5b170;
+		stroke-width: 1;
 	}
 	.location.inactive {
 		cursor: default;

@@ -69,7 +69,8 @@ import path from "node:path";
 	if (routeStyles[0].color === routeStyles[1].color) throw Error("Routes must retain player colors");
 	if (routeStyles[0].animation !== "none" || !routeStyles[1].animation.includes("route-flow"))
 		throw Error("Only provisional routes should animate");
-	await page.waitForSelector(".reserved-marker");
+	await page.waitForSelector(".location.reserved");
+	if (await page.locator(".reserved-marker").count()) throw Error("Reservation must not add a redundant label");
 	const movesBeforeReserved = await page.evaluate(() => window.captured.filter((e) => e.name === "move").length);
 	await page.getByRole("button", { name: /reserved by .*choose another destination/ }).click();
 	if ((await page.evaluate(() => window.captured.filter((e) => e.name === "move").length)) !== movesBeforeReserved)

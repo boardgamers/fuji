@@ -90,7 +90,6 @@ Before using planning rerolls, the bot evaluates its desired route and any usefu
 
 Regression coverage verifies reroll selection against the proposed destination without mutating the board or consulting hidden teammate dice. A further 168 games spanning all scenarios, player counts and difficulties completed with exact replays and no deadlocks. This validation batch is not a matched win-rate comparison.
 
-
 ## Helping from a safe village
 
 A bot staying on its current village tile can prioritise reducing its dice contributions against escaping comparison neighbours. It applies only outside the next eruption wave, with stamina strictly above the maximum possible loss for this round. Rerolls seek lower opposing contributions instead of improving the resident's own result. Buddy and Machete may set aside dice that also match the resident's own location. Residents at risk of exhaustion or threatened by lava retain the ordinary survival policy. Hidden teammate dice remain unavailable.

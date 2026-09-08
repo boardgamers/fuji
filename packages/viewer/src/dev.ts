@@ -21,6 +21,8 @@ import {
 import "./lib/theme.css";
 const store = new Store();
 store.local = true;
+store.colorblind = localStorage.getItem("fuji-colorblind") === "true";
+store.savePreference = (_name, value) => localStorage.setItem("fuji-colorblind", String(value));
 store.seat = 0;
 let game: State;
 const saved = localStorage.getItem("fuji-dev-v1");

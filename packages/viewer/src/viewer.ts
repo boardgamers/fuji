@@ -10,6 +10,10 @@ export function launch(selector: string) {
 	const events = new Emitter();
 	const store = new Store();
 	let ready = false;
+	store.savePreference = (name, value) => events.emit("update:preference", { name, value });
+	events.on<Record<string, unknown>>("preferences", (preferences) => {
+		store.colorblind = preferences?.colorblind === true;
+	});
 	store.send = (move) => events.emit("move", move);
 	events.on<View>("state", async (state) => {
 		store.receive(state);

@@ -4,12 +4,21 @@
 	"players": [2, 3, 4],
 	"credits": "Game design: Wolfgang Warsch. Illustrations: Weberson Santiago. Publisher: Feuerland Spiele.",
 	"public": false,
-	"engine": { "package": { "name": "fuji-engine", "version": "0.1.0" }, "entryPoint": "dist/wrapper.js" },
+	"engine": {
+		"package": {
+			"name": "fuji-engine",
+			"version": "0.1.0"
+		},
+		"entryPoint": "dist/wrapper.js"
+	},
 	"viewer": {
 		"url": "",
 		"topLevelVariable": "fuji",
 		"replayable": false,
-		"dependencies": { "scripts": [], "stylesheets": [] }
+		"dependencies": {
+			"scripts": [],
+			"stylesheets": []
+		}
 	},
 	"options": [
 		{
@@ -18,11 +27,31 @@
 			"type": "select",
 			"default": "1",
 			"items": [
-				{ "name": "1", "label": "Level 1" },
-				{ "name": "2", "label": "Level 2" },
-				{ "name": "3", "label": "Level 3" },
-				{ "name": "4", "label": "Level 4" }
+				{
+					"name": "1",
+					"label": "Level 1"
+				},
+				{
+					"name": "2",
+					"label": "Level 2"
+				},
+				{
+					"name": "3",
+					"label": "Level 3"
+				},
+				{
+					"name": "4",
+					"label": "Level 4"
+				}
 			]
+		}
+	],
+	"preferences": [
+		{
+			"name": "colorblind",
+			"label": "Show color labels (colorblind support)",
+			"type": "checkbox",
+			"default": false
 		}
 	]
 }

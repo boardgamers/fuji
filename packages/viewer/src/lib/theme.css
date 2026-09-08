@@ -1234,3 +1234,11 @@ h3 {
 .pack-options button:disabled {
 	opacity: 1;
 }
+
+.accessibility-option {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 13px;
+	margin: 18px 0;
+}

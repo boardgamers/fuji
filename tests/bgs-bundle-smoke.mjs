@@ -15,7 +15,7 @@ import path from "node:path";
 	await page.evaluate((view) => {
 		window.captured = [];
 		window.bridge = window.fuji.launch("#app");
-		for (const name of ["ready", "move", "fetchState", "replaceLog"])
+		for (const name of ["ready", "move", "fetchState", "replaceLog", "update:preference"])
 			window.bridge.on(name, (payload) => window.captured.push({ name, payload }));
 		window.bridge.emit("player", { index: 0 });
 		window.bridge.emit("state", view);
@@ -44,6 +44,18 @@ import path from "node:path";
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
 	await page.waitForSelector(".revealed-team");
 	if ((await page.locator(".revealed-team .die:not(.hidden)").count()) !== 6) throw Error("Radio not rendered");
+	if (await page.locator(".die-caption").count()) throw Error("Color labels should be off by default");
+	await page.evaluate(() => window.bridge.emit("preferences", { colorblind: true }));
+	await page.waitForSelector(".die-caption");
+	await page.getByRole("button", { name: "Open playing guide" }).click();
+	await page.getByRole("checkbox", { name: "Show color labels (colorblind support)" }).uncheck();
+	const preference = await page.evaluate(
+		() => window.captured.findLast((e) => e.name === "update:preference")?.payload
+	);
+	if (preference?.name !== "colorblind" || preference.value !== false) throw Error("Wrong preference uplink");
+	if (await page.locator(".die-caption").count()) throw Error("Color labels did not turn off");
+	await page.keyboard.press("Escape");
+	if ((await page.locator(".village-marker").count()) !== 5) throw Error("Every village location needs a marker");
 	await page.evaluate((v) => {
 		window.bridge.emit("player", {});
 		window.bridge.emit("state", v);

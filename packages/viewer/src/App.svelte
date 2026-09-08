@@ -281,7 +281,7 @@
 											? "Packing"
 											: p.injuries.length
 												? `${p.injuries.length} injury`
-												: "Stamina"}</span
+												: ""}</span
 						>
 					</div>
 				</button>
@@ -290,6 +290,7 @@
 		<div class="game-layout">
 			<div class="world-column">
 				<Landscape
+					colorblind={store.colorblind}
 					state={s}
 					{seat}
 					route={currentRoute}
@@ -315,6 +316,7 @@
 					{#if me}
 						<div class="dice-row">
 							{#each me.dice as d (d.id)}<Die
+									colorblind={store.colorblind}
 									die={d}
 									selected={dice.includes(d.id)}
 									relevant={s.phase !== "setup" && !!rule && matches(face(d), rule)}
@@ -322,7 +324,7 @@
 									onclick={() => pickDie(d.id)}
 								/>{/each}
 							{#if focusTerrain && s.phase !== "setup"}<div class="dice-total">
-									<strong>{localTotal}</strong><span>your total<br />for this location</span>
+									<strong>{localTotal}</strong><span>Matching dice total<br />{focusTerrain.name}</span>
 								</div>{/if}
 						</div>
 						<div class="skill-line">
@@ -674,6 +676,7 @@
 							<span class="eyebrow">{p.name}</span>
 							<div class="mini-dice">
 								{#each p.dice as d}<Die
+										colorblind={store.colorblind}
 										die={d}
 										disabled
 										relevant={s.phase !== "setup" && !!rule && matches(face(d), rule)}
@@ -684,7 +687,7 @@
 		{#if s.ghost.length}<details class="neutral-dice">
 				<summary>Neutral dice · two-player variant A</summary>
 				<div class="mini-dice">
-					{#each s.ghost as d}<Die die={d} disabled />{/each}
+					{#each s.ghost as d}<Die colorblind={store.colorblind} die={d} disabled />{/each}
 				</div>
 			</details>{/if}
 		{#if me && !s.outcome}<div class="mobile-dock">
@@ -733,12 +736,20 @@
 				>THE ESSENTIALS</span
 			>
 			<h2 id="help-title">Escape together.</h2>
+			<label class="accessibility-option"
+				><input
+					type="checkbox"
+					checked={store.colorblind}
+					onchange={(event) => store.setColorblind(event.currentTarget.checked)}
+				/>Show color labels (colorblind support)</label
+			>
 			<p class="game-credits">FUJI · Wolfgang Warsch<br />Illustrations by Weberson Santiago · Feuerland Spiele</p>
 			<p>
 				Everyone must reach the village. Stamina is your remaining endurance: you start at 25/25, suffer injuries at 20,
 				15, 10 and 5 remaining, and lose at zero. If anyone is caught by lava or loses all stamina, the whole expedition
 				loses.
 			</p>
+			<p>Map symbols: ✦ means any value; ivory dice mean any color. Houses mark village destinations.</p>
 			<ol class="guide">
 				<li>
 					<strong>Plan a route.</strong> Move up to three adjacent locations. Longer journeys leave fewer rerolls. Your two

@@ -5,6 +5,12 @@ export class Store {
 	error = $state("");
 	waiting = $state(false);
 	local = $state(false);
+	colorblind = $state(false);
+	savePreference: (name: string, value: boolean) => void = () => {};
+	setColorblind(value: boolean) {
+		this.colorblind = value;
+		this.savePreference("colorblind", value);
+	}
 	send: (move: Move) => void = () => {};
 	selectSeat: (seat: number) => void = () => {};
 	restart: (players: number, seed: string, difficulty: number) => void = () => {};

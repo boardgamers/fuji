@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { terrain, cell, distance, threatened, CHARACTER_COLORS, requirementLabel, type View } from "fuji-engine";
+	import RequirementSymbols from "./RequirementSymbols.svelte";
 	import { art } from "./assets";
 	let {
 		state,
+		colorblind = false,
 		seat,
 		route = [],
 		selected = "",
@@ -11,6 +13,7 @@
 		oninspect,
 	}: {
 		state: View;
+		colorblind?: boolean;
 		seat?: number;
 		route?: string[];
 		selected?: string;
@@ -26,14 +29,6 @@
 			state.board.filter((b) => distance(a, b) === 1 && (b.x > a.x || b.y > a.y)).map((b) => ({ a, b }))
 		)
 	);
-	function badge(id: number) {
-		const r = terrain(id).requirement;
-		const c = r.colors?.length === 3 ? "" : (r.colors?.map((c) => c[0]!.toUpperCase()).join("+") ?? "");
-		const v = r.values?.join("/") ?? "";
-		return [c, r.combine === "or" ? "or" : "", r.parity === "odd" ? "odd" : r.parity === "even" ? "even" : "", v]
-			.filter(Boolean)
-			.join(" ");
-	}
 	const routeLine = $derived(route.map((id) => `${x(id)},${y(id)}`).join(" "));
 </script>
 
@@ -60,7 +55,7 @@
 				>
 				<filter id="glow"><feGaussianBlur stdDeviation="4" /></filter>
 			</defs>
-			<text x="405" y="9" class="map-region">THE VILLAGE</text>
+
 			<text x="45" y="607" class="map-note">ORTHOGONAL PATHS · ESCAPE TOGETHER</text>
 			{#each edges as { a, b }}<line
 					x1={x(a.id)}
@@ -78,10 +73,11 @@
 					class:reachable={reachable.includes(c.id)}
 					class:selected={selected === c.id}
 					class:lava={c.lava}
+					class:village={data.kind === "village"}
 					role="button"
 					aria-disabled={state.phase === "setup"}
 					tabindex={state.phase === "setup" ? -1 : 0}
-					aria-label={`${data.name}${c.lava ? ", covered in lava" : ""}${c.equipment ? ", equipment here" : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
+					aria-label={`${data.name}${data.kind === "village" ? ", village destination" : ""}, ${requirementLabel(data.requirement)}${c.lava ? ", covered in lava" : ""}${c.equipment ? ", equipment here" : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
 					onclick={() => onclick(c.id)}
 					onkeydown={(e) => {
 						if (e.key === "Enter" || e.key === " ") {
@@ -112,6 +108,19 @@
 							class="lava-crack"
 						/>{/if}
 					<rect x={x(c.id) - 44} y={y(c.id) - 35} width="88" height="70" rx="13" class="location-ring" />
+					{#if data.kind === "village"}<g
+							class="village-marker"
+							transform={`translate(${x(c.id)},${y(c.id) - 32})`}
+							aria-hidden="true"
+						>
+							<rect x="-12" y="-10" width="24" height="20" rx="5" fill="#193e36" />
+							<path
+								d="M-8 0 L0 -7 L8 0 M-6 -1 V7 H6 V-1 M-2 7 V2 H2 V7"
+								fill="none"
+								stroke="#f2df99"
+								stroke-width="1.8"
+							/>
+						</g>{/if}
 					{#if reachable.includes(c.id) && !c.lava}<circle
 							cx={x(c.id)}
 							cy={y(c.id) + 31}
@@ -144,8 +153,7 @@
 							height="18"
 							rx="4"
 							fill="#112820e6"
-						/><text x={x(c.id)} y={y(c.id) + 30} text-anchor="middle" class="requirement-badge">{badge(c.terrain)}</text
-						>{/if}
+						/><RequirementSymbols requirement={data.requirement} x={x(c.id)} y={y(c.id) + 26} {colorblind} />{/if}
 					{#if data.reroll && !c.lava}<text x={x(c.id) - 34} y={y(c.id) - 16} class="reroll-mark">↻</text>{/if}
 				</g>
 			{/each}
@@ -179,9 +187,11 @@
 		<span
 			>{#if state.phase === "setup"}Map preview · choose your equipment first{:else}<i class="legend-line"></i>Your
 				route{/if}</span
-		><span><i class="legend-danger"></i>Next eruption</span><span class="legend-end"
+		><span><i class="legend-danger"></i>Next eruption</span><span
+			class="legend-end"
+			title="Everyone must reach any house-marked village location at the same time."
 			>{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} / {state
-				.players.length} in the village</span
+				.players.length} in the village · reach any house-marked location</span
 		>
 	</div>
 </div>
@@ -221,15 +231,6 @@
 		height: clamp(390px, calc(100vh - 430px), 610px);
 		display: block;
 	}
-	.requirement-badge {
-		font: 600 11px var(--font-ui);
-		fill: #e6e2b9;
-	}
-	.map-region {
-		font: 11px var(--font-ui);
-		letter-spacing: 5px;
-		fill: #c6c88788;
-	}
 	.map-note {
 		font: 9px var(--font-ui);
 		letter-spacing: 2px;
@@ -250,6 +251,10 @@
 	.tile-art {
 		opacity: 0.86;
 		transition: opacity 0.2s;
+	}
+	.village .location-ring {
+		stroke: #e5d08d;
+		stroke-width: 2;
 	}
 	.location {
 		cursor: pointer;

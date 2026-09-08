@@ -36,3 +36,7 @@ Fuji has a shared win/loss. The wrapper gives all players the same ranking and r
 - Check clock increments and ready-state behavior using the policy described above.
 - Verify team win/loss presentation, no competitive rating side effects, and player-drop behavior.
 - Check the actual iframe bundle and style uploads, not only the Vite dev harness.
+
+## Viewer preferences
+
+`colorblind` is a boolean UI preference, false by default. The viewer reads the platform `preferences` event and emits `update:preference` with `{ name: "colorblind", value: boolean }` when changed in Help. It adds color names to dice and color initials to map requirement symbols without changing game state. The local harness persists the same setting in localStorage. The draft registration declares the checkbox for the platform sidebar.

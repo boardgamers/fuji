@@ -3,10 +3,18 @@
 	let {
 		die,
 		selected = false,
+		colorblind = false,
 		relevant = false,
 		disabled = false,
 		onclick = () => {},
-	}: { die: Die; selected?: boolean; relevant?: boolean; disabled?: boolean; onclick?: () => void } = $props();
+	}: {
+		die: Die;
+		colorblind?: boolean;
+		selected?: boolean;
+		relevant?: boolean;
+		disabled?: boolean;
+		onclick?: () => void;
+	} = $props();
 	const f = $derived(face(die));
 	const layouts: Record<number, number[]> = {
 		1: [4],
@@ -32,7 +40,7 @@
 >
 	{#if die.face}<span class="pips" aria-hidden="true"
 			>{#each Array(9) as _, i}<i class:filled={layouts[die.face]?.includes(i)}></i>{/each}</span
-		><span class="die-caption">{f.color}</span>{:else}<span aria-hidden="true">?</span>{/if}
+		>{#if colorblind}<span class="die-caption">{f.color}</span>{/if}{:else}<span aria-hidden="true">?</span>{/if}
 </button>
 
 <style>

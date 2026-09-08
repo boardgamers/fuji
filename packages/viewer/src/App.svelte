@@ -382,10 +382,8 @@
 						</p>{:else}
 						<p class="instruction">
 							This is preparation, before round 1.
-							{#if me.cards.length === SKILLS[me.skill].keep}
-								Your starting equipment is already packed. Read its effect below, then click Ready for the journey.
-							{:else}
-								Choose {SKILLS[me.skill].keep} of your {me.cards.length} equipment cards to keep, then confirm your bag.
+							{#if me.cards.length > SKILLS[me.skill].keep}
+								Choose {SKILLS[me.skill].keep} of your {me.cards.length} equipment cards to keep.
 							{/if}
 							Routes become available once everyone is ready.
 						</p>

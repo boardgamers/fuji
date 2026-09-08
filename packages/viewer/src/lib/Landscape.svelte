@@ -152,12 +152,40 @@
 					{#if data.reroll && !c.lava}<text x={x(c.id) - 34} y={y(c.id) - 16} class="reroll-mark">↻</text>{/if}
 				</g>
 			{/each}
+			{#if ["planning", "reroll", "equipment", "movement"].includes(state.phase)}
+				{#each state.players as p, i}
+					{#if i !== seat && !p.resolved && (p.path.length > 1 || p.ready)}
+						{@const destination = p.path.at(-1)!}
+						<g
+							class="teammate-route"
+							data-player={i}
+							aria-label={`${p.name}: ${terrain(cell(state, destination).terrain).name}${p.ready ? ", ready" : ", planned"}`}
+						>
+							{#if p.path.length > 1}
+								<polyline points={p.path.map((id) => `${x(id)},${y(id)}`).join(" ")} class="route-shadow" />
+								<polyline
+									points={p.path.map((id) => `${x(id)},${y(id)}`).join(" ")}
+									class="shared-route-line"
+									stroke={CHARACTER_COLORS[p.character]}
+									stroke-dashoffset={i * 4}
+								/>
+							{/if}
+							<g transform={`translate(${x(destination) + 27},${y(destination) - 20 + i * 12})`}>
+								<circle r="10" fill="#102b25" stroke={CHARACTER_COLORS[p.character]} stroke-width="2" />
+								<text y="4" text-anchor="middle" fill={CHARACTER_COLORS[p.character]} font-size="12" font-weight="700"
+									>{i + 1}</text
+								>
+							</g>
+						</g>
+					{/if}
+				{/each}
+			{/if}
 			{#if route.length > 1}<polyline points={routeLine} class="route-shadow" /><polyline
 					points={routeLine}
 					class="route-line"
 				/>{/if}
 			{#each state.players as p, i (i)}
-				{#if p.ready && state.phase === "planning" && p.path.length}
+				{#if i === seat && p.ready && state.phase === "planning" && p.path.length}
 					<circle
 						cx={x(p.path.at(-1)!)}
 						cy={y(p.path.at(-1)!)}
@@ -355,6 +383,15 @@
 		animation: route-flow 3s linear infinite;
 		pointer-events: none;
 	}
+	.teammate-route {
+		pointer-events: none;
+	}
+	.shared-route-line {
+		fill: none;
+		stroke-width: 2.5;
+		stroke-linejoin: round;
+		stroke-dasharray: 5 7;
+	}
 	.traveler {
 		transition: transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
 		pointer-events: none;
@@ -405,6 +442,15 @@
 		.danger-ring,
 		.lava-crack {
 			animation: none;
+		}
+		.teammate-route {
+			pointer-events: none;
+		}
+		.shared-route-line {
+			fill: none;
+			stroke-width: 2.5;
+			stroke-linejoin: round;
+			stroke-dasharray: 5 7;
 		}
 		.traveler {
 			transition: none;

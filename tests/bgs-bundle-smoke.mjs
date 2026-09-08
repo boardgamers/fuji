@@ -2,7 +2,7 @@ import { chromium } from "playwright";
 import path from "node:path";
 (async () => {
 	const root = process.cwd();
-	const { initGame, applyMove, stripSecret, SKILLS } = await import(root + "/packages/engine/dist/index.js");
+	const { initGame, applyMove, stripSecret, SKILLS, paths } = await import(root + "/packages/engine/dist/index.js");
 	const game = initGame(3, {}, "bridge-test");
 	const view = stripSecret(game, 0);
 	const browser = await chromium.launch({ headless: true, executablePath: process.env.FUJI_CHROMIUM_EXECUTABLE });
@@ -40,9 +40,14 @@ import path from "node:path";
 			{ action: "setup", keep: s.players[i].cards.slice(0, SKILLS[s.players[i].skill].keep).map((c) => c.id) },
 			i
 		);
+	const teammatePath = Object.values(paths(s, 1)).find((route) => route.length > 1);
+	s = applyMove(s, { action: "plan", path: teammatePath }, 1);
 	s.players[1].radio = true;
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
 	await page.waitForSelector(".revealed-team");
+	await page.waitForSelector('.teammate-route[data-player="1"] .shared-route-line', { state: "attached" });
+	if (s.players[1].ready) throw Error("Shared route fixture must be unconfirmed");
+	await page.screenshot({ path: "work/browser/fuji-shared-routes.png", fullPage: true });
 	if ((await page.locator(".revealed-team .die:not(.hidden)").count()) !== 6) throw Error("Radio not rendered");
 	if (await page.locator(".die-caption").count()) throw Error("Color labels should be off by default");
 	await page.evaluate(() => window.bridge.emit("preferences", { colorblind: true }));

@@ -71,13 +71,14 @@
 					class="location"
 					class:inactive={state.phase === "setup"}
 					class:reachable={reachable.includes(c.id)}
+					class:out-of-range={reachable.length > 0 && !reachable.includes(c.id) && !c.lava}
 					class:selected={selected === c.id}
 					class:lava={c.lava}
 					class:village={data.kind === "village"}
 					role="button"
 					aria-disabled={state.phase === "setup"}
 					tabindex={state.phase === "setup" ? -1 : 0}
-					aria-label={`${data.name}${data.kind === "village" ? ", village destination" : ""}, ${requirementLabel(data.requirement)}${c.lava ? ", covered in lava" : ""}${c.equipment ? ", equipment here" : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
+					aria-label={`${data.name}${reachable.length ? (reachable.includes(c.id) ? ", within movement range" : ", outside movement range") : ""}${data.kind === "village" ? ", village destination" : ""}, ${requirementLabel(data.requirement)}${c.lava ? ", covered in lava" : ""}${c.equipment ? ", equipment here" : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
 					onclick={() => onclick(c.id)}
 					onkeydown={(e) => {
 						if (e.key === "Enter" || e.key === " ") {
@@ -187,9 +188,9 @@
 		<span
 			>{#if state.phase === "setup"}Map preview · choose your equipment first{:else}<i class="legend-line"></i>Your
 				route{/if}</span
-		><span><i class="legend-danger"></i>Next eruption</span><span
-			class="legend-end"
-			title="Everyone must reach any house-marked village location at the same time."
+		>{#if reachable.length}<span class="range-legend">┄ Within movement range</span>{/if}<span
+			><i class="legend-danger"></i>Next eruption</span
+		><span class="legend-end" title="Everyone must reach any house-marked village location at the same time."
 			>{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} / {state
 				.players.length} in the village · reach any house-marked location</span
 		>
@@ -287,7 +288,30 @@
 		opacity: 1;
 	}
 	.location.reachable .location-ring {
-		stroke: #c3d6a865;
+		stroke: #b9e5bf;
+		stroke-width: 2.5;
+		stroke-dasharray: 5 3;
+	}
+	.location.reachable .tile-art {
+		opacity: 1;
+	}
+	.location.out-of-range .tile-art {
+		opacity: 0.32;
+	}
+	.location.out-of-range .land-base {
+		fill: #142b25;
+	}
+	.location.out-of-range .location-ring {
+		stroke-opacity: 0.35;
+	}
+	.location.reachable.selected .location-ring {
+		stroke: #ffe19a;
+		stroke-width: 3.5;
+		stroke-dasharray: none;
+	}
+	.location.reachable:hover .location-ring,
+	.location.reachable:focus-visible .location-ring {
+		stroke-width: 3.5;
 	}
 	.reachable-dot {
 		fill: #e7db99;

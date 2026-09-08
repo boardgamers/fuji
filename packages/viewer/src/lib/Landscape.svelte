@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { terrain, cell, distance, threatened, CHARACTER_COLORS, requirementLabel, type View } from "fuji-engine";
+	import TravelGuide from "./TravelGuide.svelte";
 	import RequirementSymbols from "./RequirementSymbols.svelte";
 	import { art } from "./assets";
 	let {
@@ -232,13 +233,25 @@
 		<span
 			>{#if state.phase === "setup"}Map preview · choose your equipment first{:else}<i class="legend-line"></i>Your
 				route{/if}</span
-		>{#if reachable.length}<span class="range-legend">Dimmed: out of range</span>{/if}<span
-			><i class="legend-danger"></i>Next eruption</span
-		><span class="legend-end" title="Everyone must reach any house-marked village location at the same time."
-			>{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} / {state
-				.players.length} in the village · reach any house-marked location</span
+		><span><i class="legend-danger"></i>Next eruption</span><span
+			class="legend-end"
+			title="Everyone must reach any house-marked village location at the same time."
+			aria-label={`${state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} of ${state.players.length} players in the village`}
+		>
+			<svg
+				viewBox="0 0 24 24"
+				width="27"
+				height="27"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.7"
+				aria-hidden="true"><path d="m2 11 10-9 10 9M5 9v12h14V9M10 21v-7h4v7" /></svg
+			>
+			{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length}/{state.players
+				.length}</span
 		>
 	</div>
+	<TravelGuide difficulty={state.difficulty} />
 </div>
 
 <style>
@@ -438,6 +451,7 @@
 		font: 600 17px var(--font-ui);
 	}
 	.scene-legend {
+		flex-wrap: wrap;
 		padding: 0 25px 20px;
 		display: flex;
 		gap: 20px;
@@ -463,6 +477,8 @@
 	.legend-end {
 		margin-left: auto;
 		color: #d7d7a7;
+		font-size: 24px;
+		font-variant-numeric: tabular-nums;
 	}
 	@keyframes pulse {
 		50% {
@@ -498,9 +514,6 @@
 		.scene-legend {
 			padding: 8px 16px 16px;
 			gap: 12px;
-		}
-		.legend-end {
-			display: none !important;
 		}
 	}
 </style>

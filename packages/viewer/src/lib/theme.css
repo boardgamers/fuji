@@ -1447,3 +1447,24 @@ h3 {
 	border-radius: 6px;
 	margin: 8px 0;
 }
+
+.journal li.journal-phase {
+	align-items: center;
+	gap: 12px;
+	margin-block: 6px;
+}
+.journal-phase::after {
+	content: "";
+	flex: 1;
+	border-top: 1px solid #b6c9ad26;
+}
+.journal-phase h4 {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	color: #a6bba9;
+	font: 500 10px var(--font-ui);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}

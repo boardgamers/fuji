@@ -460,10 +460,12 @@
 										<h3>{e.round === 0 ? "Preparation" : `Round ${String(e.round).padStart(2, "0")}`}</h3>
 									</li>
 								{/if}
-								<li class:latest={i === 0}>
-									<div class="journal-entry">
-										<JournalEntry entry={e} colorblind={store.colorblind} />
-									</div>
+								<li class:latest={i === 0} class:journal-phase={e.type === "phase"}>
+									{#if e.type === "phase"}
+										<h4><span aria-hidden="true">◇</span>{e.text}</h4>
+									{:else}<div class="journal-entry">
+											<JournalEntry entry={e} colorblind={store.colorblind} />
+										</div>{/if}
 								</li>{/each}
 						</ol>{/if}
 				</section>

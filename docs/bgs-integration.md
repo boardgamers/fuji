@@ -2,7 +2,7 @@
 
 ## Contract already implemented
 
-Engine entry point: `dist/wrapper.js` from `fuji-engine`. The wrapper exports init, move, ended, scores, rankings, currentPlayer, dropPlayer, logLength, logSlice, stripSecret, round, replay and setPlayerMetaData, plus the optional isLiveUpdate hook. `hashSeed = true`; the seed never appears in a stripped view. No `moveAI` export is provided yet.
+Engine entry point: `dist/wrapper.js` from `fuji-engine`. The wrapper exports init, move, ended, scores, rankings, currentPlayer, dropPlayer, logLength, logSlice, stripSecret, round, replay and setPlayerMetaData, plus the optional isLiveUpdate hook. `hashSeed = true`; the seed never appears in a stripped view. `moveAI(state, player)` returns a new state using the shared baseline bot; the harness and simulations use the same implementation.
 
 Viewer: self-contained IIFE, global `fuji`, function `launch(selector)` returning an emitter. The bridge consumes state/player events, requests fresh state on state updates and game logs, forwards moves without double wrapping, and announces readiness after rendering the initial state. The host continues to provide chat, clocks, identity and iframe messaging. Source assets are bundled as data URLs, so the initial viewer has no independent asset-hosting requirement.
 

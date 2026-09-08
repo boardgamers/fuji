@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
 	initGame,
+	choosePowerBars,
 	applyMove,
 	stripSecret,
 	comparison,
@@ -345,7 +346,8 @@ test("BGS route edits and provisional readiness are live; drops retain turn hand
 	assert.equal(wrapper.isLiveUpdate(confirmed), true);
 	const revised = applyMove(confirmed, { action: "plan", path: [confirmed.players[0]!.position] }, 0);
 	assert.equal(wrapper.isLiveUpdate(revised), true);
-	assert.deepEqual(wrapper.currentPlayer(revised), wrapper.currentPlayer(confirmed));
+	assert.deepEqual(wrapper.currentPlayer(confirmed), [1, 2]);
+	assert.deepEqual(wrapper.currentPlayer(revised), [0, 1, 2]);
 	assert.equal(wrapper.isLiveUpdate(wrapper.dropPlayer(revised, 0)), false);
 	assert.equal(wrapper.isLiveUpdate(wrapper.setPlayerMetaData(revised, 0, { name: "Explorer" })), false);
 });
@@ -660,4 +662,37 @@ test("power bar choices keep only amounts that improve an outcome", () => {
 	s.players[2]!.powerBars = 2;
 	s.pendingHelpers = [1, 2];
 	assert.deepEqual(powerBarChoices(s, 1), [1, 2, 3]);
+});
+
+test("playtest AI spends only enough bars to turn a failed comparison into success", () => {
+	const s = withPhase("movement");
+	cell(s, "0,3").terrain = 16;
+	s.players.forEach((p) => p.dice.forEach((d) => (d.face = 2)));
+	s.activeResolution = 0;
+	s.pendingHelpers = [1];
+	s.players[1]!.powerBars = 3;
+	assert.equal(choosePowerBars(s, 1), 1);
+	s.players[0]!.bonus = -1;
+	assert.equal(choosePowerBars(s, 1), 2);
+	s.players[0]!.bonus = -3;
+	assert.equal(choosePowerBars(s, 1), 0);
+	s.players[0]!.bonus = 1;
+	assert.equal(choosePowerBars(s, 1), 0);
+});
+
+test("moveAI uses the public view, preserves its input and records a replayable action", async () => {
+	const wrapper = await import("../wrapper.js");
+	const s = prepared();
+	const before = structuredClone(s);
+	const next = wrapper.moveAI(s, 0);
+	assert.deepEqual(s, before);
+	assert.deepEqual(wrapper.moveAI(s, 0), next);
+	assert.deepEqual(replay(next), next);
+	const hidden = structuredClone(s);
+	hidden.players[1]!.dice.forEach((d) => (d.face = d.face === 1 ? 6 : 1));
+	const { chooseMove } = await import("../index.js");
+	assert.deepEqual(chooseMove(stripSecret(s, 0), 0), chooseMove(stripSecret(hidden, 0), 0));
+	const ready = applyMove(s, { action: "ready" }, 0);
+	assert.throws(() => wrapper.moveAI(ready, 0), /No AI action/);
+	assert.deepEqual(wrapper.currentPlayer(ready), [1, 2]);
 });

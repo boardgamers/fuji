@@ -9,6 +9,7 @@ import {
 } from "./src/game.js";
 import type { State } from "./src/types.js";
 export { stripSecret };
+export { moveAI } from "./src/ai.js";
 export const hashSeed = true;
 // BGS evaluates the saved state. A live update must preserve active seats.
 export const isLiveUpdate = (s: State): boolean => s.liveUpdate === true;
@@ -21,7 +22,7 @@ export function move(data: State, input: unknown, player: number) {
 }
 export const ended = (s: State) => s.outcome !== null;
 export const currentPlayer = (s: State) => {
-	const seats = activePlayers(s);
+	const seats = activePlayers(s).filter((i) => s.phase !== "planning" || !s.players[i]!.ready);
 	return seats.length === 1 ? seats[0] : seats.length ? seats : undefined;
 };
 export const round = (s: State) => s.round;

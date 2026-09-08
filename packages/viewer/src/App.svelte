@@ -1010,7 +1010,7 @@
 										</div>
 									</fieldset>{/if}
 								{#if ["binoculars", "rope"].includes(actionTool ?? "")}<p class="muted small">
-										{#if actionTool === "binoculars"}Choose two empty land tiles anywhere on the map—no range limit. No
+										{#if actionTool === "binoculars"}Choose two empty land tiles anywhere on the map. No range limit. No
 											players, destination markers, equipment or eruption tokens; no village or lava tiles.
 										{:else}Choose one adjacent land location on the map.{/if}
 										<span

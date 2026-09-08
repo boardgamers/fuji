@@ -31,7 +31,7 @@ await request(version, "PUT", {
 	rules: "[How to play Fuji](https://boardgamers.space/page/fuji/rules)",
 });
 console.log("Registered private Fuji v1.");
-await request(version + "/engine", "POST", readFileSync("fuji-engine-0.1.0.tgz"), true);
+await request(version + "/engine", "POST", readFileSync(`fuji-engine-${draft.engine.package.version}.tgz`), true);
 const js = await request(
 	version + "/viewer/file?filename=fuji-viewer.iife.js",
 	"POST",

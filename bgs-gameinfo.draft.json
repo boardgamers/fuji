@@ -1,101 +1,105 @@
 {
-	"label": "Fuji",
-	"description": "Escape Mount Fuji together. Private alpha: all seven scenarios.",
-	"players": [2, 3, 4],
-	"credits": "Game design: Wolfgang Warsch. Illustrations: Weberson Santiago. Publisher: Feuerland Spiele.",
-	"public": false,
-	"engine": {
-		"package": {
-			"name": "fuji-engine",
-			"version": "0.1.0"
-		},
-		"entryPoint": "dist/wrapper.js"
-	},
-	"viewer": {
-		"url": "",
-		"topLevelVariable": "fuji",
-		"replayable": false,
-		"dependencies": {
-			"scripts": [],
-			"stylesheets": []
-		},
-		"fullScreen": true
-	},
-	"options": [
-		{
-			"name": "scenario",
-			"label": "Scenario",
-			"type": "select",
-			"default": "1",
-			"items": [
-				{
-					"name": "1",
-					"label": "Scenario 1"
-				},
-				{
-					"name": "2",
-					"label": "Scenario 2"
-				},
-				{
-					"name": "3",
-					"label": "Scenario 3"
-				},
-				{
-					"name": "4",
-					"label": "Scenario 4"
-				},
-				{
-					"name": "5",
-					"label": "Scenario 5"
-				},
-				{
-					"name": "6",
-					"label": "Scenario 6"
-				},
-				{
-					"name": "7",
-					"label": "Scenario 7"
-				}
-			]
-		},
-		{
-			"name": "difficulty",
-			"label": "Difficulty",
-			"type": "select",
-			"default": "1",
-			"items": [
-				{
-					"name": "1",
-					"label": "Level 1 (tie or lower: lose 3 stamina)"
-				},
-				{
-					"name": "2",
-					"label": "Level 2 (tie or lower: lose 4 stamina)"
-				},
-				{
-					"name": "3",
-					"label": "Level 3 (tie or lower: lose 5 stamina)"
-				},
-				{
-					"name": "4",
-					"label": "Level 4 (tie or lower: lose 6 stamina)"
-				}
-			]
-		}
-	],
-	"preferences": [
-		{
-			"name": "colorblind",
-			"label": "Show color labels (colorblind support)",
-			"type": "checkbox",
-			"default": false
-		}
-	],
-	"alias": null,
-	"links": {
-		"source": "https://codeberg.org/boardgamers/fuji",
-		"bgg": "https://boardgamegeek.com/boardgame/258308/fuji",
-		"publisher": "https://www.feuerland-spiele.de/",
-		"buy": "https://boardgamegeek.com/boardgame/258308/fuji/marketplace/stores"
-	}
+  "label": "Fuji",
+  "description": "Escape Mount Fuji together. Private alpha: all seven scenarios.",
+  "players": [
+    2,
+    3,
+    4
+  ],
+  "credits": "Game design: Wolfgang Warsch. Illustrations: Weberson Santiago. Publisher: Feuerland Spiele.",
+  "public": false,
+  "engine": {
+    "package": {
+      "name": "fuji-engine",
+      "version": "0.1.1"
+    },
+    "entryPoint": "dist/wrapper.js"
+  },
+  "viewer": {
+    "url": "",
+    "topLevelVariable": "fuji",
+    "replayable": false,
+    "dependencies": {
+      "scripts": [],
+      "stylesheets": []
+    },
+    "fullScreen": true
+  },
+  "options": [
+    {
+      "name": "scenario",
+      "label": "Scenario",
+      "type": "select",
+      "default": "1",
+      "items": [
+        {
+          "name": "1",
+          "label": "Scenario 1"
+        },
+        {
+          "name": "2",
+          "label": "Scenario 2"
+        },
+        {
+          "name": "3",
+          "label": "Scenario 3"
+        },
+        {
+          "name": "4",
+          "label": "Scenario 4"
+        },
+        {
+          "name": "5",
+          "label": "Scenario 5"
+        },
+        {
+          "name": "6",
+          "label": "Scenario 6"
+        },
+        {
+          "name": "7",
+          "label": "Scenario 7"
+        }
+      ]
+    },
+    {
+      "name": "difficulty",
+      "label": "Difficulty",
+      "type": "select",
+      "default": "1",
+      "items": [
+        {
+          "name": "1",
+          "label": "Level 1 (tie or lower: lose 3 stamina)"
+        },
+        {
+          "name": "2",
+          "label": "Level 2 (tie or lower: lose 4 stamina)"
+        },
+        {
+          "name": "3",
+          "label": "Level 3 (tie or lower: lose 5 stamina)"
+        },
+        {
+          "name": "4",
+          "label": "Level 4 (tie or lower: lose 6 stamina)"
+        }
+      ]
+    }
+  ],
+  "preferences": [
+    {
+      "name": "colorblind",
+      "label": "Show color labels (colorblind support)",
+      "type": "checkbox",
+      "default": false
+    }
+  ],
+  "alias": null,
+  "links": {
+    "source": "https://codeberg.org/boardgamers/fuji",
+    "bgg": "https://boardgamegeek.com/boardgame/258308/fuji",
+    "publisher": "https://www.feuerland-spiele.de/",
+    "buy": "https://boardgamegeek.com/boardgame/258308/fuji/marketplace/stores"
+  }
 }

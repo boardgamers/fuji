@@ -1122,3 +1122,37 @@ test("a shared destination remains forbidden when another route is available", (
 	s.players[0]!.ready = true;
 	assert.throws(() => applyMove(s, { action: "ready" }, 1), /different destinations/);
 });
+
+test("village bots leave the only reachable entrance for an approaching neighbor", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = prepared();
+	s.players.forEach((p) => {
+		p.cards = [];
+		p.ready = false;
+	});
+	for (const c of s.board) if (terrain(c.terrain).kind === "village") c.terrain = 28;
+	const positions = ["4,2", "3,4", "6,0"];
+	s.players.forEach((p, i) => {
+		p.position = positions[i]!;
+		p.path = [p.position];
+	});
+	s.players[0]!.dice.forEach((d) => {
+		d.face = 1;
+	});
+	const entrances = Object.keys(paths(s, 1)).filter((id) => terrain(cell(s, id).terrain).kind === "village");
+	assert.deepEqual(entrances, ["4,2"]);
+	const move = chooseMove(stripSecret(s, 0), 0);
+	assert.equal(move.action, "plan");
+	const route = move.path as string[];
+	assert.notEqual(route.at(-1), "4,2");
+	assert.equal(terrain(cell(s, route.at(-1)!).terrain).kind, "village");
+	assert(!route.slice(1).some((id) => cell(s, id).eruption || cell(s, id).lava));
+	const noArrival = structuredClone(s);
+	noArrival.players[1]!.position = "5,0";
+	noArrival.players[1]!.path = ["5,0"];
+	assert.equal(chooseMove(stripSecret(noArrival, 0), 0).action, "ready");
+	s.players[1]!.dice.forEach((d) => {
+		d.face = 6;
+	});
+	assert.deepEqual(chooseMove(stripSecret(s, 0), 0), move, "Hidden teammate dice must not affect entrance sharing");
+});

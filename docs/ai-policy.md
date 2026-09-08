@@ -57,3 +57,9 @@ The benchmark uses scenario 1 and the default skill assignments. It measures com
 The escape-emphasis policy was selected before held-out evaluation. It won **112/300 (37.3%)**, compared with **87/300 (29.0%)** for the baseline: an 8.3 percentage-point improvement on this seed set. Neither stalled in held-out evaluation. The small training differences between equipment variants are not evidence of a universally optimal parameter set.
 
 The higher-lead candidate stalled once: two neighbors ended up sharing an isolated village card with no remaining legal distinct destinations. That candidate was rejected. This late-game engine/rules edge case remains recorded in the report; the AI cannot invent a legal move in that state. All other benchmark games terminated. Tests also exercise each equipment card in constructed useful situations, since conservative lending and Carabiner use are rare in full games without multiple Wireless reveals.
+
+## Village space
+
+Bots already in the village prefer to leave scarce, reachable entrances for approaching comparison neighbors. The preference uses public routes, weights teammates near lava more heavily, and favors leaving shorter approaches available. It applies only to village destinations safe from the next eruption and routes without eruption markers; ordinary dice and route scoring still apply. Neighbors already in the village or with finalized routes do not add pressure to move.
+
+Matched comparison for the village-space change: 240 identical seeded games using the same engine, with only the previous AI module substituted for the baseline. Scenario 1 used 50 seeds at each of 2/3/4 players; scenarios 2–7 used five seeds at each player count. Difficulty cycled through 1–4. Baseline: 70 wins (63 + 7), 13,911 moves. Updated: 72 wins (64 + 8), 13,631 moves. Both completed all games without deadlocks and with exact replays. The gain from 29.2% to 30.0% is small and does not establish statistical significance.

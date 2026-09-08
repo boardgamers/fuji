@@ -344,6 +344,40 @@ export function chooseMove(game: View, seat: number, policy: AiPolicy = DEFAULT_
 		const cooperative = choices.filter(preservesEscape);
 		if (cooperative.length) choices.splice(0, choices.length, ...cooperative);
 		const danger = new Set(threatened(game));
+		// A village resident should leave scarce entrances to approaching neighbors.
+		// Only public routes matter; never inspect their hidden rolls.
+		const arrivals =
+			terrain(cell(game, p.position).terrain).kind === "village"
+				? neighbors(game, seat)
+						.filter(
+							(i) =>
+								!game.players[i]!.ready && terrain(cell(game, game.players[i]!.position).terrain).kind !== "village"
+						)
+						.map((i) => {
+							const claimed = new Set(
+								neighbors(game, i)
+									.filter((j) => j !== seat && game.players[j]!.ready)
+									.map((j) => game.players[j]!.path.at(-1))
+							);
+							const options = Object.values(paths(game, i)).filter((route) => {
+								const target = cell(game, route.at(-1)!);
+								return (
+									terrain(target.terrain).kind === "village" &&
+									!danger.has(target.id) &&
+									!claimed.has(target.id) &&
+									!route.slice(1).some((id) => cell(game, id).eruption)
+								);
+							});
+							return { seat: i, options };
+						})
+				: [];
+		const entranceCost = (destination: string) =>
+			arrivals.reduce((cost, arrival) => {
+				const route = arrival.options.find((route) => route.at(-1) === destination);
+				if (!route) return cost;
+				// Fewer alternatives and shorter approaches make this entrance more valuable.
+				return cost + (18 * urgency(game, arrival.seat)) / arrival.options.length / Math.max(1, route.length - 1);
+			}, 0);
 		const score = (path: string[]) => {
 			const c = cell(game, path.at(-1)!);
 			const closestVillage = Math.min(
@@ -384,6 +418,11 @@ export function chooseMove(game: View, seat: number, policy: AiPolicy = DEFAULT_
 				closestVillage * policy.progress +
 				(terrain(c.terrain).kind === "village" ? 8 : 0) +
 				(c.equipment ? 1 : 0) -
+				(terrain(c.terrain).kind === "village" &&
+				!danger.has(c.id) &&
+				!path.slice(1).some((id) => cell(game, id).eruption)
+					? entranceCost(c.id) - entranceCost(p.position)
+					: 0) -
 				path.slice(1).reduce((cost, id) => cost + cell(game, id).eruption * 4, 0)
 			);
 		};

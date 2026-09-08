@@ -1356,3 +1356,13 @@ h3 {
 	grid-template-rows: repeat(3, 4px);
 	gap: 4px;
 }
+
+.equipment-transfer {
+	margin-top: 16px;
+	padding-top: 12px;
+	border-top: 1px solid #b6c9ad26;
+}
+.equipment-transfer summary {
+	cursor: pointer;
+	color: #e5c77e;
+}

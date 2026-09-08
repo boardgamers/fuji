@@ -531,3 +531,22 @@ test("automatic movement resumes after a player's injury choice", () => {
 	assert.equal(s.phase, "eruption");
 	assert(s.players.every((p) => p.resolved));
 });
+
+test("giving equipment clears readiness and is a definitive action", async () => {
+	const wrapper = await import("../wrapper.js");
+	for (const phase of ["planning", "equipment"] as const) {
+		let s = withPhase(phase);
+		s.players[2]!.cards = [{ id: "torch", used: 0, availableRound: 1 }];
+		s.players[0]!.ready = true;
+		if (phase === "planning")
+			s = applyMove(s, { action: "plan", path: Object.values(paths(s, 2)).find((path) => path.length > 1)! }, 2);
+		const before = structuredClone(s);
+		const next = applyMove(s, { action: "give", id: "torch", target: 0 }, 2);
+		assert.deepEqual(s, before);
+		assert.equal(next.players[0]!.ready, false);
+		assert(next.players[0]!.cards.some((c) => c.id === "torch"));
+		assert.equal(wrapper.isLiveUpdate(next), false);
+		assert.equal(next.history.at(-1)!.move.action, "give");
+		assert(activePlayers(next).includes(0));
+	}
+});

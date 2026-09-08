@@ -141,6 +141,24 @@ import path from "node:path";
 	const torchResult = applyMove(torchState, torchMove, 0);
 	if (torchResult.players[0].cards.length) throw Error("Torch should be consumed after a valid reroll");
 
+	const managerState = structuredClone(s);
+	managerState.players[0].skill = "manager";
+	managerState.players[0].cards = [{ id: "map", used: 0, availableRound: 0 }];
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(managerState, 0));
+	await page.locator(".equipment-list button").filter({ hasText: "Map" }).click();
+	await page.getByLabel(/Lend a die to/).selectOption("1");
+	if (await page.getByLabel(/Give card to/).isVisible()) throw Error("Card transfer should start collapsed");
+	await page.getByText("Give this card…", { exact: true }).click();
+	await page.getByLabel(/Give card to/).selectOption("2");
+	if ((await page.getByLabel(/Lend a die to/).inputValue()) !== "1")
+		throw Error("Card transfer must not change the die recipient");
+	await page.screenshot({ path: "work/browser/fuji-equipment-transfer.png", fullPage: true });
+	await page.getByRole("button", { name: "Give Map card", exact: true }).click();
+	const giveMove = await page.evaluate(() => window.captured.findLast((e) => e.name === "move")?.payload);
+	if (giveMove.action !== "give" || giveMove.target !== 2) throw Error("Wrong card transfer recipient");
+	const given = applyMove(managerState, giveMove, 0);
+	if (!given.players[2].cards.some((c) => c.id === "map")) throw Error("Map card was not transferred");
+
 	s.phase = "movement";
 	s.activeResolution = null;
 	s.players[1].powerBars = 2;

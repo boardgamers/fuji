@@ -45,6 +45,7 @@
 	let tool = $state<EquipmentId | null>(null);
 	let copied = $state<EquipmentId>("torch");
 	let target = $state(0);
+	let giveTarget = $state(0);
 	let turnFace = $state(1);
 	let keep = $state<string[]>([]);
 	let drop = $state("");
@@ -105,6 +106,7 @@
 			keep = me.cards.slice(0, SKILLS[me.skill].keep).map((c) => c.id);
 			drop = me.dice.at(-1)?.id ?? "";
 			target = seat ?? 0;
+			giveTarget = seat === 0 ? 1 : 0;
 		}
 	});
 	const traceContext = $derived(`${s?.phase}:${seat}`);
@@ -200,6 +202,7 @@
 	}
 	function chooseTool(id: EquipmentId) {
 		tool = tool === id ? null : id;
+		target = id === "map" ? (seat === 0 ? 1 : 0) : (seat ?? 0);
 		tilePicks = [];
 		dice = [];
 	}
@@ -723,7 +726,11 @@
 										></label
 									>{/if}
 								{#if ["water", "lighter", "map"].includes(actionTool ?? "")}<label class="field"
-										>Recipient<select bind:value={target}
+										>{actionTool === "map"
+											? "Lend a die to"
+											: actionTool === "lighter"
+												? "Borrow a die from"
+												: "Reroll dice for"}<select bind:value={target}
 											>{#each s.players as p, i}<option value={i}>{p.name}{i === seat ? " (you)" : ""}</option
 												>{/each}</select
 										></label
@@ -756,16 +763,27 @@
 										) ||
 										!!s.pending ||
 										(actionTool === "machete" && (dice.length < 1 || dice.length > 2)) ||
-										(actionTool === "torch" && dice.length === 0)}
+										(actionTool === "torch" && dice.length === 0) ||
+										(actionTool === "map" && (dice.length !== 1 || target === seat))}
 									onclick={confirmTool}>Use {info.name}</button
 								>
-								{#if hasSkill(me, "manager")}<label class="field"
-										>Give to<select bind:value={target}
-											>{#each s.players as p, i}{#if i !== seat}<option value={i}>{p.name}</option>{/if}{/each}</select
-										></label
-									><button class="text-button" onclick={() => store.dispatch({ action: "give", id: tool, target })}
-										>Give equipment</button
-									>{/if}
+								{#if hasSkill(me, "manager")}<details class="equipment-transfer">
+										<summary>Give this card…</summary>
+										<p class="muted small">
+											Transfer the {info.name} card to a teammate using your Equipment Manager ability.
+										</p>
+										<label class="field"
+											>Give card to<select bind:value={giveTarget}>
+												{#each s.players as p, i}{#if i !== seat}<option value={i}>{p.name}</option>{/if}{/each}
+											</select></label
+										>
+										<button
+											class="secondary"
+											disabled={store.waiting || !!s.pending || !["planning", "equipment"].includes(s.phase)}
+											onclick={() => store.dispatch({ action: "give", id: tool, target: giveTarget })}
+											>Give {info.name} card</button
+										>
+									</details>{/if}
 							</div>
 						{/if}
 					</section>

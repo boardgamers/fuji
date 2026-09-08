@@ -26,6 +26,7 @@
 		onclick: (id: string) => void;
 		oninspect: (id: string) => void;
 	} = $props();
+	const opposite = $derived(state.players.length === 4 && seat !== undefined ? (seat + 2) % 4 : -1);
 	const danger = $derived(threatened(state));
 	const mapWidth = $derived(116 + Math.max(...state.board.map((c) => c.x)) * 100);
 	// Empty rectangles in the seven production layouts, including four-player tiles.
@@ -203,6 +204,7 @@
 						{@const destination = p.path.at(-1)!}
 						<g
 							class="teammate-route"
+							class:opposite={i === opposite}
 							data-player={i}
 							aria-label={`${p.name}: ${terrain(cell(state, destination).terrain).name}${p.ready ? ", ready" : ", planned"}`}
 						>
@@ -239,7 +241,27 @@
 				{/if}
 				{@const occupants = state.players.map((q, j) => (q.position === p.position ? j : -1)).filter((j) => j >= 0)}
 				{@const offset = (occupants.indexOf(i) - (occupants.length - 1) / 2) * 27}
-				<g class="traveler" style:transform={`translate(${x(p.position) + offset}px,${y(p.position)}px)`}>
+				<g
+					class="traveler"
+					class:opposite={i === opposite}
+					data-player={i}
+					role="button"
+					tabindex="0"
+					aria-label={`${p.name}${i === opposite ? ". Opposite player, not your neighbour. Your dice are not compared with each other." : ""}`}
+					onclick={() => onclick(p.position)}
+					onkeydown={(event) => {
+						if (event.key === "Enter" || event.key === " ") {
+							event.preventDefault();
+							onclick(p.position);
+						}
+					}}
+					style:transform={`translate(${x(p.position) + offset}px,${y(p.position)}px)`}
+				>
+					<title
+						>{p.name}{i === opposite
+							? ": opposite player, not your neighbour. Your dice are not compared with each other."
+							: ""}</title
+					>
 					<circle r="19" fill="#091e1b" stroke={CHARACTER_COLORS[p.character]} stroke-width={i === seat ? 3 : 2} />
 					<text text-anchor="middle" y="6" fill={CHARACTER_COLORS[p.character]} class="traveler-number">{i + 1}</text>
 					{#if i === seat}<path d="M-4 -28H4L0 -22Z" fill="#f4d888" />{/if}
@@ -449,9 +471,16 @@
 		stroke-dasharray: 6 6;
 		animation: route-flow 3s linear infinite;
 	}
+	.opposite {
+		opacity: 0.65;
+	}
+	.traveler:hover,
+	.traveler:focus-visible {
+		opacity: 1;
+	}
 	.traveler {
 		transition: transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
-		pointer-events: none;
+		pointer-events: auto;
 		filter: drop-shadow(0 4px 3px #0007);
 	}
 	.traveler-number {

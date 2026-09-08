@@ -1630,3 +1630,11 @@ h3 {
 	font-size: 12px;
 	color: #aebfa3;
 }
+
+.teammate.opposite {
+	opacity: 0.65;
+}
+.teammate.opposite:hover,
+.teammate.opposite:focus-visible {
+	opacity: 1;
+}

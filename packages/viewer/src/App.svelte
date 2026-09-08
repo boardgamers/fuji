@@ -463,6 +463,10 @@
 				<button
 					class="teammate"
 					class:own={seat === i}
+					class:opposite={s.players.length === 4 && seat !== undefined && i === (seat + 2) % 4}
+					title={s.players.length === 4 && seat !== undefined && i === (seat + 2) % 4
+						? "Opposite player, not your neighbour. Your dice are not compared with each other."
+						: undefined}
 					class:can-act={actingSeats.includes(i)}
 					style:--player-color={CHARACTER_COLORS[p.character]}
 					onclick={() => {

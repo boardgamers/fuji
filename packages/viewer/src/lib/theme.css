@@ -1426,3 +1426,12 @@ h3 {
 .auto-teammates input {
 	accent-color: #e5c77e;
 }
+
+.inspected-art {
+	display: block;
+	width: 100%;
+	height: auto;
+	object-fit: contain;
+	border-radius: 6px;
+	margin: 8px 0;
+}

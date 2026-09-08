@@ -22,6 +22,7 @@ import path from "node:path";
 		window.bridge.emit("player", { index: 2 });
 		window.bridge.emit("state", view);
 	}, view);
+	if ((await page.locator(".phase-track svg").count()) !== 5) throw Error("Phase strip must show five icons");
 	await page.getByRole("button", { name: "Ready for the journey" }).click();
 	await page.evaluate(() => {
 		window.bridge.emit("state:updated");
@@ -103,6 +104,14 @@ import path from "node:path";
 	s.phase = "reroll";
 	s.players[0].rerolls = 0;
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
+	const matchingBeforeHover = await page.locator(".personal .matching-badge").allTextContents();
+	await page.locator(".location").last().hover();
+	if (
+		JSON.stringify(await page.locator(".personal .matching-badge").allTextContents()) !==
+		JSON.stringify(matchingBeforeHover)
+	)
+		throw Error("Reroll matching badges must stay tied to the chosen destination");
+	await page.screenshot({ path: "work/browser/fuji-matching-dice.png", fullPage: true });
 	await page.locator(".personal .die").first().click();
 	const aside = page.getByRole("button", { name: "Set selected die aside" });
 	if (!(await aside.isEnabled())) throw Error("Buddy must be usable with zero rerolls");

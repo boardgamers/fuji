@@ -35,9 +35,16 @@
 	style:--die-color={die.face ? { blue: "#82ccdb", pink: "#e16d9a", yellow: "#f2cd5d" }[f.color] : "#27433c"}
 	{disabled}
 	{onclick}
-	aria-label={die.face ? `${f.color} ${die.face}${die.aside ? ", set aside" : ""}` : "Hidden die"}
+	aria-label={die.face
+		? `${f.color} ${die.face}${die.aside ? ", set aside" : relevant ? `, counts +${die.face}` : ""}`
+		: "Hidden die"}
 	aria-pressed={selected}
 >
+	{#if relevant && die.face && !die.aside}<span
+			class="matching-badge"
+			aria-hidden="true"
+			title={`Counts +${die.face} toward the matching total`}>+{die.face}</span
+		>{/if}
 	{#if die.face}<span class="pips" aria-hidden="true"
 			>{#each Array(9) as _, i}<i class:filled={layouts[die.face]?.includes(i)}></i>{/each}</span
 		>{#if colorblind}<span class="die-caption">{f.color}</span>{/if}{:else}<span aria-hidden="true">?</span>{/if}
@@ -77,11 +84,24 @@
 		outline: 2px solid #fff7cd;
 		outline-offset: 3px;
 	}
-	.die.relevant:not(.chosen) {
-		box-shadow:
-			inset 0 -5px 0 #0002,
-			0 0 0 2px #dcecb96b;
+	.matching-badge {
+		position: absolute;
+		top: -12px;
+		left: 50%;
+		transform: translateX(-50%);
+		min-width: 28px;
+		padding: 3px 5px;
+		border-radius: 5px;
+		background: #f4e2a8;
+		color: #193c30;
+		border: 2px solid #193c30;
+		font-size: 12px;
+		font-weight: 800;
+		line-height: 1;
+		box-shadow: 0 2px 4px #0005;
+		pointer-events: none;
 	}
+
 	.die.aside {
 		opacity: 0.5;
 		transform: scale(0.85);

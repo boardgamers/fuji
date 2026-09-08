@@ -27,6 +27,7 @@
 	import { art } from "./lib/assets";
 	import Landscape from "./lib/Landscape.svelte";
 	import Die from "./lib/Die.svelte";
+	import PhaseIcon from "./lib/PhaseIcon.svelte";
 	import RequirementDisplay from "./lib/RequirementDisplay.svelte";
 	import PlayerChoices from "./lib/PlayerChoices.svelte";
 	import StaminaGuide from "./lib/StaminaGuide.svelte";
@@ -80,8 +81,9 @@
 	const resolvingSeat = $derived(s?.activeResolution ?? seat);
 	const resolvingPlayer = $derived(s && resolvingSeat !== undefined ? s.players[resolvingSeat] : undefined);
 	const result = $derived(s && resolvingSeat !== undefined && revealed ? comparison(s, resolvingSeat) : null);
-	const rule = $derived(focusTerrain?.requirement);
-	const localTotal = $derived(me && focusTerrain ? total(me, focusTerrain.id) : 0);
+	const diceTerrain = $derived(s?.phase === "planning" ? focusTerrain : destination);
+	const rule = $derived(diceTerrain?.requirement);
+	const localTotal = $derived(me && diceTerrain ? total(me, diceTerrain.id) : 0);
 	const danger = $derived(s ? threatened(s) : []);
 	const nextAction = $derived(
 		!s
@@ -355,15 +357,15 @@
 									colorblind={store.colorblind}
 									die={d}
 									selected={dice.includes(d.id)}
-									relevant={s.phase !== "setup" && !!rule && matches(face(d), rule)}
+									relevant={s.phase !== "setup" && !d.aside && !!d.face && !!rule && matches(face(d), rule)}
 									disabled={(d.aside && !me.pendingInjuries) ||
 										store.waiting ||
 										s.phase === "setup" ||
 										(s.phase === "reroll" && me.ready)}
 									onclick={() => pickDie(d.id)}
 								/>{/each}
-							{#if focusTerrain && s.phase !== "setup"}<div class="dice-total">
-									<strong>{localTotal}</strong><span>Matching dice total<br />{focusTerrain.name}</span>
+							{#if diceTerrain && s.phase !== "setup"}<div class="dice-total">
+									<strong>{localTotal}</strong><span>Matching dice total<br />{diceTerrain.name}</span>
 								</div>{/if}
 						</div>
 						{#if s.phase === "reroll"}<section class="reroll-actions" aria-label="Dice actions">
@@ -441,7 +443,10 @@
 				<nav class="phase-track" aria-label="Round phases">
 					{#each ["Plan", "Reroll", "Equip", "Move", "Erupt"] as label, i}<span
 							class:active={phaseNumber === i + 1}
-							class:complete={phaseNumber > i + 1}>{label}</span
+							class:complete={phaseNumber > i + 1}
+							title={label}
+							aria-label={label}
+							aria-current={phaseNumber === i + 1 ? "step" : undefined}><PhaseIcon phase={i} /></span
 						>{/each}
 				</nav>
 				{#if store.error}<div class="error" role="alert">
@@ -790,7 +795,8 @@
 					</section>
 				{/if}
 				{#if focusTerrain && s.phase !== "setup"}<div class="location-detail">
-						<span class="eyebrow">INSPECTING THE TRAIL</span><strong>{focusTerrain.name}</strong><RequirementDisplay
+						<span class="eyebrow">INSPECTING THE TRAIL</span><strong>{focusTerrain.name}</strong>
+						<img class="inspected-art" src={art("land", focusTerrain.id)} alt={focusTerrain.name} /><RequirementDisplay
 							requirement={focusTerrain.requirement}
 							colorblind={store.colorblind}
 						/>
@@ -827,7 +833,7 @@
 										colorblind={store.colorblind}
 										die={d}
 										disabled
-										relevant={s.phase !== "setup" && !!rule && matches(face(d), rule)}
+										relevant={s.phase !== "setup" && !d.aside && !!d.face && !!rule && matches(face(d), rule)}
 									/>{/each}
 							</div>
 						</div>{/if}{/each}

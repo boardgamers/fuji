@@ -78,7 +78,7 @@
 					role="button"
 					aria-disabled={state.phase === "setup"}
 					tabindex={state.phase === "setup" ? -1 : 0}
-					aria-label={`${data.name}${reachable.length ? (reachable.includes(c.id) ? ", within movement range" : ", outside movement range") : ""}${data.kind === "village" ? ", village destination" : ""}, ${requirementLabel(data.requirement)}${c.lava ? ", covered in lava" : ""}${c.equipment ? ", equipment here" : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
+					aria-label={`${data.name}${reachable.length ? (reachable.includes(c.id) ? ", within movement range" : ", outside movement range") : ""}${data.kind === "village" ? ", village destination" : ""}, ${requirementLabel(data.requirement)}${c.lava ? ", covered in lava" : ""}${c.equipment && !c.lava ? ", equipment: finish here to draw a card usable next round" : ""}${c.eruption && !c.lava ? `, crossing or entering triggers ${c.eruption} extra eruption(s)` : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
 					onclick={() => onclick(c.id)}
 					onkeydown={(e) => {
 						if (e.key === "Enter" || e.key === " ") {
@@ -93,6 +93,11 @@
 						if (state.phase !== "setup") oninspect(c.id);
 					}}
 				>
+					<title
+						>{data.name}{c.lava
+							? " · Lava: cannot enter or cross"
+							: `${data.reroll ? " · +1 reroll at this destination" : ""}${c.equipment ? " · Equipment: finish here to draw a card usable next round" : ""}${c.eruption ? ` · Entering or crossing triggers ${c.eruption} extra eruption(s)` : ""}${danger.includes(c.id) ? " · Covered by the next eruption" : ""}`}</title
+					>
 					<rect x={x(c.id) - 44} y={y(c.id) - 35} width="88" height="70" rx="13" class="land-base" />
 					<image
 						href={art("land", c.lava ? 1 : c.terrain)}
@@ -124,7 +129,7 @@
 						</g>{/if}
 					{#if c.equipment && !c.lava}<g transform={`translate(${x(c.id) + 29},${y(c.id) - 25})`}
 							><circle r="10" class="equipment-dot" /><path
-								d="M-4 -2h8v6h-8z M-2 -2v-3h4v3"
+								d="M-7 -3 0 -6 7 -3 0 0Z M-7 -3V4L0 7 7 4V-3 M0 0V7"
 								class="equipment-icon"
 							/></g
 						>{/if}

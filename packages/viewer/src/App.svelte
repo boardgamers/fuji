@@ -688,8 +688,23 @@
 				{/if}
 				{#if focusTerrain && s.phase !== "setup"}<div class="location-detail">
 						<span class="eyebrow">INSPECTING THE TRAIL</span><strong>{focusTerrain.name}</strong><span
-							>{requirementLabel(focusTerrain.requirement)}{focusTerrain.reroll ? " · +1 reroll" : ""}</span
+							>{requirementLabel(focusTerrain.requirement)}</span
 						>
+						{#if focus?.lava}<span>Lava: cannot enter or cross.</span>
+						{:else}
+							{#if focusTerrain.reroll}<span>↻ +1 reroll when chosen as your destination.</span>{/if}
+							{#if focus?.equipment}<span>Equipment: finish your move here to draw a card, usable next round.</span
+								>{/if}
+							{#if focus?.eruption}<span
+									>⚠ Entering or crossing triggers {focus.eruption} extra eruption{focus.eruption === 1 ? "" : "s"}.
+									One-time trigger.</span
+								>{/if}
+							{#if focus && threatened(s).includes(focus.id)}<span>The next eruption will cover this location.</span
+								>{/if}
+							{#if focusTerrain.kind === "village"}<span
+									>Village: any house-marked location counts toward the team’s escape.</span
+								>{/if}
+						{/if}
 					</div>{/if}
 			</aside>
 		</div>

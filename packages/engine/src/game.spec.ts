@@ -308,3 +308,69 @@ test("metadata and player drops replay exactly without exposing system actions t
 	assert.deepEqual(replay(s), s);
 	assert.throws(() => applyMove(prepared(), { action: "$drop" }, 0));
 });
+
+test("BGS route edits and provisional readiness are live; drops retain turn handling", async () => {
+	const wrapper = await import("../wrapper.js");
+	const initial = prepared();
+	assert.equal(wrapper.isLiveUpdate(initial), false);
+	const planned = applyMove(initial, { action: "plan", path: [initial.players[0]!.position] }, 0);
+	assert.equal(wrapper.isLiveUpdate(planned), true);
+	assert.deepEqual(wrapper.currentPlayer(planned), wrapper.currentPlayer(initial));
+	assert.equal(wrapper.isLiveUpdate(JSON.parse(JSON.stringify(planned))), true);
+	assert.equal(wrapper.isLiveUpdate(replay(planned)), true);
+	const confirmed = applyMove(planned, { action: "ready" }, 0);
+	assert.equal(wrapper.isLiveUpdate(confirmed), true);
+	const revised = applyMove(confirmed, { action: "plan", path: [confirmed.players[0]!.position] }, 0);
+	assert.equal(wrapper.isLiveUpdate(revised), true);
+	assert.deepEqual(wrapper.currentPlayer(revised), wrapper.currentPlayer(confirmed));
+	assert.equal(wrapper.isLiveUpdate(wrapper.dropPlayer(revised, 0)), false);
+	assert.equal(wrapper.isLiveUpdate(wrapper.setPlayerMetaData(revised, 0, { name: "Explorer" })), false);
+});
+
+test("100 planning revisions keep history and public log bounded and replay exactly", async () => {
+	const wrapper = await import("../wrapper.js");
+	let s = prepared();
+	const historyLength = s.history.length;
+	const logLength = s.log.length;
+	for (let i = 0; i < 100; i++) {
+		const seat = i % 2;
+		const path = Object.values(paths(s, seat)).find(
+			(path) => !s.players.some((p, j) => j !== seat && p.ready && p.path.at(-1) === path.at(-1))
+		)!;
+		s = applyMove(s, { action: "plan", path }, seat);
+		s = applyMove(s, { action: "ready" }, seat);
+		assert.equal(wrapper.isLiveUpdate(s), true);
+		assert.equal(s.history.length, historyLength);
+		assert.equal(s.log.length, logLength);
+	}
+	assert.deepEqual(replay(JSON.parse(JSON.stringify(s))), s);
+	assert.equal("planningSnapshot" in stripSecret(s, 0), false);
+	assert.equal("liveUpdate" in stripSecret(s, 0), false);
+	const lastPath = Object.values(paths(s, 2)).find(
+		(path) => !s.players.some((p, j) => j !== 2 && p.path.at(-1) === path.at(-1))
+	)!;
+	s = applyMove(s, { action: "plan", path: lastPath }, 2);
+	s = applyMove(s, { action: "ready" }, 2);
+	assert.equal(s.phase, "reroll");
+	assert.equal(wrapper.isLiveUpdate(s), false);
+	assert.equal(s.history.length, historyLength + 2);
+	const partial = replay(s, historyLength + 1);
+	assert.equal(partial.phase, "planning");
+	assert.equal(wrapper.isLiveUpdate(partial), true);
+	assert.deepEqual(replay(partial), partial);
+	assert.equal(s.planningSnapshot, undefined);
+	assert.deepEqual(replay(s), s);
+	assert.throws(() => applyMove(s, { action: "plan", path: [s.players[0]!.position] }, 0));
+});
+
+test("metadata and drops checkpoint live planning without losing replay", async () => {
+	const wrapper = await import("../wrapper.js");
+	let s = prepared();
+	s = applyMove(s, { action: "plan", path: [s.players[0]!.position] }, 0);
+	s = wrapper.setPlayerMetaData(s, 1, { name: "Climber" });
+	assert.deepEqual(replay(s), s);
+	s = applyMove(s, { action: "ready" }, 0);
+	s = wrapper.dropPlayer(s, 1);
+	assert.equal(wrapper.isLiveUpdate(s), false);
+	assert.deepEqual(replay(s), s);
+});

@@ -15,7 +15,7 @@ import {
 	type EquipmentId,
 	type Injury,
 } from "./data.js";
-import type { State, View, Player, Die, Cell, Move, ResolvedFace } from "./types.js";
+import type { State, View, Player, Die, Cell, Move, ResolvedFace, PlanningSnapshot } from "./types.js";
 export const assert = (ok: unknown, message: string): asserts ok => {
 	if (!ok) throw Error(message);
 };
@@ -506,7 +506,6 @@ function execute(s: State, m: Move, seat: number) {
 				throw Error("A neighbor has already selected that destination.");
 			p.path = route;
 			p.ready = false;
-			event(s, `${p.name} is planning a route.`);
 			break;
 		}
 		case "ready": {
@@ -518,9 +517,10 @@ function execute(s: State, m: Move, seat: number) {
 					throw Error("Neighbors need different destinations.");
 			}
 			p.ready = true;
-			event(s, `${p.name} is ready.`);
+			if (s.phase !== "planning") event(s, `${p.name} is ready.`);
 			if (s.players.every((p) => p.ready)) {
 				if (s.phase === "planning") {
+					for (const player of s.players) event(s, `${player.name} chose ${player.path.join(" → ")}.`);
 					phase(s, "reroll");
 					s.players.forEach((p, i) => {
 						p.rerolls = rerollAllowance(s, i);
@@ -647,6 +647,24 @@ function execute(s: State, m: Move, seat: number) {
 			throw Error("Unknown action.");
 	}
 }
+// Provisional planning overwrites one bounded snapshot. Only a definitive
+// action checkpoints it into replay history; it never truncates the public log.
+function checkpointPlanning(s: State) {
+	if (s.planningSnapshot) {
+		s.history.push({ player: 0, move: { action: "$planning", snapshot: structuredClone(s.planningSnapshot) } });
+		delete s.planningSnapshot;
+	}
+	delete s.liveUpdate;
+}
+function restorePlanning(s: State, snapshot: PlanningSnapshot) {
+	s.players.forEach((p, i) => {
+		p.path = [...snapshot.players[i]!.path];
+		p.ready = snapshot.players[i]!.ready;
+	});
+	s.revision = snapshot.revision;
+	s.planningSnapshot = structuredClone(snapshot);
+	s.liveUpdate = true;
+}
 export function applyMove(data: State, input: unknown, seat: number): State {
 	if (!Number.isInteger(seat) || seat < 0 || seat >= data.players.length) throw Error("Invalid player.");
 	if (!input || typeof input !== "object" || Array.isArray(input)) throw Error("Invalid move.");
@@ -658,11 +676,31 @@ export function applyMove(data: State, input: unknown, seat: number): State {
 	const s = structuredClone(data);
 	execute(s, move, seat);
 	s.revision++;
-	s.history.push({ player: seat, move });
+	const live =
+		data.phase === "planning" && s.phase === "planning" && (move.action === "plan" || move.action === "ready");
+	if (live) {
+		s.liveUpdate = true;
+		s.planningSnapshot = {
+			players: s.players.map((p) => ({ path: [...p.path], ready: p.ready })),
+			revision: s.revision,
+		};
+	} else {
+		checkpointPlanning(s);
+		s.history.push({ player: seat, move });
+	}
 	return s;
 }
 export function stripSecret(s: State, seat?: number): View {
-	const { seed: _, counter: __, deck, history: ___, initOptions: ____, ...publicState } = structuredClone(s);
+	const {
+		seed: _,
+		counter: __,
+		deck,
+		history: ___,
+		initOptions: ____,
+		liveUpdate: _____,
+		planningSnapshot: ______,
+		...publicState
+	} = structuredClone(s);
 	const revealed = s.phase === "movement" || s.phase === "eruption" || s.phase === "ended";
 	publicState.players.forEach((p, i) => {
 		p.dice.forEach((d) => {
@@ -695,6 +733,7 @@ export function activePlayers(s: State): number[] {
 export function dropGamePlayer(s: State, seat: number): State {
 	if (!s.players[seat]) throw Error("Invalid player.");
 	const next = structuredClone(s);
+	checkpointPlanning(next);
 	end(next, "lost", `${next.players[seat]!.name} left the expedition.`);
 	next.revision++;
 	next.history.push({ player: seat, move: { action: "$drop" } });
@@ -703,16 +742,22 @@ export function dropGamePlayer(s: State, seat: number): State {
 export function setPlayerName(s: State, seat: number, name: string): State {
 	if (!s.players[seat] || typeof name !== "string") throw Error("Invalid player metadata.");
 	const next = structuredClone(s);
+	checkpointPlanning(next);
 	next.players[seat]!.name = name;
 	next.history.push({ player: seat, move: { action: "$name", name } });
 	return next;
 }
-export function replay(s: State, to = s.history.length): State {
+export function replay(s: State, to?: number): State {
 	let state = initGame(s.players.length, s.initOptions, s.seed);
-	for (const e of s.history.slice(0, to)) {
-		if (e.move.action === "$drop") state = dropGamePlayer(state, e.player);
+	for (const e of s.history.slice(0, to ?? s.history.length)) {
+		if (e.move.action === "$planning") {
+			restorePlanning(state, e.move.snapshot as unknown as PlanningSnapshot);
+			state.history.push(structuredClone(e));
+			delete state.planningSnapshot;
+		} else if (e.move.action === "$drop") state = dropGamePlayer(state, e.player);
 		else if (e.move.action === "$name") state = setPlayerName(state, e.player, e.move.name as string);
 		else state = applyMove(state, e.move, e.player);
 	}
+	if (to === undefined && s.planningSnapshot) restorePlanning(state, s.planningSnapshot);
 	return state;
 }

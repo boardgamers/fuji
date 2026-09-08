@@ -55,7 +55,13 @@ export interface Pending {
 	required: boolean;
 	receiver?: number;
 }
+export interface PlanningSnapshot {
+	players: { path: string[]; ready: boolean }[];
+	revision: number;
+}
 export interface State {
+	liveUpdate?: boolean;
+	planningSnapshot?: PlanningSnapshot;
 	schemaVersion: 1;
 	seed: string;
 	counter: number;
@@ -77,7 +83,10 @@ export interface State {
 	history: { player: number; move: Record<string, unknown> }[];
 	initOptions: Record<string, unknown>;
 }
-export interface View extends Omit<State, "seed" | "counter" | "deck" | "history" | "initOptions"> {
+export interface View extends Omit<
+	State,
+	"seed" | "counter" | "deck" | "history" | "initOptions" | "liveUpdate" | "planningSnapshot"
+> {
 	deckCount: number;
 }
 export interface Move {

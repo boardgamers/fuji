@@ -10,6 +10,8 @@ import {
 import type { State } from "./src/types.js";
 export { stripSecret };
 export const hashSeed = true;
+// BGS evaluates the saved state. A live update must preserve active seats.
+export const isLiveUpdate = (s: State): boolean => s.liveUpdate === true;
 export async function init(players: number, expansions: string[], options: Record<string, unknown>, seed: string) {
 	if (expansions.length) throw Error("No expansions are implemented.");
 	return initGame(players, options, seed);

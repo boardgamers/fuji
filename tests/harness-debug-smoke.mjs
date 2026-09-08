@@ -1,11 +1,15 @@
 import { chromium } from "playwright";
 import { readFileSync, mkdirSync } from "node:fs";
 import assert from "node:assert/strict";
-import { replay } from "../packages/engine/dist/index.js";
+import { replay, initGame } from "../packages/engine/dist/index.js";
 mkdirSync("work/browser", { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.FUJI_CHROMIUM_EXECUTABLE });
 try {
 	const page = await browser.newPage();
+	await page.addInitScript(
+		(state) => localStorage.setItem("fuji-dev-v1", JSON.stringify(state)),
+		initGame(4, { scenario: 7, difficulty: 3 }, "debug-test")
+	);
 	await page.goto("http://127.0.0.1:5187");
 	await page.locator(".map").waitFor();
 	await page.getByText("Playtest tools", { exact: true }).click();
@@ -20,6 +24,11 @@ try {
 	assert.deepEqual(replay(snapshot.game), snapshot.game);
 	assert.equal(snapshot.seat, 0);
 	console.log("Debug export preserves exact state, selected seat and deterministic replay.");
+	await page.getByRole("button", { name: "New game", exact: true }).click();
+	const modal = page.getByRole("dialog");
+	for (const label of ["7", "Level 3", "4 players"])
+		assert.equal(await modal.getByRole("button", { name: label, exact: true }).getAttribute("aria-pressed"), "true");
+	console.log("New games retain the restored scenario, difficulty and player count.");
 } finally {
 	await browser.close();
 }

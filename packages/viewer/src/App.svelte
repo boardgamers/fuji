@@ -94,6 +94,15 @@
 	let newDifficulty = $state(1);
 	let newScenario = $state(1);
 	let newSeed = $state("first-light");
+	function openNewGame() {
+		const current = store.state;
+		if (current) {
+			newScenario = current.scenario ?? 1;
+			newDifficulty = current.difficulty;
+			newPlayers = current.players.length;
+		}
+		newGame = true;
+	}
 	const reachable = $derived(s && seat !== undefined ? paths(s, seat) : {});
 	const reserved = $derived.by(() => {
 		const locations: Record<string, string> = {};
@@ -439,7 +448,7 @@
 							<p class="muted small">Includes the seed, settings, move history and all players’ dice.</p>
 							{#if debugStatus}<p class="small" role="status">{debugStatus}</p>{/if}
 						</fieldset>
-						<button onclick={() => (newGame = true)}>New game</button>
+						<button onclick={openNewGame}>New game</button>
 						<button
 							onclick={() => {
 								newSeed = crypto.randomUUID().slice(0, 8);
@@ -735,7 +744,7 @@
 								>{s.players.reduce((n, p) => n + 4 - p.injuries.length + p.cards.length, 0)} expedition points</strong
 							>{/if}
 					</div>
-					{#if store.local}<button class="primary" onclick={() => (newGame = true)}>Start a new expedition</button>{/if}
+					{#if store.local}<button class="primary" onclick={openNewGame}>Start a new expedition</button>{/if}
 				{:else if !me}<p class="instruction">Follow the expedition. Private dice remain hidden until the reveal.</p>
 				{:else if s.phase === "setup"}
 					{#if me.setupDone}<p class="instruction">

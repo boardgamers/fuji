@@ -41,6 +41,23 @@ const ruleAt = (game: View, seat: number) =>
 const valueOf = (d: Die, r: Requirement) => (matches(face(d), r) ? d.face : 0);
 const urgency = (game: View, seat: number) => (threatened(game).includes(game.players[seat]!.position) ? 3 : 1);
 
+function distancesToVillage(game: View): Map<string, number> {
+	// Measure progress along the trail, including detours around gaps and lava.
+	const villageDistances = new Map<string, number>();
+	const frontier = game.board.filter((c) => walkable(c) && terrain(c.terrain).kind === "village");
+	frontier.forEach((c) => villageDistances.set(c.id, 0));
+	for (let i = 0; i < frontier.length; i++) {
+		const current = frontier[i]!;
+		for (const next of game.board) {
+			if (!walkable(next) || villageDistances.has(next.id)) continue;
+			if (Math.abs(current.x - next.x) + Math.abs(current.y - next.y) !== 1) continue;
+			villageDistances.set(next.id, villageDistances.get(current.id)! + 1);
+			frontier.push(next);
+		}
+	}
+	return villageDistances;
+}
+
 // Convolve independent fair rolls; revealed faces are point masses. This is a
 // prior, not access to private rolls or a model of another player's strategy.
 export function contributionDistribution(dice: Die[], rule: Requirement): number[] {
@@ -244,14 +261,8 @@ function chooseEquipment(game: View, seat: number, policy: AiPolicy): Move | und
 					);
 			} else if (effect === "rope") {
 				const origin = cell(game, player.position);
-				const villageDistance = (id: string) => {
-					const c = cell(game, id);
-					return Math.min(
-						...game.board
-							.filter((t) => terrain(t.terrain).kind === "village")
-							.map((t) => Math.abs(t.x - c.x) + Math.abs(t.y - c.y))
-					);
-				};
+				const distances = distancesToVillage(game);
+				const villageDistance = (id: string) => distances.get(id) ?? game.board.length;
 				for (const c of game.board.filter(
 					(c) =>
 						walkable(c) &&
@@ -378,19 +389,7 @@ export function chooseMove(game: View, seat: number, policy: AiPolicy = DEFAULT_
 				// Fewer alternatives and shorter approaches make this entrance more valuable.
 				return cost + (18 * urgency(game, arrival.seat)) / arrival.options.length / Math.max(1, route.length - 1);
 			}, 0);
-		// Measure progress along the trail, including detours around gaps and lava.
-		const villageDistances = new Map<string, number>();
-		const frontier = game.board.filter((c) => walkable(c) && terrain(c.terrain).kind === "village");
-		frontier.forEach((c) => villageDistances.set(c.id, 0));
-		for (let i = 0; i < frontier.length; i++) {
-			const current = frontier[i]!;
-			for (const next of game.board) {
-				if (!walkable(next) || villageDistances.has(next.id)) continue;
-				if (Math.abs(current.x - next.x) + Math.abs(current.y - next.y) !== 1) continue;
-				villageDistances.set(next.id, villageDistances.get(current.id)! + 1);
-				frontier.push(next);
-			}
-		}
+		const villageDistances = distancesToVillage(game);
 		const score = (path: string[]) => {
 			const c = cell(game, path.at(-1)!);
 			const closestVillage = villageDistances.get(c.id) ?? game.board.length;

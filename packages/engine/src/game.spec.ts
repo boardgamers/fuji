@@ -1181,3 +1181,17 @@ test("AI follows the connected trail around scenario 7's gap instead of camping 
 		assert.deepEqual(chooseMove(stripSecret(s, seat), seat), previous);
 	}
 });
+
+test("AI uses Rope to advance around a map gap even when coordinate distance increases", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = initGame(3, { scenario: 7 }, "rope-detour");
+	s.phase = "equipment";
+	for (const [i, p] of s.players.entries()) {
+		p.position = ["5,4", "6,5", "6,3"][i]!;
+		p.path = [p.position];
+		p.ready = false;
+		p.cards = [];
+	}
+	s.players[0]!.cards = [{ id: "rope", used: 0, availableRound: 0 }];
+	assert.deepEqual(chooseMove(stripSecret(s, 0), 0), { action: "equipment", id: "rope", tiles: ["5,3"] });
+});

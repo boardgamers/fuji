@@ -1,0 +1,681 @@
+{
+	"description": "Matched all-scenario experiments after correcting village distance around map gaps. Complete-team wins, default skills, 2\u20134 players, all seven scenarios and difficulty cycling 1\u20134. Every game checked for termination and exact replay. Training candidates evaluated before held-out seeds.",
+	"baselineCommit": "fdac316",
+	"routeCommit": "9c03772",
+	"currentChanges": "Connected-path distance in route planning and Rope equipment decisions; original policy weights retained.",
+	"training": [
+		{
+			"name": "old",
+			"family": "training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 168,
+			"wins": 15,
+			"moves": 10887,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 7
+				},
+				"2": {
+					"games": 24,
+					"wins": 0
+				},
+				"3": {
+					"games": 24,
+					"wins": 1
+				},
+				"4": {
+					"games": 24,
+					"wins": 0
+				},
+				"5": {
+					"games": 24,
+					"wins": 5
+				},
+				"6": {
+					"games": 24,
+					"wins": 1
+				},
+				"7": {
+					"games": 24,
+					"wins": 1
+				}
+			},
+			"equipment": {
+				"radio": 46,
+				"rope": 53,
+				"flare": 92,
+				"water": 52,
+				"binoculars": 32,
+				"aid": 77,
+				"map": 31,
+				"shovel": 24,
+				"torch": 39,
+				"machete": 28,
+				"compass": 10,
+				"tape": 10
+			},
+			"stalled": []
+		},
+		{
+			"name": "route",
+			"family": "training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 168,
+			"wins": 46,
+			"moves": 10592,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 7
+				},
+				"2": {
+					"games": 24,
+					"wins": 7
+				},
+				"3": {
+					"games": 24,
+					"wins": 5
+				},
+				"4": {
+					"games": 24,
+					"wins": 5
+				},
+				"5": {
+					"games": 24,
+					"wins": 9
+				},
+				"6": {
+					"games": 24,
+					"wins": 6
+				},
+				"7": {
+					"games": 24,
+					"wins": 7
+				}
+			},
+			"equipment": {
+				"radio": 43,
+				"rope": 56,
+				"flare": 88,
+				"water": 55,
+				"binoculars": 26,
+				"aid": 77,
+				"map": 29,
+				"shovel": 25,
+				"torch": 36,
+				"machete": 33,
+				"compass": 14,
+				"tape": 13
+			},
+			"stalled": []
+		},
+		{
+			"name": "current",
+			"family": "training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 168,
+			"wins": 48,
+			"moves": 10608,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 7
+				},
+				"2": {
+					"games": 24,
+					"wins": 8
+				},
+				"3": {
+					"games": 24,
+					"wins": 4
+				},
+				"4": {
+					"games": 24,
+					"wins": 5
+				},
+				"5": {
+					"games": 24,
+					"wins": 9
+				},
+				"6": {
+					"games": 24,
+					"wins": 7
+				},
+				"7": {
+					"games": 24,
+					"wins": 8
+				}
+			},
+			"equipment": {
+				"radio": 44,
+				"rope": 68,
+				"flare": 88,
+				"water": 56,
+				"binoculars": 27,
+				"aid": 77,
+				"map": 29,
+				"shovel": 26,
+				"torch": 36,
+				"machete": 33,
+				"compass": 16,
+				"tape": 13
+			},
+			"stalled": []
+		},
+		{
+			"name": "frugal",
+			"family": "training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 1.5
+			},
+			"games": 168,
+			"wins": 44,
+			"moves": 10689,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 7
+				},
+				"2": {
+					"games": 24,
+					"wins": 6
+				},
+				"3": {
+					"games": 24,
+					"wins": 4
+				},
+				"4": {
+					"games": 24,
+					"wins": 5
+				},
+				"5": {
+					"games": 24,
+					"wins": 9
+				},
+				"6": {
+					"games": 24,
+					"wins": 6
+				},
+				"7": {
+					"games": 24,
+					"wins": 7
+				}
+			},
+			"equipment": {
+				"radio": 45,
+				"rope": 69,
+				"flare": 86,
+				"water": 55,
+				"binoculars": 27,
+				"aid": 76,
+				"map": 28,
+				"shovel": 25,
+				"torch": 34,
+				"machete": 31,
+				"compass": 15,
+				"tape": 13
+			},
+			"stalled": []
+		},
+		{
+			"name": "generous",
+			"family": "training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.3
+			},
+			"games": 168,
+			"wins": 46,
+			"moves": 10529,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 7
+				},
+				"2": {
+					"games": 24,
+					"wins": 8
+				},
+				"3": {
+					"games": 24,
+					"wins": 5
+				},
+				"4": {
+					"games": 24,
+					"wins": 5
+				},
+				"5": {
+					"games": 24,
+					"wins": 8
+				},
+				"6": {
+					"games": 24,
+					"wins": 7
+				},
+				"7": {
+					"games": 24,
+					"wins": 6
+				}
+			},
+			"equipment": {
+				"radio": 43,
+				"rope": 68,
+				"flare": 89,
+				"water": 55,
+				"binoculars": 27,
+				"aid": 77,
+				"map": 28,
+				"shovel": 27,
+				"machete": 35,
+				"tape": 18,
+				"torch": 35,
+				"compass": 17
+			},
+			"stalled": []
+		},
+		{
+			"name": "stamina",
+			"family": "training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 3,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 168,
+			"wins": 44,
+			"moves": 10516,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 6
+				},
+				"2": {
+					"games": 24,
+					"wins": 7
+				},
+				"3": {
+					"games": 24,
+					"wins": 4
+				},
+				"4": {
+					"games": 24,
+					"wins": 5
+				},
+				"5": {
+					"games": 24,
+					"wins": 9
+				},
+				"6": {
+					"games": 24,
+					"wins": 6
+				},
+				"7": {
+					"games": 24,
+					"wins": 7
+				}
+			},
+			"equipment": {
+				"radio": 43,
+				"rope": 67,
+				"flare": 89,
+				"water": 56,
+				"binoculars": 27,
+				"aid": 77,
+				"map": 28,
+				"shovel": 26,
+				"torch": 36,
+				"compass": 17,
+				"machete": 33,
+				"tape": 13
+			},
+			"stalled": []
+		},
+		{
+			"name": "teamwork",
+			"family": "training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.8,
+				"cost": 0.8
+			},
+			"games": 168,
+			"wins": 48,
+			"moves": 10623,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 7
+				},
+				"2": {
+					"games": 24,
+					"wins": 8
+				},
+				"3": {
+					"games": 24,
+					"wins": 4
+				},
+				"4": {
+					"games": 24,
+					"wins": 5
+				},
+				"5": {
+					"games": 24,
+					"wins": 9
+				},
+				"6": {
+					"games": 24,
+					"wins": 7
+				},
+				"7": {
+					"games": 24,
+					"wins": 8
+				}
+			},
+			"equipment": {
+				"radio": 44,
+				"rope": 68,
+				"flare": 88,
+				"water": 56,
+				"binoculars": 27,
+				"aid": 77,
+				"map": 29,
+				"shovel": 26,
+				"machete": 34,
+				"torch": 36,
+				"tape": 14,
+				"compass": 16
+			},
+			"stalled": []
+		}
+	],
+	"heldout": [
+		{
+			"name": "old",
+			"family": "heldout",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 252,
+			"wins": 29,
+			"moves": 16071,
+			"byScenario": {
+				"1": {
+					"games": 36,
+					"wins": 16
+				},
+				"2": {
+					"games": 36,
+					"wins": 2
+				},
+				"3": {
+					"games": 36,
+					"wins": 3
+				},
+				"4": {
+					"games": 36,
+					"wins": 1
+				},
+				"5": {
+					"games": 36,
+					"wins": 4
+				},
+				"6": {
+					"games": 36,
+					"wins": 1
+				},
+				"7": {
+					"games": 36,
+					"wins": 2
+				}
+			},
+			"equipment": {
+				"water": 117,
+				"aid": 76,
+				"flare": 41,
+				"radio": 56,
+				"shovel": 70,
+				"binoculars": 135,
+				"machete": 64,
+				"torch": 60,
+				"compass": 33,
+				"rope": 51,
+				"map": 49,
+				"tape": 8
+			},
+			"stalled": []
+		},
+		{
+			"name": "route",
+			"family": "heldout",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 252,
+			"wins": 61,
+			"moves": 16353,
+			"byScenario": {
+				"1": {
+					"games": 36,
+					"wins": 17
+				},
+				"2": {
+					"games": 36,
+					"wins": 5
+				},
+				"3": {
+					"games": 36,
+					"wins": 5
+				},
+				"4": {
+					"games": 36,
+					"wins": 5
+				},
+				"5": {
+					"games": 36,
+					"wins": 12
+				},
+				"6": {
+					"games": 36,
+					"wins": 8
+				},
+				"7": {
+					"games": 36,
+					"wins": 9
+				}
+			},
+			"equipment": {
+				"water": 112,
+				"aid": 74,
+				"flare": 43,
+				"radio": 54,
+				"shovel": 69,
+				"binoculars": 130,
+				"machete": 76,
+				"torch": 62,
+				"compass": 30,
+				"rope": 54,
+				"map": 50,
+				"tape": 13
+			},
+			"stalled": []
+		},
+		{
+			"name": "current",
+			"family": "heldout",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 252,
+			"wins": 61,
+			"moves": 16220,
+			"byScenario": {
+				"1": {
+					"games": 36,
+					"wins": 17
+				},
+				"2": {
+					"games": 36,
+					"wins": 6
+				},
+				"3": {
+					"games": 36,
+					"wins": 5
+				},
+				"4": {
+					"games": 36,
+					"wins": 6
+				},
+				"5": {
+					"games": 36,
+					"wins": 12
+				},
+				"6": {
+					"games": 36,
+					"wins": 8
+				},
+				"7": {
+					"games": 36,
+					"wins": 7
+				}
+			},
+			"equipment": {
+				"water": 112,
+				"aid": 74,
+				"flare": 41,
+				"radio": 54,
+				"shovel": 69,
+				"binoculars": 129,
+				"machete": 76,
+				"torch": 62,
+				"compass": 30,
+				"rope": 61,
+				"map": 50,
+				"tape": 11
+			},
+			"stalled": []
+		},
+		{
+			"name": "teamwork",
+			"family": "heldout",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.8,
+				"cost": 0.8
+			},
+			"games": 252,
+			"wins": 61,
+			"moves": 16189,
+			"byScenario": {
+				"1": {
+					"games": 36,
+					"wins": 17
+				},
+				"2": {
+					"games": 36,
+					"wins": 6
+				},
+				"3": {
+					"games": 36,
+					"wins": 5
+				},
+				"4": {
+					"games": 36,
+					"wins": 6
+				},
+				"5": {
+					"games": 36,
+					"wins": 11
+				},
+				"6": {
+					"games": 36,
+					"wins": 8
+				},
+				"7": {
+					"games": 36,
+					"wins": 8
+				}
+			},
+			"equipment": {
+				"water": 112,
+				"aid": 74,
+				"flare": 41,
+				"radio": 54,
+				"shovel": 69,
+				"binoculars": 129,
+				"machete": 79,
+				"torch": 62,
+				"compass": 32,
+				"rope": 61,
+				"map": 49,
+				"tape": 13
+			},
+			"stalled": []
+		}
+	]
+}

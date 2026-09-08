@@ -63,3 +63,23 @@ The higher-lead candidate stalled once: two neighbors ended up sharing an isolat
 Bots already in the village prefer to leave scarce, reachable entrances for approaching comparison neighbors. The preference uses public routes, weights teammates near lava more heavily, and favors leaving shorter approaches available. It applies only to village destinations safe from the next eruption and routes without eruption markers; ordinary dice and route scoring still apply. Neighbors already in the village or with finalized routes do not add pressure to move.
 
 Matched comparison for the village-space change: 240 identical seeded games using the same engine, with only the previous AI module substituted for the baseline. Scenario 1 used 50 seeds at each of 2/3/4 players; scenarios 2–7 used five seeds at each player count. Difficulty cycled through 1–4. Baseline: 70 wins (63 + 7), 13,911 moves. Updated: 72 wins (64 + 8), 13,631 moves. Both completed all games without deadlocks and with exact replays. The gain from 29.2% to 30.0% is small and does not establish statistical significance.
+
+## Connected-path distance and equipment retuning
+
+Scenario 7 exposed a geometric error: coordinate distance penalized walking around the gap between the starting trail and village, encouraging repeated stays. Planning and Rope now use shortest connected paths through walkable locations, excluding lava. This uses public board information only.
+
+The matched experiment in `ai-detour-benchmark.json` covers all seven scenarios, 2–4 players, difficulty 1–4 and default skills. Seven candidates each played 168 training games (1,176 runs). Four candidates then played 252 separate held-out games each (1,008 runs). Every run terminated and replayed exactly.
+
+| Policy                               | Training wins / 168 | Held-out wins / 252 |
+| ------------------------------------ | ------------------: | ------------------: |
+| Previous coordinate distance         |                  15 |                  29 |
+| Connected route distance             |                  46 |                  61 |
+| Connected route and Rope distance    |                  48 |                  61 |
+| More conservative equipment spending |                  44 |          Not tested |
+| More generous equipment spending     |                  46 |          Not tested |
+| More stamina emphasis                |                  44 |          Not tested |
+| More teammate emphasis               |                  48 |                  61 |
+
+The selected policy retains the original weights and corrects distance for both routes and Rope. Held-out wins increased from 11.5% to 24.2% versus the previous AI. Scenario 7 increased from 2/36 to 7/36; that per-scenario sample is small. Rope's correction tied route-only results overall and lost two scenario-7 wins in held-out seeds, so its geometric correctness should not be confused with a demonstrated additional win-rate improvement. Equipment weight changes did not establish a stronger policy.
+
+Reproduce a current-policy batch with `node scripts/benchmark-policy.mjs current heldout 12`. Use `teamwork`, `frugal`, `generous`, or `stamina` to test the recorded alternatives. `FUJI_BENCH_ENGINE` can select an alternate compiled engine directory for matched historical comparisons. Reports are written to `work/benchmarks`. Seed families are independent of policy names.

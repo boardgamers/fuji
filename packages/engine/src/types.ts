@@ -44,6 +44,19 @@ export interface Cell {
 	eruption: number;
 }
 export interface Event {
+	detail?: boolean;
+	transfer?: { id: EquipmentId; from: string; to: string };
+	journey?: {
+		name: string;
+		character: number;
+		terrain: number;
+		moved: boolean;
+		reason: "success" | "planned-stay" | "comparison" | "blocked";
+		own: number;
+		highest: number;
+		loss: number | null;
+		participants: { name: string; total: number; bonus: number; dice: Die[] }[];
+	};
 	dice?: Die[];
 	diceLabel?: string;
 	round: number;

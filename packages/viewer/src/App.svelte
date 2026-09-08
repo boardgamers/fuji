@@ -27,6 +27,7 @@
 	import { art } from "./lib/assets";
 	import Landscape from "./lib/Landscape.svelte";
 	import Die from "./lib/Die.svelte";
+	import JournalEntry from "./lib/JournalEntry.svelte";
 	import PhaseIcon from "./lib/PhaseIcon.svelte";
 	import RequirementDisplay from "./lib/RequirementDisplay.svelte";
 	import PlayerChoices from "./lib/PlayerChoices.svelte";
@@ -54,7 +55,12 @@
 	let drop = $state("");
 	let help = $state(false);
 	let journal = $state(true);
-	const journalEntries = $derived(s?.log.slice().reverse() ?? []);
+	const journalEntries = $derived(
+		s?.log
+			.filter((entry) => !entry.detail)
+			.slice()
+			.reverse() ?? []
+	);
 	let newGame = $state(false);
 	let newPlayers = $state(3);
 	let newDifficulty = $state(1);
@@ -456,11 +462,7 @@
 								{/if}
 								<li class:latest={i === 0}>
 									<div class="journal-entry">
-										<span>{e.diceLabel ?? e.text}</span>{#if e.dice}<div class="journal-dice">
-												{#each e.dice as d}<Die die={d} colorblind={store.colorblind} disabled />{:else}<span
-														>No matching dice</span
-													>{/each}
-											</div>{/if}
+										<JournalEntry entry={e} colorblind={store.colorblind} />
 									</div>
 								</li>{/each}
 						</ol>{/if}

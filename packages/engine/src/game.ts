@@ -114,8 +114,8 @@ export function comparison(s: State | View, seat: number) {
 	const loss = p.aid ? 0 : margin <= 0 ? s.difficulty + 2 : Math.max(0, s.difficulty + 2 - Math.ceil(margin / 2));
 	return { own, peers, margin, loss, success: margin > 0 };
 }
-function event(s: State, text: string, type: State["log"][number]["type"] = "move") {
-	s.log.push({ round: s.round, text, type });
+function event(s: State, text: string, type: State["log"][number]["type"] = "move", detail = false) {
+	s.log.push({ round: s.round, text, type, ...(detail ? { detail: true } : {}) });
 }
 
 function diceEvent(s: State, label: string, dice: Die[]) {
@@ -547,7 +547,7 @@ function execute(s: State, m: Move, seat: number) {
 					throw Error("Neighbors need different destinations.");
 			}
 			p.ready = true;
-			if (s.phase !== "planning") event(s, `${p.name} is ready.`);
+			if (s.phase !== "planning") event(s, `${p.name} is ready.`, "move", true);
 			if (s.players.every((p) => p.ready)) {
 				if (s.phase === "planning") {
 					for (const player of s.players) event(s, `${player.name} chose ${player.path.join(" → ")}.`);
@@ -592,7 +592,8 @@ function execute(s: State, m: Move, seat: number) {
 			p.cards = p.cards.filter((x) => x !== c);
 			s.players[target]!.cards.push(c);
 			if (s.phase === "planning" || s.phase === "equipment") resetReady(s);
-			event(s, `${p.name} gave equipment to ${s.players[target]!.name}.`, "equipment");
+			event(s, `${p.name} gave ${equipment(c.id).name} to ${s.players[target]!.name}.`, "equipment");
+			s.log.at(-1)!.transfer = { id: c.id, from: p.name, to: s.players[target]!.name };
 			break;
 		}
 		case "equipment":
@@ -602,7 +603,7 @@ function execute(s: State, m: Move, seat: number) {
 			if (s.phase !== "movement" || s.activeResolution !== null || p.resolved)
 				throw Error("Choose an unresolved player to move.");
 			s.activeResolution = seat;
-			event(s, `${p.name} is resolving their journey.`);
+			event(s, `${p.name} is resolving their journey.`, "move", true);
 			s.pendingHelpers = s.players.flatMap((helper, i) =>
 				hasSkill(helper, "gatherer") && helper.powerBars > 0 ? [i] : []
 			);
@@ -648,7 +649,8 @@ function execute(s: State, m: Move, seat: number) {
 			}
 			const result = comparison(s, seat);
 			const criterion = terrain(cell(s, dest).terrain);
-			event(s, `Dice comparison at ${criterion.name}: ${requirementLabel(criterion.requirement)}.`);
+			event(s, `Dice comparison at ${criterion.name}: ${requirementLabel(criterion.requirement)}.`, "move", true);
+			const participants: NonNullable<State["log"][number]["journey"]>["participants"] = [];
 			for (const participant of [{ seat, total: result.own }, ...result.peers]) {
 				const owner = participant.seat === -1 ? null : s.players[participant.seat]!;
 				const counted = (owner ? activeDice(owner) : s.ghost).filter((d) => matches(face(d), criterion.requirement));
@@ -658,26 +660,55 @@ function execute(s: State, m: Move, seat: number) {
 					`${owner?.name ?? "Neutral dice"} · matching total ${participant.total}${bonus ? ` (including +${bonus} bonus)` : ""}`,
 					counted
 				);
+				s.log.at(-1)!.detail = true;
+				participants.push({
+					name: owner?.name ?? "Neutral dice",
+					total: participant.total,
+					bonus,
+					dice: structuredClone(counted),
+				});
 			}
 			let canMove = result.success && route.length > 0;
 			if (route.slice(1).some((id) => !walkable(cell(s, id)))) canMove = false;
+			const journey: NonNullable<State["log"][number]["journey"]> = {
+				name: p.name,
+				character: p.character,
+				terrain: criterion.id,
+				moved: canMove && dest !== p.position,
+				reason: !result.success
+					? "comparison"
+					: !canMove
+						? "blocked"
+						: dest === p.position
+							? "planned-stay"
+							: "success",
+				own: result.own,
+				highest: Math.max(...result.peers.map((x) => x.total)),
+				loss: null,
+				participants,
+			};
 			if (canMove) {
 				p.position = dest;
 				event(
 					s,
 					`${p.name} reached ${terrain(cell(s, dest).terrain).name} (${result.own} vs ${Math.max(...result.peers.map((x) => x.total))}).`
 				);
+				s.log.at(-1)!.journey = journey;
 				win(s);
 				if (s.outcome) break;
 				collect(s, p);
 				trigger(s, route.slice(1));
 				if (s.outcome) break;
-			} else event(s, `${p.name} stayed in place (${result.own} vs ${Math.max(...result.peers.map((x) => x.total))}).`);
+			} else {
+				event(s, `${p.name} stayed in place (${result.own} vs ${Math.max(...result.peers.map((x) => x.total))}).`);
+				s.log.at(-1)!.journey = journey;
+			}
 			const loss = p.aid ? 0 : canMove ? result.loss : s.difficulty + 2;
 			const old = p.stamina;
 			p.stamina = Math.min(EXHAUSTION, p.stamina + loss);
 			p.pendingInjuries += INJURY_AT.filter((n) => n > old && n <= p.stamina).length;
-			event(s, `${p.name} lost ${loss} stamina.`);
+			journey.loss = loss;
+			event(s, `${p.name} lost ${loss} stamina.`, "move", true);
 			p.resolved = true;
 			if (p.stamina >= EXHAUSTION) end(s, "lost", `${p.name} collapsed from exhaustion.`);
 			else afterMovement(s);

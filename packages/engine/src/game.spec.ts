@@ -737,3 +737,36 @@ test("destination paths prefer fewer eruption triggers, then fewer steps", () =>
 	cell(s, "1,0").lava = true;
 	assert.equal(paths(s, 0)["2,0"], undefined);
 });
+
+test("compact journey snapshots distinguish planned stays, failed comparisons and blocked routes", () => {
+	for (const reason of ["planned-stay", "comparison", "blocked"] as const) {
+		const s = withPhase("movement");
+		cell(s, "0,3").terrain = 16;
+		s.players.forEach((p) => p.dice.forEach((d) => (d.face = 2)));
+		s.players[0]!.bonus = reason === "comparison" ? 0 : 100;
+		if (reason === "blocked") {
+			s.players[0]!.path = ["0,3", "1,3"];
+			cell(s, "1,3").lava = true;
+		}
+		const next = applyMove(s, { action: "beginMovement" }, 0);
+		const record = next.log
+			.slice()
+			.reverse()
+			.find((e) => e.journey)?.journey;
+		assert(record);
+		assert.equal(record.reason, reason);
+		assert.equal(record.moved, false);
+		assert.equal(record.loss, reason === "planned-stay" ? 0 : 3);
+		assert.equal(record.participants.length, 3);
+		const snapshot = structuredClone(record);
+		next.players[0]!.dice[0]!.face = 1;
+		assert.deepEqual(record, snapshot);
+		assert.deepEqual(
+			stripSecret(next)
+				.log.slice()
+				.reverse()
+				.find((e) => e.journey)?.journey,
+			snapshot
+		);
+	}
+});

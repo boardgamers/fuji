@@ -7,7 +7,7 @@
 	"engine": {
 		"package": {
 			"name": "fuji-engine",
-			"version": "0.1.1"
+			"version": "0.1.2"
 		},
 		"entryPoint": "dist/wrapper.js"
 	},
@@ -55,6 +55,10 @@
 				{
 					"name": "7",
 					"label": "Scenario 7"
+				},
+				{
+					"name": "random",
+					"label": "Random"
 				}
 			]
 		},

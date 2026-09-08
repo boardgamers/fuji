@@ -235,7 +235,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 	if (!Number.isInteger(players) || players < 2 || players > 4) throw Error("Fuji supports 2–4 players.");
 	const difficulty = Number(options.difficulty ?? 1);
 	if (!Number.isInteger(difficulty) || difficulty < 1 || difficulty > 4) throw Error("Choose difficulty 1–4.");
-	const scenario = Number(options.scenario ?? 1);
+	let scenario = options.scenario === "random" ? 1 : Number(options.scenario ?? 1);
 	if (!Number.isInteger(scenario) || scenario < 1 || scenario > 7) throw Error("Choose scenario 1–7.");
 	const s: State = {
 		schemaVersion: 1,
@@ -260,6 +260,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 		history: [],
 		initOptions: { autoMovement: true, autoProgress: true, ...options },
 	};
+	if (options.scenario === "random") s.scenario = scenario = 1 + Math.floor(random(s) * SCENARIOS.length);
 	const lands = shuffle(
 		s,
 		Array.from({ length: 24 }, (_, i) => i + 4)

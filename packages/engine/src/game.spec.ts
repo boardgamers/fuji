@@ -1306,3 +1306,15 @@ test("safe village residents sacrifice strong dice for escaping neighbors withou
 	p.cards = [{ id: "machete", used: 0, availableRound: 0 }];
 	assert.equal(chooseMove(stripSecret(s, 0), 0).id, "machete");
 });
+
+test("random scenario is seeded, covers all seven layouts and replays exactly", () => {
+	const seen = new Set<number>();
+	for (let i = 0; i < 50; i++) {
+		const s = initGame(3, { scenario: "random" }, `random-scenario-${i}`);
+		assert(s.scenario! >= 1 && s.scenario! <= 7);
+		seen.add(s.scenario!);
+		assert.deepEqual(initGame(3, { scenario: "random" }, s.seed), s);
+		assert.deepEqual(replay(s), s);
+	}
+	assert.equal(seen.size, 7);
+});

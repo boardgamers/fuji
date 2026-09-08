@@ -696,8 +696,9 @@
 							{#if focus?.equipment}<span>Equipment: finish your move here to draw a card, usable next round.</span
 								>{/if}
 							{#if focus?.eruption}<span
-									>⚠ Entering or crossing triggers {focus.eruption} extra eruption{focus.eruption === 1 ? "" : "s"}.
-									One-time trigger.</span
+									>Eruption: entering or crossing triggers {focus.eruption} extra eruption{focus.eruption === 1
+										? ""
+										: "s"}. One-time trigger.</span
 								>{/if}
 							{#if focus && threatened(s).includes(focus.id)}<span>The next eruption will cover this location.</span
 								>{/if}

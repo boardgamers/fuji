@@ -133,11 +133,14 @@
 								class="equipment-icon"
 							/></g
 						>{/if}
-					{#if c.eruption && !c.lava}<g transform={`translate(${x(c.id) - 29},${y(c.id) - 25})`}
-							><path d="M0 -10 10 8H-10Z" class="eruption-dot" /><text y="5" text-anchor="middle" class="warning-mark"
-								>!</text
-							></g
-						>{/if}
+					{#if c.eruption && !c.lava}<g
+							class="eruption-marker"
+							transform={`translate(${x(c.id) - 29},${y(c.id) - 25})`}
+						>
+							<circle r="13" fill="#241f1b" stroke="#ee9969" stroke-width="1" />
+							<path d="M-10 9 -4 -2 H4 L10 9Z" class="eruption-volcano" />
+							<path d="M-4 -2 -2 3 0 0 3 5 4 -2 M0 -6V-10 M-5 -6 -8 -9 M5 -6 8 -9" class="eruption-lava" />
+						</g>{/if}
 					{#if danger.includes(c.id)}<rect
 							x={x(c.id) - 44}
 							y={y(c.id) - 35}
@@ -339,14 +342,18 @@
 		stroke-width: 1.5;
 		stroke-linejoin: round;
 	}
-	.eruption-dot {
-		fill: #e88a54;
-		stroke: #482c27;
-		stroke-width: 1.5;
+	.eruption-volcano {
+		fill: #bd6543;
+		stroke: #ffb77c;
+		stroke-width: 1.3;
+		stroke-linejoin: round;
 	}
-	.warning-mark {
-		font: bold 12px var(--font-ui);
-		fill: #452c25;
+	.eruption-lava {
+		fill: none;
+		stroke: #ffe3a0;
+		stroke-width: 1.8;
+		stroke-linecap: round;
+		stroke-linejoin: round;
 	}
 	.reroll-mark {
 		font:

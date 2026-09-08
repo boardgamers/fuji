@@ -173,7 +173,9 @@
 							rx="4"
 							fill="#112820e6"
 						/><RequirementSymbols requirement={data.requirement} x={x(c.id)} y={y(c.id) + 22} {colorblind} />{/if}
-					{#if data.reroll && !c.lava}<text x={x(c.id) - 34} y={y(c.id) - 16} class="reroll-mark">↻</text>{/if}
+					{#if data.reroll && !c.lava}<text x={x(c.id) - 34} y={y(c.id) + (c.eruption ? 9 : -16)} class="reroll-mark"
+							>↻</text
+						>{/if}
 				</g>
 			{/each}
 			{#if ["planning", "reroll", "equipment", "movement"].includes(state.phase)}

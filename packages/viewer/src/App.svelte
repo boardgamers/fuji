@@ -399,7 +399,7 @@
 									/><span class="pack-copy"
 										><strong>{info.name}</strong><small>{info.description}</small><small class="equipment-timing"
 											>Use during {info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}.</small
-										><small>{keep.includes(c.id) ? "Keeping this card" : "Click to keep"}</small></span
+										></span
 									><i>{keep.includes(c.id) ? "✓" : "+"}</i></button
 								>{/each}
 						</div>

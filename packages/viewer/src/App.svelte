@@ -731,7 +731,11 @@
 								{#if ["shovel", "torch", "tape", "machete", "compass", "map"].includes(actionTool ?? "")}<p
 										class="muted small"
 									>
-										Select {actionTool === "machete" ? "one or two dice" : "the dice"} below the map. {dice.length} selected.
+										Select {actionTool === "machete"
+											? "one or two dice"
+											: actionTool === "torch"
+												? "one or more dice to reroll"
+												: "the dice"} below the map. {dice.length} selected.
 									</p>{/if}
 								{#if actionTool === "shovel"}<label class="field"
 										>New value<select bind:value={turnFace}
@@ -751,7 +755,8 @@
 											s.phase === "planning" ? 2 : s.phase === "equipment" ? 4 : -1
 										) ||
 										!!s.pending ||
-										(actionTool === "machete" && (dice.length < 1 || dice.length > 2))}
+										(actionTool === "machete" && (dice.length < 1 || dice.length > 2)) ||
+										(actionTool === "torch" && dice.length === 0)}
 									onclick={confirmTool}>Use {info.name}</button
 								>
 								{#if hasSkill(me, "manager")}<label class="field"

@@ -12,8 +12,6 @@
 		comparison,
 		powerBarChoices,
 		threatened,
-		walkable,
-		distance,
 		SKILLS,
 		EQUIPMENT,
 		INJURIES,
@@ -53,7 +51,6 @@
 	let turnFace = $state(1);
 	let keep = $state<string[]>([]);
 	let drop = $state("");
-	let trace = $state(false);
 	let help = $state(false);
 	let journal = $state(false);
 	const journalEntries = $derived(s?.log.slice().reverse() ?? []);
@@ -114,11 +111,6 @@
 			giveTarget = seat === 0 ? 1 : 0;
 		}
 	});
-	const traceContext = $derived(`${s?.phase}:${seat}`);
-	$effect(() => {
-		void traceContext;
-		trace = false;
-	});
 	function pickDie(id: string) {
 		dice = dice.includes(id) ? dice.filter((x) => x !== id) : [...dice, id];
 	}
@@ -132,19 +124,8 @@
 			return;
 		}
 		if (s?.phase !== "planning" || !me || me.ready || store.waiting || s.pending) return;
-		let route = me.path;
-		if (trace) {
-			const last = route.at(-1)!;
-			if (route.includes(id)) {
-				route = route.slice(0, route.indexOf(id) + 1);
-			} else if (
-				walkable(cell(s, id)) &&
-				distance(cell(s, last), cell(s, id)) === 1 &&
-				route.length < (hasSkill(me, "scout") ? 5 : 4)
-			) {
-				route = [...route, id];
-			}
-		} else if (reachable[id]) route = reachable[id]!;
+		const route = reachable[id];
+		if (!route) return;
 		if (!reserved[route.at(-1)!] && route.join(";") !== me.path.join(";"))
 			store.dispatch({ action: "plan", path: route });
 	}
@@ -599,15 +580,6 @@
 						<button class="text-button" onclick={() => store.dispatch({ action: "plan", path: me.path })}
 							>Change my route</button
 						>{/if}
-					<button
-						class="text-button trace-button"
-						disabled={me.ready || store.waiting}
-						onclick={() => {
-							trace = !trace;
-						}}>{trace ? "Stop tracing" : "Trace a specific path"}</button
-					>{#if trace}<p class="muted small">
-							Click adjacent locations to build your route. Click an earlier step to go back.
-						</p>{/if}
 				{:else if s.phase === "reroll"}
 					<p class="instruction">Reroll in silence. Your dice actions are below the map.</p>
 				{:else if s.phase === "equipment"}

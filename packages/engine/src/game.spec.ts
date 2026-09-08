@@ -710,3 +710,30 @@ test("AI leaves a threatened location even when staying has the best dice total"
 	assert(!threatened(s).includes(route.at(-1)!));
 	assert.doesNotThrow(() => applyMove(s, move, 1));
 });
+
+test("destination paths prefer fewer eruption triggers, then fewer steps", () => {
+	const s = prepared();
+	s.players[0]!.position = "0,0";
+	s.board = [
+		[0, 0],
+		[1, 0],
+		[2, 0],
+		[0, 1],
+		[1, 1],
+		[2, 1],
+	].map(([x, y]) => ({
+		id: `${x},${y}`,
+		x: x!,
+		y: y!,
+		terrain: 16,
+		lava: false,
+		equipment: false,
+		eruption: x === 1 && y === 0 ? 1 : 0,
+	}));
+	assert.deepEqual(paths(s, 0, 4)["2,0"], ["0,0", "0,1", "1,1", "2,1", "2,0"]);
+	assert.deepEqual(paths(s, 0)["2,0"], ["0,0", "1,0", "2,0"]);
+	cell(s, "1,0").eruption = 0;
+	assert.deepEqual(paths(s, 0, 4)["2,0"], ["0,0", "1,0", "2,0"]);
+	cell(s, "1,0").lava = true;
+	assert.equal(paths(s, 0)["2,0"], undefined);
+});

@@ -69,9 +69,19 @@ export function paths(s: State | View, seat: number, max?: number): Record<strin
 		if (path.length - 1 >= limit) continue;
 		const last = cell(s, path.at(-1)!);
 		for (const next of s.board.filter((c) => walkable(c) && distance(last, c) === 1)) {
-			if (found[next.id]) continue;
-			found[next.id] = [...path, next.id];
-			queue.push(found[next.id]!);
+			if (path.includes(next.id)) continue;
+			const candidate = [...path, next.id];
+			const previous = found[next.id];
+			const eruptions = (route: string[]) => route.slice(1).reduce((sum, id) => sum + cell(s, id).eruption, 0);
+			if (
+				!previous ||
+				eruptions(candidate) < eruptions(previous) ||
+				(eruptions(candidate) === eruptions(previous) && candidate.length < previous.length)
+			)
+				found[next.id] = candidate;
+			// Explore all bounded simple paths: a longer, safer prefix may lead to
+			// a different optimum, so finding a location must not stop the search.
+			queue.push(candidate);
 		}
 	}
 	return found;

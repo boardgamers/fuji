@@ -93,6 +93,7 @@
 		dice = dice.includes(id) ? dice.filter((x) => x !== id) : [...dice, id];
 	}
 	function chooseLocation(id: string) {
+		if (s?.phase === "setup") return;
 		inspected = id;
 		if (tool && ["binoculars", "rope"].includes(actionTool ?? "")) {
 			tilePicks = tilePicks.includes(id)
@@ -267,7 +268,9 @@
 						>
 					</div>
 					<div class="teammate-status">
-						<span>{EXHAUSTION - p.stamina}<small> / {EXHAUSTION}</small></span><span class="ready-label"
+						<span title="Remaining stamina. At zero, the whole expedition loses."
+							>{EXHAUSTION - p.stamina}<small> / {EXHAUSTION} stamina</small></span
+						><span class="ready-label"
 							>{p.pendingInjuries
 								? "Injured"
 								: p.ready || (p.setupDone && s.phase === "setup")
@@ -290,10 +293,12 @@
 					state={s}
 					{seat}
 					route={currentRoute}
-					selected={tool ? (tilePicks.at(-1) ?? focusId) : (currentRoute.at(-1) ?? focusId)}
+					selected={s.phase === "setup" ? "" : tool ? (tilePicks.at(-1) ?? "") : (currentRoute.at(-1) ?? "")}
 					reachable={s.phase === "planning" && !me?.ready ? Object.keys(reachable) : []}
 					onclick={chooseLocation}
-					oninspect={(id) => (inspected = id)}
+					oninspect={(id) => {
+						if (s.phase !== "setup") inspected = id;
+					}}
 				/>
 				<section class="personal" aria-label="Your dice">
 					<div class="personal-title">
@@ -312,7 +317,7 @@
 							{#each me.dice as d (d.id)}<Die
 									die={d}
 									selected={dice.includes(d.id)}
-									relevant={!!rule && matches(face(d), rule)}
+									relevant={s.phase !== "setup" && !!rule && matches(face(d), rule)}
 									disabled={(d.aside && !me.pendingInjuries) || store.waiting || s.phase === "setup"}
 									onclick={() => pickDie(d.id)}
 								/>{/each}
@@ -376,17 +381,28 @@
 							Your bag is packed. Waiting for the rest of the expedition.
 						</p>{:else}
 						<p class="instruction">
-							Keep {SKILLS[me.skill].keep} equipment card{SKILLS[me.skill].keep > 1 ? "s" : ""} for the journey.
+							This is preparation, before round 1.
+							{#if me.cards.length === SKILLS[me.skill].keep}
+								Your starting equipment is already packed. Read its effect below, then click Ready for the journey.
+							{:else}
+								Choose {SKILLS[me.skill].keep} of your {me.cards.length} equipment cards to keep, then confirm your bag.
+							{/if}
+							Routes become available once everyone is ready.
 						</p>
 						<div class="pack-options">
-							{#each me.cards as c}<button
+							{#each me.cards as c}{@const info = EQUIPMENT.find((e) => e.id === c.id)!}<button
+									aria-pressed={keep.includes(c.id)}
+									disabled={me.cards.length === SKILLS[me.skill].keep}
 									class:selected={keep.includes(c.id)}
 									onclick={() => (keep = keep.includes(c.id) ? keep.filter((id) => id !== c.id) : [...keep, c.id])}
 									><img
 										src={art("equipment", EQUIPMENT.findIndex((x) => x.id === c.id) + 1)}
 										alt={EQUIPMENT.find((x) => x.id === c.id)?.name}
-									/><span>{EQUIPMENT.find((x) => x.id === c.id)?.name}</span><i>{keep.includes(c.id) ? "✓" : "+"}</i
-									></button
+									/><span class="pack-copy"
+										><strong>{info.name}</strong><small>{info.description}</small><small class="equipment-timing"
+											>Use during {info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}.</small
+										><small>{keep.includes(c.id) ? "Keeping this card" : "Click to keep"}</small></span
+									><i>{keep.includes(c.id) ? "✓" : "+"}</i></button
 								>{/each}
 						</div>
 						{#if SKILLS[me.skill].dice === 5}<label class="field"
@@ -395,6 +411,7 @@
 										>{/each}</select
 								></label
 							>{/if}
+						<p class="packing-count">{keep.length} / {SKILLS[me.skill].keep} cards selected</p>
 						<button
 							class="primary"
 							disabled={keep.length !== SKILLS[me.skill].keep || store.waiting}
@@ -577,14 +594,14 @@
 									onclick={() => chooseTool(c.id)}
 									aria-expanded={tool === c.id}
 									><img src={art("equipment", EQUIPMENT.indexOf(info) + 1)} alt="" /><span
-										><strong>{info.name}</strong><small
+										><strong>{info.name}</strong><span class="equipment-description">{info.description}</span><small
 											>{c.availableRound > s.round
 												? "Available next round"
 												: c.used
 													? "One use left"
 													: available
 														? "Available now"
-														: `Phase ${info.phases.join(" / ")}`}</small
+														: `Use during ${info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}`}</small
 										></span
 									><span class="equipment-plus">{tool === c.id ? "−" : "+"}</span></button
 								>
@@ -627,7 +644,10 @@
 									disabled={store.waiting ||
 										c.availableRound > s.round ||
 										me.injuries.includes("arm") ||
-										!["planning", "equipment"].includes(s.phase)}
+										!(info.phases as readonly number[]).includes(
+											s.phase === "planning" ? 2 : s.phase === "equipment" ? 4 : -1
+										) ||
+										!!s.pending}
 									onclick={confirmTool}>Use {info.name}</button
 								>
 								{#if hasSkill(me, "manager")}<label class="field"
@@ -655,7 +675,11 @@
 				{#each s.players as p, i}{#if i !== seat && (revealed || p.dice.some((d) => d.face > 0))}<div>
 							<span class="eyebrow">{p.name}</span>
 							<div class="mini-dice">
-								{#each p.dice as d}<Die die={d} disabled relevant={!!rule && matches(face(d), rule)} />{/each}
+								{#each p.dice as d}<Die
+										die={d}
+										disabled
+										relevant={s.phase !== "setup" && !!rule && matches(face(d), rule)}
+									/>{/each}
 							</div>
 						</div>{/if}{/each}
 			</section>{/if}
@@ -713,7 +737,9 @@
 			<h2 id="help-title">Escape together.</h2>
 			<p class="game-credits">FUJI · Wolfgang Warsch<br />Illustrations by Weberson Santiago · Feuerland Spiele</p>
 			<p>
-				Everyone must reach the village. If anyone is caught by lava or loses all stamina, the whole expedition loses.
+				Everyone must reach the village. Stamina is your remaining endurance: you start at 25/25, suffer injuries at 20,
+				15, 10 and 5 remaining, and lose at zero. If anyone is caught by lava or loses all stamina, the whole expedition
+				loses.
 			</p>
 			<ol class="guide">
 				<li>

@@ -74,11 +74,13 @@
 				{@const data = terrain(c.terrain)}
 				<g
 					class="location"
+					class:inactive={state.phase === "setup"}
 					class:reachable={reachable.includes(c.id)}
 					class:selected={selected === c.id}
 					class:lava={c.lava}
 					role="button"
-					tabindex="0"
+					aria-disabled={state.phase === "setup"}
+					tabindex={state.phase === "setup" ? -1 : 0}
 					aria-label={`${data.name}${c.lava ? ", covered in lava" : ""}${c.equipment ? ", equipment here" : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
 					onclick={() => onclick(c.id)}
 					onkeydown={(e) => {
@@ -87,8 +89,12 @@
 							onclick(c.id);
 						}
 					}}
-					onmouseenter={() => oninspect(c.id)}
-					onfocus={() => oninspect(c.id)}
+					onmouseenter={() => {
+						if (state.phase !== "setup") oninspect(c.id);
+					}}
+					onfocus={() => {
+						if (state.phase !== "setup") oninspect(c.id);
+					}}
 				>
 					<rect x={x(c.id) - 44} y={y(c.id) - 35} width="88" height="70" rx="13" class="land-base" />
 					<image
@@ -170,8 +176,10 @@
 		</svg>
 	</div>
 	<div class="scene-legend">
-		<span><i class="legend-line"></i>Your route</span><span><i class="legend-danger"></i>Next eruption</span><span
-			class="legend-end"
+		<span
+			>{#if state.phase === "setup"}Map preview · choose your equipment first{:else}<i class="legend-line"></i>Your
+				route{/if}</span
+		><span><i class="legend-danger"></i>Next eruption</span><span class="legend-end"
 			>{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} / {state
 				.players.length} in the village</span
 		>
@@ -255,13 +263,16 @@
 			stroke 0.15s,
 			stroke-width 0.15s;
 	}
-	.location:hover .location-ring,
-	.location:focus .location-ring {
+	.location:not(.inactive):hover .location-ring,
+	.location:not(.inactive):focus-visible .location-ring {
 		stroke: #f2d49a;
 		stroke-width: 2;
 	}
-	.location:hover .tile-art {
-		opacity: 1;
+	.location.inactive {
+		cursor: default;
+	}
+	.location.inactive .location-ring {
+		stroke: #dbc47d25;
 	}
 	.location.selected .location-ring {
 		stroke: #f9df99;

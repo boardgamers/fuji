@@ -9,6 +9,20 @@ fs.mkdirSync("work/browser", { recursive: true });
 	page.on("pageerror", (e) => errors.push(e.message));
 	await page.goto("http://127.0.0.1:5187");
 	await page.waitForSelector(".map");
+	if (
+		!(await page
+			.locator(".pack-options")
+			.getByText(/do not count in movement comparisons/)
+			.isVisible())
+	)
+		throw Error("Equipment effect must be readable during preparation");
+	const beforePreview = await page.evaluate(() => localStorage.getItem("fuji-dev-v1"));
+	await page.locator(".location").first().hover();
+	await page.locator(".location").first().dispatchEvent("click");
+	if (await page.locator(".location.selected").count()) throw Error("Preparation preview looks selected");
+	if (beforePreview !== (await page.evaluate(() => localStorage.getItem("fuji-dev-v1"))))
+		throw Error("Preview changed game state");
+	await page.screenshot({ path: "work/browser/fuji-setup.png", fullPage: true });
 	await page.getByRole("button", { name: "Ready for the journey" }).click();
 	await page.getByText("Playtest tools", { exact: true }).click();
 	const step = page.getByRole("button", { name: "Play next teammate action" });

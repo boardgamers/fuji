@@ -153,7 +153,8 @@ export const EQUIPMENT = [
 		id: "machete",
 		name: "Machete",
 		phases: [4],
-		description: "Set aside up to two dice, visible to everyone, until the end of this round.",
+		description:
+			"Set aside one or two dice. They are visible to everyone and do not count in movement comparisons. They return at the end of the round.",
 	},
 	{
 		id: "lighter",

@@ -987,7 +987,7 @@ test("AI has legal useful choices for every equipment card, including copied eff
 	for (const card of EQUIPMENT) {
 		let used = false;
 		for (let example = 0; example < 180 && !used; example++) {
-			const s = withPhase((card.phases as readonly number[]).includes(4) ? "equipment" : "planning");
+			let s = withPhase((card.phases as readonly number[]).includes(4) ? "equipment" : "planning");
 			s.players.forEach((p, i) => {
 				p.position = ["0,3", "3,3", "3,2"][i]!;
 				p.path = [p.position];
@@ -1001,8 +1001,12 @@ test("AI has legal useful choices for every equipment card, including copied eff
 			if (card.id === "knife") s.players[1]!.cards = [{ id: "flare", used: 0, availableRound: 0 }];
 			const view = stripSecret(s, 0),
 				before = structuredClone(view);
-			const move = chooseMove(view, 0);
+			let move = chooseMove(view, 0);
 			assert.deepEqual(view, before);
+			if (move.action === "plan") {
+				s = applyMove(s, move, 0);
+				move = chooseMove(stripSecret(s, 0), 0);
+			}
 			if (move.action === "equipment" && move.id === card.id) {
 				assert.doesNotThrow(() => applyMove(s, move, 0), card.id);
 				used = true;
@@ -1194,4 +1198,49 @@ test("AI uses Rope to advance around a map gap even when coordinate distance inc
 	}
 	s.players[0]!.cards = [{ id: "rope", used: 0, availableRound: 0 }];
 	assert.deepEqual(chooseMove(stripSecret(s, 0), 0), { action: "equipment", id: "rope", tiles: ["5,3"] });
+});
+
+test("AI rerolls for a prospective Binoculars destination before spending the swap", async () => {
+	const { chooseMove } = await import("../index.js");
+	let s = initGame(3, { scenario: 7 }, "swap-regression-0");
+	for (let i = 0; i < 3; i++) {
+		const p = s.players[i]!;
+		if (!p.setupDone)
+			s = applyMove(
+				s,
+				{
+					action: "setup",
+					keep: p.cards.slice(0, p.skill === "manager" ? 2 : 1).map((c) => c.id),
+					drop: p.dice.at(-1)?.id,
+				},
+				i
+			);
+	}
+	s.phase = "planning";
+	s.players.forEach((p) => {
+		p.cards = [];
+		p.ready = false;
+	});
+	s.players[2]!.cards = [{ id: "binoculars", used: 0, availableRound: 0 }];
+	const swap = chooseMove(stripSecret(s, 2), 2);
+	assert.equal(swap.id, "binoculars");
+	const hypothetical = structuredClone(s);
+	const [a, b] = (swap.tiles as string[]).map((id) => cell(hypothetical, id));
+	[a!.terrain, b!.terrain] = [b!.terrain, a!.terrain];
+	hypothetical.players[2]!.cards = [{ id: "torch", used: 0, availableRound: 0 }];
+	const route = chooseMove(stripSecret(hypothetical, 2), 2);
+	assert.equal(route.action, "plan");
+	assert.equal((route.path as string[]).at(-1), a!.id);
+	hypothetical.players[2]!.path = route.path as string[];
+	const expectedRoll = chooseMove(stripSecret(hypothetical, 2), 2);
+	assert.equal(expectedRoll.id, "torch");
+	s.players[2]!.cards.push({ id: "torch", used: 0, availableRound: 0 });
+	const before = structuredClone(s);
+	assert.deepEqual(chooseMove(stripSecret(s, 2), 2), expectedRoll);
+	assert.deepEqual(s, before);
+	const rolled = applyMove(s, expectedRoll, 2);
+	assert.deepEqual(rolled.board, before.board, "the proposed swap is not committed before rolling");
+	assert(rolled.players[2]!.cards.some((c) => c.id === "binoculars"));
+	s.players[0]!.dice.forEach((d) => (d.face = 6));
+	assert.deepEqual(chooseMove(stripSecret(s, 2), 2), expectedRoll);
 });

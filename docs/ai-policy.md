@@ -83,3 +83,9 @@ The matched experiment in `ai-detour-benchmark.json` covers all seven scenarios,
 The selected policy retains the original weights and corrects distance for both routes and Rope. Held-out wins increased from 11.5% to 24.2% versus the previous AI. Scenario 7 increased from 2/36 to 7/36; that per-scenario sample is small. Rope's correction tied route-only results overall and lost two scenario-7 wins in held-out seeds, so its geometric correctness should not be confused with a demonstrated additional win-rate improvement. Equipment weight changes did not establish a stronger policy.
 
 Reproduce a current-policy batch with `node scripts/benchmark-policy.mjs current heldout 12`. Use `teamwork`, `frugal`, `generous`, or `stamina` to test the recorded alternatives. `FUJI_BENCH_ENGINE` can select an alternate compiled engine directory for matched historical comparisons. Reports are written to `work/benchmarks`. Seed families are independent of policy names.
+
+## Planning equipment order
+
+Before using planning rerolls, the bot evaluates its desired route and any useful prospective Binoculars swap. A swap is considered useful only when the normal route planner would choose its improved destination. Torch and Water flask are evaluated against that intended destination, including its hypothetical post-swap requirements. The bot rolls first and reevaluates the route and swap afterward; it does not spend Binoculars merely to improve an unused nearby tile. A prospective swap does not place a destination marker, which would make that tile ineligible for swapping.
+
+Regression coverage verifies reroll selection against the proposed destination without mutating the board or consulting hidden teammate dice. A further 168 games spanning all scenarios, player counts and difficulties completed with exact replays and no deadlocks. This validation batch is not a matched win-rate comparison.

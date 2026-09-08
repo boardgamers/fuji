@@ -127,7 +127,12 @@ export function choosePowerBars(state: State | View, helper: number): number {
 // Consider deterministic equipment effects against public destination criteria.
 // Never increase the total a comparison neighbor must beat, even when their
 // dice are hidden. Unknown opposition is estimated from the published faces.
-function chooseEquipment(game: View, seat: number, policy: AiPolicy): Move | undefined {
+function chooseEquipment(
+	game: View,
+	seat: number,
+	policy: AiPolicy,
+	mode: "all" | "rerolls" | "binoculars" = "all"
+): Move | undefined {
 	const player = game.players[seat]!;
 	if (player.injuries.includes("arm")) return;
 	const dice = activeDice(player);
@@ -194,6 +199,8 @@ function chooseEquipment(game: View, seat: number, policy: AiPolicy): Move | und
 		for (const effect of effects.filter((id) =>
 			(EQUIPMENT.find((e) => e.id === id)!.phases as readonly number[]).includes(phase)
 		)) {
+			if (mode === "binoculars" && effect !== "binoculars") continue;
+			if (game.phase === "planning" && ["torch", "water"].includes(effect) !== (mode === "rerolls")) continue;
 			const move: Move = { action: "equipment", id: card.id, ...(card.id === "knife" ? { copy: effect } : {}) };
 			if (effect === "flare") consider(move, dice, 3);
 			else if (effect === "aid") consider(move, dice, 0, true);
@@ -292,8 +299,14 @@ function chooseEquipment(game: View, seat: number, policy: AiPolicy): Move | und
 						const improved = contribution(dice, terrain(b.terrain).requirement);
 						const distance = (c: typeof a) =>
 							Math.abs(c.x - cell(game, player.position).x) + Math.abs(c.y - cell(game, player.position).y);
-						// Improve a nearby destination without disturbing anyone's chosen tile.
-						if (improved > old + 5 && distance(a) <= 2) offer({ ...move, tiles: [a.id, b.id] }, (improved - old) * 0.3);
+						if (improved <= old + 5 || distance(a) > 2) continue;
+						// A better local total is useful only if we would actually go there.
+						const swapped = structuredClone(game);
+						cell(swapped, a.id).terrain = b.terrain;
+						cell(swapped, b.id).terrain = a.terrain;
+						const route = chooseMove(swapped, seat, { ...policy, equipment: false });
+						const destination = route.action === "plan" ? (route.path as string[]).at(-1) : player.path.at(-1);
+						if (destination === a.id) offer({ ...move, tiles: [a.id, b.id] }, (improved - old) * 0.3);
 					}
 			}
 		}
@@ -331,6 +344,23 @@ export function chooseMove(game: View, seat: number, policy: AiPolicy = DEFAULT_
 				.filter(({ other, i }) => i !== seat && !other.injuries.includes("arm"))
 				.sort((a, b) => urgency(game, b.i) - urgency(game, a.i))[0];
 			if (target) return { action: "give", id: p.cards[0]!.id, target: target.i };
+		}
+		if (game.phase === "planning") {
+			// Consider the intended post-swap destination before rolling, but do not
+			// spend Binoculars until the new dice confirm that the swap is useful.
+			const planned = structuredClone(game);
+			const swap = chooseEquipment(game, seat, policy, "binoculars");
+			if (swap) {
+				const [a, b] = (swap.tiles as string[]).map((id) => cell(planned, id));
+				[a!.terrain, b!.terrain] = [b!.terrain, a!.terrain];
+			}
+			const route = chooseMove(planned, seat, { ...policy, equipment: false });
+			if (route.action === "plan") planned.players[seat]!.path = route.path as string[];
+			const reroll = chooseEquipment(planned, seat, policy, "rerolls");
+			if (reroll) {
+				// Selecting a tile would make it ineligible for a later swap.
+				return !swap && route.action === "plan" ? route : reroll;
+			}
 		}
 		const equipment = chooseEquipment(game, seat, policy);
 		if (equipment) return equipment;

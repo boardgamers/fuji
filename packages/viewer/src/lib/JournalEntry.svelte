@@ -47,7 +47,14 @@
 				>{j.own} {j.own > j.highest ? ">" : j.own === j.highest ? "=" : "<"} {j.highest}</span
 			>
 			{#if j.loss !== null}<span class="log-loss" title="Stamina lost">♥ −{j.loss}</span>{/if}
-			{#if j.reason === "comparison"}<span class="failed">{j.own === j.highest ? "Tie" : "Lower total"}</span>
+			{#if j.reason === "comparison"}<span class="failed"
+					>{j.own === j.highest ? "Tied with" : "Beaten by"}
+					{j.participants
+						.slice(1)
+						.filter((p) => p.total === j.highest)
+						.map((p) => p.name)
+						.join(" & ")}</span
+				>
 			{:else if j.reason === "blocked"}<span class="failed">Route blocked</span>
 			{:else if j.reason === "planned-stay"}<span>Planned stay</span>{/if}
 		</summary>

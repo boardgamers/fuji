@@ -27,6 +27,7 @@
 		oninspect: (id: string) => void;
 	} = $props();
 	const danger = $derived(threatened(state));
+	const mapWidth = $derived(116 + Math.max(...state.board.map((c) => c.x)) * 100);
 	const x = (id: string) => 58 + cell(state, id).x * 100;
 	const y = (id: string) => 54 + cell(state, id).y * 84;
 	const edges = $derived(
@@ -49,7 +50,11 @@
 		>
 	</div>
 	<div class="map-scroll">
-		<svg viewBox="0 0 835 630" class="map" aria-label="Expedition map. Choose a location to inspect or plan a journey.">
+		<svg
+			viewBox={`0 0 ${mapWidth} 640`}
+			class="map"
+			aria-label="Expedition map. Choose a location to inspect or plan a journey."
+		>
 			<defs>
 				<radialGradient id="feather"
 					><stop offset="65%" stop-color="white" /><stop offset="100%" stop-color="black" /></radialGradient
@@ -66,7 +71,6 @@
 				<filter id="glow"><feGaussianBlur stdDeviation="4" /></filter>
 			</defs>
 
-			<text x="45" y="607" class="map-note">ORTHOGONAL PATHS · ESCAPE TOGETHER</text>
 			{#each edges as { a, b }}<line
 					x1={x(a.id)}
 					y1={y(a.id)}
@@ -227,31 +231,40 @@
 					{#if i === seat}<path d="M-4 -28H4L0 -22Z" fill="#f4d888" />{/if}
 				</g>
 			{/each}
+			<foreignObject x="14" y="519" width="385" height="116" class="map-guides">
+				<div xmlns="http://www.w3.org/1999/xhtml">
+					<div class="scene-legend">
+						<span
+							>{#if state.phase === "setup"}Map preview · choose your equipment first{:else}<i class="legend-line"
+								></i>Your route{/if}</span
+						><span><i class="legend-danger"></i>Next eruption</span>
+					</div>
+					<TravelGuide difficulty={state.difficulty} embedded />
+				</div>
+			</foreignObject>
+			<foreignObject x={mapWidth - 112} y="603" width="98" height="35">
+				<div xmlns="http://www.w3.org/1999/xhtml">
+					<span
+						class="legend-end"
+						title="Everyone must reach any house-marked village location at the same time."
+						aria-label={`${state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} of ${state.players.length} players in the village`}
+					>
+						<svg
+							viewBox="0 0 24 24"
+							width="27"
+							height="27"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.7"
+							aria-hidden="true"><path d="m2 11 10-9 10 9M5 9v12h14V9M10 21v-7h4v7" /></svg
+						>
+						{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length}/{state
+							.players.length}</span
+					>
+				</div>
+			</foreignObject>
 		</svg>
 	</div>
-	<div class="scene-legend">
-		<span
-			>{#if state.phase === "setup"}Map preview · choose your equipment first{:else}<i class="legend-line"></i>Your
-				route{/if}</span
-		><span><i class="legend-danger"></i>Next eruption</span><span
-			class="legend-end"
-			title="Everyone must reach any house-marked village location at the same time."
-			aria-label={`${state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} of ${state.players.length} players in the village`}
-		>
-			<svg
-				viewBox="0 0 24 24"
-				width="27"
-				height="27"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.7"
-				aria-hidden="true"><path d="m2 11 10-9 10 9M5 9v12h14V9M10 21v-7h4v7" /></svg
-			>
-			{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length}/{state.players
-				.length}</span
-		>
-	</div>
-	<TravelGuide difficulty={state.difficulty} />
 </div>
 
 <style>
@@ -286,14 +299,10 @@
 	}
 	.map {
 		width: 100%;
-		height: clamp(390px, calc(100vh - 430px), 610px);
+		height: clamp(500px, calc(100vh - 310px), 760px);
 		display: block;
 	}
-	.map-note {
-		font: 9px var(--font-ui);
-		letter-spacing: 2px;
-		fill: #a1b5a44d;
-	}
+
 	.trail {
 		stroke: #b7bd8450;
 		stroke-width: 3;
@@ -452,7 +461,7 @@
 	}
 	.scene-legend {
 		flex-wrap: wrap;
-		padding: 0 25px 20px;
+		padding: 0 0 10px;
 		display: flex;
 		gap: 20px;
 		color: #a7b9a8;
@@ -475,7 +484,9 @@
 		border-radius: 2px;
 	}
 	.legend-end {
-		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 7px;
 		color: #d7d7a7;
 		font-size: 24px;
 		font-variant-numeric: tabular-nums;
@@ -512,7 +523,7 @@
 			padding: 16px 16px 0;
 		}
 		.scene-legend {
-			padding: 8px 16px 16px;
+			padding: 0 0 10px;
 			gap: 12px;
 		}
 	}

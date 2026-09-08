@@ -1,10 +1,10 @@
 <script lang="ts">
 	import PhaseIcon from "./PhaseIcon.svelte";
-	let { difficulty }: { difficulty: number } = $props();
+	let { difficulty, embedded = false }: { difficulty: number; embedded?: boolean } = $props();
 	const maximum = $derived(difficulty + 2);
 </script>
 
-<div class="travel-guide">
+<div class="travel-guide" class:embedded>
 	<div
 		class="guide-row"
 		aria-label="Rerolls by movement distance"
@@ -92,5 +92,24 @@
 		.guide-label {
 			min-width: 100%;
 		}
+	}
+	.embedded {
+		padding: 0;
+		gap: 6px;
+		font-size: 11px;
+	}
+	.embedded .guide-label {
+		min-width: 83px;
+		gap: 3px;
+	}
+	.embedded .guide-chip {
+		gap: 4px;
+		padding: 3px 5px;
+	}
+	.embedded .guide-row {
+		gap: 4px;
+	}
+	.embedded .bonus {
+		margin-left: 0;
 	}
 </style>

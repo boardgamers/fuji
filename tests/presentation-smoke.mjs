@@ -35,7 +35,15 @@ try {
 				text: "Lava followed",
 				animation: { kind: "eruption", cells: [start] },
 			});
+			next.round = initial.round + 1;
+			next.phase = "planning";
+			next.players[0].dice[0].face = initial.players[0].dice[0].face === 6 ? 1 : 6;
+			next.log.push({ round: next.round, type: "phase", text: "New round dice", sound: "dice" });
 			store.receive(next);
+			assert(
+				store.scene.players[0].dice[0].face === initial.players[0].dice[0].face,
+				"Next roll appeared before movement"
+			);
 			assert(
 				store.state.revision === next.revision && store.state.board.find((c) => c.id === start).lava,
 				"Authoritative state must update immediately"
@@ -53,11 +61,21 @@ try {
 			await new Promise((resolve) => setTimeout(resolve, 760));
 			assert(store.journal.at(-1).text === "Lava followed", "Eruption did not advance on its own");
 			assert(store.scene.board.find((c) => c.id === start).lava, "Lava scene did not advance");
+			assert(
+				store.scene.players[0].dice[0].face === initial.players[0].dice[0].face,
+				"Next roll appeared during eruption"
+			);
+			await new Promise((resolve) => setTimeout(resolve, 1150));
+			assert(store.journal.at(-1).text === "New round dice", "Playback did not reach the roll");
+			assert(
+				store.scene.players[0].dice[0].face === next.players[0].dice[0].face,
+				"Dice did not update at their roll cue"
+			);
 			const later = structuredClone(next);
 			later.revision++;
 			later.log.push({ round: 1, type: "equipment", text: "Later action" });
 			store.receive(later);
-			assert(store.journal.at(-1).text === "Lava followed", "New updates jumped the queue");
+			assert(store.journal.at(-1).text === "New round dice", "New updates jumped the queue");
 			store.skipPresentation();
 			assert(
 				!store.animating && !store.waiting && store.journal.at(-1).text === "Later action",

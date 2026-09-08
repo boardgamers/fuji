@@ -115,8 +115,19 @@ export class Store {
 		}
 		const scene = structuredClone(previous);
 		const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-		for (const event of s.log.slice(previous.log.length)) {
+		const events = s.log.slice(previous.log.length);
+		// A broadcast contains only the final dice snapshot. Apply it at the last
+		// roll cue, never to earlier movement/eruption frames or intermediate rolls.
+		const lastRoll = events.reduce((last, event, index) => (event.sound === "dice" ? index : last), -1);
+		for (const [index, event] of events.entries()) {
 			scene.log.push(event);
+			if (index === lastRoll) {
+				scene.round = s.round;
+				scene.phase = s.phase;
+				scene.players = structuredClone(s.players);
+				scene.ghost = structuredClone(s.ghost);
+				scene.ghostVisible = [...s.ghostVisible];
+			}
 			const action = event.animation;
 			const cue = event.sound ?? (event.type === "equipment" ? "gear" : undefined);
 			if (action?.kind === "move") {

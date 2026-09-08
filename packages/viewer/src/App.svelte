@@ -38,7 +38,7 @@
 	import TravelGuide from "./lib/TravelGuide.svelte";
 	import StaminaGuide from "./lib/StaminaGuide.svelte";
 	let { store }: { store: Store } = $props();
-	const s = $derived(store.state);
+	const s = $derived(store.scene ?? store.state);
 	const actingSeats = $derived(
 		s
 			? activePlayers(s).filter(

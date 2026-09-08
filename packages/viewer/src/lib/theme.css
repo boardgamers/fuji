@@ -579,7 +579,9 @@ h3 {
 	line-height: 1.5;
 }
 .comparison > strong {
-	display: block;
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
 	font:
 		46px Georgia,
 		serif;
@@ -1276,4 +1278,33 @@ h3 {
 .finish-dice {
 	flex-basis: 100%;
 	margin: 0;
+}
+
+.comparison > .comparison-player {
+	display: grid;
+	gap: 8px;
+}
+.comparison-name {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+}
+.comparison-dice {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+}
+.comparison .comparison-dice .die {
+	width: 35px;
+	height: 40px;
+	padding: 4px;
+	border-radius: 7px;
+}
+.comparison .comparison-dice .pips {
+	grid-template-columns: repeat(3, 4px);
+	grid-template-rows: repeat(3, 4px);
+	gap: 3px;
+}
+.comparison .comparison-dice .die-caption {
+	font-size: 6px;
 }

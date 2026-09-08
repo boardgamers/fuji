@@ -568,7 +568,10 @@
 						{#if !me.resolved}<button class="primary" onclick={() => store.dispatch({ action: "beginMovement" })}
 								>Resolve my journey <span>→</span></button
 							>{:else}<p class="confirmed">✓ Your journey is resolved.</p>{/if}
-					{:else if s.activeResolution === seat && result}<div class="comparison">
+					{:else if s.activeResolution === seat && result}{@const criterion = terrain(
+							cell(s, me.path.at(-1)!).terrain
+						).requirement}
+						<div class="comparison">
 							<span class="eyebrow">{result.success ? "YOU CAN MOVE" : "YOU MUST STAY"}</span><strong
 								>{result.own}<small> vs </small>{Math.max(...result.peers.map((p) => p.total))}</strong
 							>
@@ -577,12 +580,35 @@
 									? `Lead of ${result.margin} · lose ${result.loss} stamina`
 									: `Tie or lower · lose ${result.loss} stamina`}
 							</p>
-							{#each result.peers as peer}<div>
-									<span>{peer.seat === -1 ? "Neutral dice" : s.players[peer.seat]!.name}</span><span>{peer.total}</span>
-								</div>{/each}
+							<span class="muted small">Dice matching {terrain(cell(s, me.path.at(-1)!).terrain).name}</span>
+							{#each [{ seat: seat!, total: result.own }, ...result.peers] as peer}
+								{@const counted = (peer.seat === -1 ? s.ghost : s.players[peer.seat]!.dice).filter(
+									(d) => !d.aside && matches(face(d), criterion)
+								)}
+								<div class="comparison-player">
+									<div class="comparison-name">
+										<span
+											>{peer.seat === seat
+												? "You"
+												: peer.seat === -1
+													? "Neutral dice"
+													: s.players[peer.seat]!.name}</span
+										><strong>{peer.total}</strong>
+									</div>
+									<div class="comparison-dice">
+										{#each counted as d}<Die die={d} colorblind={store.colorblind} disabled />{:else}<span
+												>No matching dice</span
+											>{/each}
+									</div>
+									{#if peer.seat === seat && me.bonus}<span>+{me.bonus} bonus</span>{/if}
+								</div>
+							{/each}
 						</div>
+						{#if s.players.some((p) => hasSkill(p, "gatherer") && p.powerBars > 0)}<p class="muted small">
+								The Gatherer can still add +1 per power bar before you confirm.
+							</p>{/if}
 						<button class="primary" onclick={() => store.dispatch({ action: "resolve" })}
-							>Continue journey <span>→</span></button
+							>Confirm result <span>→</span></button
 						>
 					{:else}<p class="instruction">{s.players[s.activeResolution]!.name} is resolving their journey.</p>{/if}
 					{#if s.activeResolution !== null && hasSkill(me, "gatherer") && me.powerBars}<button

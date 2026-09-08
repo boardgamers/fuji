@@ -85,6 +85,17 @@ import path from "node:path";
 	if (await page.locator(".tool-form").count()) throw Error("Discarded equipment left a stale action panel");
 	if (await machete.count()) throw Error("Discarded machete remains usable");
 	if (s.players[0].cards.some((c) => c.id === "machete")) throw Error("Machete was not consumed");
+	s.phase = "movement";
+	s.activeResolution = 0;
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
+	await page.getByRole("button", { name: "Confirm result" }).waitFor();
+	if ((await page.locator(".comparison-player").count()) !== 3) throw Error("Comparison must show every participant");
+	if (await page.locator(".comparison-dice .die.aside").count()) throw Error("Set-aside dice must not count");
+	const countedBeforeHover = await page.locator(".comparison").innerText();
+	await page.locator(".location").last().hover();
+	if ((await page.locator(".comparison").innerText()) !== countedBeforeHover)
+		throw Error("Hover changed the resolution criterion");
+	await page.screenshot({ path: "work/browser/fuji-comparison.png", fullPage: true });
 	await page.evaluate((v) => {
 		window.bridge.emit("player", {});
 		window.bridge.emit("state", v);

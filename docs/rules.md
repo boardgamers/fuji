@@ -50,3 +50,25 @@ At **20, 15, 10 and 5 stamina**, choose a new injury:
 Lava spreads one step at the end of each round. Crossing an eruption marker triggers an extra eruption immediately. Watch the marked locations that will be covered next.
 
 Keep playing after reaching the village: everyone must arrive before anyone dies.
+
+## Equipment reference
+
+| Equipment     | Effect                                                                                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Binoculars    | During planning, swap any two completely empty land tiles, at any distance. No players, destination markers, equipment tokens, eruption markers, village tiles or lava. |
+| Flare gun     | Add three to your own movement value this round. This bonus does not increase the total teammates must beat.                                                            |
+| Rope          | Immediately move to an adjacent land tile during planning or equipment.                                                                                                 |
+| Shovel        | Turn one die to any face.                                                                                                                                               |
+| Torch         | During planning, reroll any selection of your dice once.                                                                                                                |
+| Pocketknife   | Copy an eligible equipment card held by another player.                                                                                                                 |
+| Water flask   | Take up to two rerolls yourself, or grant one to a teammate.                                                                                                            |
+| First aid kit | Lose no stamina this round.                                                                                                                                             |
+| Wireless      | Reveal your dice to everyone until the phase ends.                                                                                                                      |
+| Tape          | Turn any of your ones into sixes.                                                                                                                                       |
+| Compass       | Turn any of your sixes into ones.                                                                                                                                       |
+| Machete       | Set aside one or two dice. They become visible but do not count this round.                                                                                             |
+| Fire lighter  | Ask a teammate to lend you one die for the round.                                                                                                                       |
+| Carabiner     | Every player must reroll exactly one die.                                                                                                                               |
+| Map           | Lend one die to a teammate for the round.                                                                                                                               |
+
+Set-aside and loaned dice return at the end of the round. The Equipment manager can give an equipment card to another player without being on the same location. The card's use phase and availability still apply.

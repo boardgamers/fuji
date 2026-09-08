@@ -427,7 +427,7 @@
 						if (store.local) store.selectSeat(i);
 					}}
 					disabled={!store.local}
-					aria-label={`${p.name}${seat === i ? ", you" : ""}${actingSeats.includes(i) ? ", can act now" : ""}. ${EXHAUSTION - p.stamina} stamina remaining${store.local ? ". Switch to this player." : ""}`}
+					aria-label={`${p.name}${seat === i ? ", you" : ""}${actingSeats.includes(i) ? ", can act now" : ""}. ${EXHAUSTION - p.stamina} stamina remaining${p.skill === "gatherer" ? `, ${p.powerBars} power bars` : ""}${store.local ? ". Switch to this player." : ""}`}
 				>
 					<img src={art("character", p.character + 1)} alt="" class="portrait" />
 					<div class="teammate-info">
@@ -436,14 +436,32 @@
 						><span class="role-name"
 							>{SKILLS[p.skill].name}{#each p.injuries as injury}<InjuryIcon
 									{injury}
-								/>{/each}{#if p.skill === "gatherer"}<span class="public-bars">
-									· {p.powerBars} power bar{p.powerBars === 1 ? "" : "s"}</span
+								/>{/each}{#if p.skill === "gatherer"}<span
+									class="public-bars"
+									title={`${p.powerBars} power bar${p.powerBars === 1 ? "" : "s"}. Each adds +1 to a player's movement total.`}
+									aria-label={`${p.powerBars} power bars`}
+								>
+									<svg
+										viewBox="0 0 26 20"
+										width="23"
+										height="18"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linejoin="round"
+										aria-hidden="true"
+										><path
+											d="m2 4 3 1 2-1h12l2 1 3-1v12l-3-1-2 1H7l-2-1-3 1Z M7 4v12M19 4v12 M14 6l-4 5h4l-2 4 5-6h-4Z"
+										/></svg
+									>
+									{p.powerBars}</span
 								>{/if}</span
 						>
 					</div>
 					<div class="teammate-status">
 						<span title="Remaining stamina. At zero, the whole expedition loses."
-							>{EXHAUSTION - p.stamina}<small> / {EXHAUSTION} stamina</small></span
+							><span class="stamina-heart" aria-hidden="true">♥</span>
+							{EXHAUSTION - p.stamina}<small> / {EXHAUSTION}</small></span
 						><span class="ready-label" class:active-label={actingSeats.includes(i)}
 							>{actingSeats.includes(i)
 								? s.pending

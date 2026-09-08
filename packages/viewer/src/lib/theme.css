@@ -1354,6 +1354,14 @@ h3 {
 }
 .public-bars {
 	color: var(--gold);
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-left: 6px;
+	vertical-align: middle;
+}
+.stamina-heart {
+	color: #e6b08b;
 }
 
 .teammate.can-act {

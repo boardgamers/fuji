@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-	initGame,
+	initGame as createGame,
 	choosePowerBars,
 	applyMove,
 	stripSecret,
@@ -18,6 +18,9 @@ import {
 	activePlayers,
 } from "../index.js";
 import type { State, Move } from "./types.js";
+// Existing rule fixtures deliberately use the legacy roster to isolate each rule.
+const initGame = (players = 3, options: Record<string, unknown> = {}, seed = "fuji") =>
+	createGame(players, { skillAssignment: "fixed", ...options }, seed);
 function prepared(players = 3) {
 	let s = initGame(players, { autoMovement: false, autoProgress: false }, "test-seed");
 	for (let i = 0; i < players; i++) {
@@ -1317,4 +1320,40 @@ test("random scenario is seeded, covers all seven layouts and replays exactly", 
 		assert.deepEqual(replay(s), s);
 	}
 	assert.equal(seen.size, 7);
+});
+
+test("new games assign distinct seeded random skills; legacy saves keep their roster", () => {
+	const rosters = new Set<string>();
+	for (let i = 0; i < 20; i++) {
+		const s = createGame(4, {}, `skill-random-${i}`);
+		assert.equal(s.initOptions.skillAssignment, "random");
+		assert.equal(new Set(s.players.map((p) => p.skill)).size, 4);
+		assert.deepEqual(replay(s), s);
+		rosters.add(s.players.map((p) => p.skill).join());
+	}
+	assert(rosters.size > 1);
+	const legacy = initGame();
+	delete legacy.initOptions.skillAssignment;
+	assert.deepEqual(replay(legacy), legacy);
+});
+
+test("players choose distinct skills before equipment is dealt, with exact replay", () => {
+	let s = createGame(3, { skillAssignment: "choose" }, "skill-draft");
+	assert(s.players.every((p) => p.cards.length === 0));
+	assert.deepEqual(activePlayers(s), [0]);
+	assert.throws(() => applyMove(s, { action: "setup", keep: [] }, 0));
+	assert.throws(() => applyMove(s, { action: "chooseSkill", skill: "manager" }, 1));
+	s = applyMove(s, { action: "chooseSkill", skill: "manager" }, 0);
+	const before = structuredClone(s);
+	assert.throws(() => applyMove(s, { action: "chooseSkill", skill: "manager" }, 1));
+	assert.deepEqual(s, before);
+	s = applyMove(s, { action: "chooseSkill", skill: "scout" }, 1);
+	s = applyMove(s, { action: "chooseSkill", skill: "gatherer" }, 2);
+	assert.equal(s.skillChoices, undefined);
+	assert.deepEqual(
+		s.players.map((p) => p.cards.length),
+		[4, 2, 1]
+	);
+	assert.deepEqual(activePlayers(s), [0, 1]);
+	assert.deepEqual(replay(s), s);
 });

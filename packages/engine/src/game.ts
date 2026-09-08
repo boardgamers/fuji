@@ -258,7 +258,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 		ghost: [],
 		ghostVisible: [],
 		history: [],
-		initOptions: { autoMovement: true, autoProgress: true, ...options },
+		initOptions: { autoMovement: true, autoProgress: true, skillAssignment: "random", ...options },
 	};
 	if (options.scenario === "random") s.scenario = scenario = 1 + Math.floor(random(s) * SCENARIOS.length);
 	const lands = shuffle(
@@ -288,9 +288,16 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 		s,
 		EQUIPMENT.map((c) => c.id)
 	);
-	const skillList: Skill[] = Array.isArray(options.skills)
-		? (options.skills as Skill[])
-		: (["buddy", "gatherer", "manager", "survivalist"] as Skill[]);
+	if (options.skillAssignment !== undefined && !["random", "choose", "fixed"].includes(String(options.skillAssignment)))
+		throw Error("Invalid skill assignment.");
+	const assignment = options.skillAssignment ?? "random";
+	const choosingSkills = assignment === "choose";
+	const skillList: Skill[] =
+		assignment === "random"
+			? shuffle(s, Object.keys(SKILLS) as Skill[])
+			: Array.isArray(options.skills)
+				? (options.skills as Skill[])
+				: (["buddy", "gatherer", "manager", "survivalist"] as Skill[]);
 	if (skillList.length < players || skillList.some((x) => !(x in SKILLS))) throw Error("Invalid skill selection.");
 	for (let i = 0; i < players; i++) {
 		const skill = skillList[i]!;
@@ -322,10 +329,10 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 			aid: false,
 			bonus: 0,
 			resolved: false,
-			setupDone: SKILLS[skill].draw === SKILLS[skill].keep && SKILLS[skill].dice === 6,
+			setupDone: !choosingSkills && SKILLS[skill].draw === SKILLS[skill].keep && SKILLS[skill].dice === 6,
 			buddyUsed: false,
 		};
-		for (let j = 0; j < SKILLS[skill].draw; j++) draw(s, p, 1);
+		if (!choosingSkills) for (let j = 0; j < SKILLS[skill].draw; j++) draw(s, p, 1);
 		s.players.push(p);
 	}
 	if (players === 2) {
@@ -339,6 +346,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 		}));
 		s.ghostVisible = s.ghost.filter((_, j) => j % 2 === 0).map((d) => d.id);
 	}
+	if (choosingSkills) s.skillChoices = s.players.map((_, i) => i);
 	event(s, `Scenario ${scenario} · the path to the village`, "phase");
 	if (s.players.every((p) => p.setupDone)) startRound(s);
 	return s;
@@ -571,6 +579,28 @@ function execute(s: State, m: Move, seat: number) {
 		event(s, `${p.name} ${responseText}.`, "equipment");
 		if (pending.kind === "reroll") s.log.at(-1)!.sound = "dice";
 		finishPending(s);
+		return;
+	}
+	if (s.skillChoices?.length) {
+		if (m.action !== "chooseSkill" || seat !== s.skillChoices[0]) throw Error("Wait for your skill choice.");
+		const skill = m.skill as Skill;
+		if (
+			!Object.hasOwn(SKILLS, skill) ||
+			s.players.some((other, i) => !s.skillChoices!.includes(i) && other.skill === skill)
+		)
+			throw Error("Choose an available skill.");
+		p.skill = skill;
+		s.skillChoices.shift();
+		event(s, `${p.name} chose ${SKILLS[skill].name}.`);
+		if (!s.skillChoices.length) {
+			delete s.skillChoices;
+			for (const player of s.players) {
+				const spec = SKILLS[player.skill];
+				for (let j = 0; j < spec.draw; j++) draw(s, player, 1);
+				player.setupDone = spec.draw === spec.keep && spec.dice === 6;
+			}
+			if (s.players.every((player) => player.setupDone)) startRound(s);
+		}
 		return;
 	}
 	if (s.players.some((p) => p.pendingInjuries) && m.action !== "injury") throw Error("Choose an injury first.");
@@ -1018,6 +1048,7 @@ export function applyMove(data: State, input: unknown, seat: number): State {
 	if (typeof raw.action !== "string") throw Error("Invalid action.");
 	const allowed = [
 		"action",
+		"skill",
 		"keep",
 		"drop",
 		"path",
@@ -1078,6 +1109,7 @@ export function stripSecret(s: State, seat?: number): View {
 }
 export function activePlayers(s: State | View): number[] {
 	if (s.outcome) return [];
+	if (s.skillChoices?.length) return [s.skillChoices[0]!];
 	if (s.pending) return s.pending.players;
 	const injured = s.players.flatMap((p, i) => (p.pendingInjuries ? [i] : []));
 	if (injured.length) return injured;
@@ -1113,7 +1145,9 @@ export function setPlayerName(s: State, seat: number, name: string): State {
 	return next;
 }
 export function replay(s: State, to?: number): State {
-	let state = initGame(s.players.length, s.initOptions, s.seed);
+	// Saves predating skill assignment used the fixed roster.
+	let state = initGame(s.players.length, { skillAssignment: "fixed", ...s.initOptions }, s.seed);
+	state.initOptions = structuredClone(s.initOptions);
 	for (const e of s.history.slice(0, to ?? s.history.length)) {
 		if (e.move.action === "$planning") {
 			restorePlanning(state, e.move.snapshot as unknown as PlanningSnapshot);

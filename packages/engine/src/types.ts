@@ -85,6 +85,7 @@ export interface PlanningSnapshot {
 	revision: number;
 }
 export interface State {
+	skillChoices?: number[];
 	liveUpdate?: boolean;
 	planningSnapshot?: PlanningSnapshot;
 	schemaVersion: 1;

@@ -1640,3 +1640,27 @@ h3 {
 .teammate.opposite:focus-visible {
 	opacity: 1;
 }
+
+.teammate {
+	cursor: pointer;
+}
+.teammate:hover .teammate-name,
+.teammate:focus-visible .teammate-name {
+	color: var(--gold);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.skill-choices {
+	display: grid;
+	gap: 10px;
+}
+.skill-choices button {
+	display: grid;
+	gap: 8px;
+	text-align: left;
+	padding: 14px;
+}
+.skill-choices span {
+	font-size: 14px;
+	line-height: 1.5;
+}

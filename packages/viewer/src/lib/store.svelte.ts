@@ -3,6 +3,7 @@ import type { View, Move } from "fuji-engine";
 export class Store {
 	state: View | null = $state(null);
 	avatars: string[] = $state([]);
+	clickPlayer: (index: number) => void = () => {};
 	private audio = new SoundDesign();
 	sound = $state(true);
 	setSound(enabled: boolean) {
@@ -65,7 +66,8 @@ export class Store {
 	}
 	send: (move: Move) => void = () => {};
 	selectSeat: (seat: number) => void = () => {};
-	restart: (players: number, seed: string, difficulty: number, scenario?: number) => void = () => {};
+	restart: (players: number, seed: string, difficulty: number, scenario?: number, skillAssignment?: string) => void =
+		() => {};
 	teammateStep: () => void = () => {};
 	dispatch(move: Move) {
 		if (this.animating && this.blocksInput) return;

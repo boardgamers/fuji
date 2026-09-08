@@ -18,6 +18,7 @@ export function launch(selector: string) {
 	events.on<string[]>("avatars", (avatars) => {
 		store.avatars = avatars;
 	});
+	store.clickPlayer = (index) => events.emit("player:clicked", { index });
 	store.send = (move) => events.emit("move", move);
 	events.on<View>("state", async (state) => {
 		store.receive(state);

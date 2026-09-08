@@ -93,6 +93,7 @@
 	let newPlayers = $state(3);
 	let newDifficulty = $state(1);
 	let newScenario = $state(1);
+	let newSkills = $state("random");
 	let newSeed = $state("first-light");
 	function openNewGame() {
 		const current = store.state;
@@ -482,8 +483,8 @@
 					style:--player-color={CHARACTER_COLORS[p.character]}
 					onclick={() => {
 						if (store.local) store.selectSeat(i);
+						else store.clickPlayer(i);
 					}}
-					disabled={!store.local}
 					aria-label={`${p.name}${seat === i ? ", you" : ""}${actingSeats.includes(i) ? ", can act now" : ""}. ${EXHAUSTION - p.stamina} stamina remaining${p.skill === "gatherer" ? `, ${p.powerBars} power bars` : ""}${store.local ? ". Switch to this player." : ""}`}
 				>
 					<img src={art("character", p.character + 1)} alt="" class="portrait" />
@@ -491,7 +492,9 @@
 						<span class="teammate-name"
 							>{p.name}{#if seat === i}<small>YOU</small>{/if}</span
 						><span class="role-name"
-							>{SKILLS[p.skill].name}{#each p.injuries as injury}<InjuryIcon
+							>{s.skillChoices?.includes(i)
+								? "Choosing skill"
+								: SKILLS[p.skill].name}{#each p.injuries as injury}<InjuryIcon
 									{injury}
 								/>{/each}{#if p.skill === "gatherer"}<span
 									class="public-bars"
@@ -762,6 +765,28 @@
 					</div>
 					{#if store.local}<button class="primary" onclick={openNewGame}>Start a new expedition</button>{/if}
 				{:else if !me}<p class="instruction">Follow the expedition. Private dice remain hidden until the reveal.</p>
+				{:else if s.skillChoices?.length}
+					<p class="instruction">
+						{s.skillChoices[0] === seat
+							? "Choose your skill."
+							: `${s.players[s.skillChoices[0]!]!.name} is choosing a skill.`}
+					</p>
+					<div class="skill-choices">
+						{#each Object.entries(SKILLS) as [id, skill]}
+							{@const owner = s.players.find((p, i) => !s.skillChoices!.includes(i) && p.skill === id)}
+							<button
+								disabled={s.skillChoices[0] !== seat || !!owner || store.waiting}
+								onclick={() => store.dispatch({ action: "chooseSkill", skill: id })}
+							>
+								<strong>{skill.name}</strong><span>{skill.description}</span>
+								<small
+									>{skill.dice} dice · draw {skill.draw}, keep {skill.keep} equipment{owner
+										? ` · ${owner.name}`
+										: ""}</small
+								>
+							</button>
+						{/each}
+					</div>
 				{:else if s.phase === "setup"}
 					{#if me.setupDone}<p class="instruction">
 							Your bag is packed. Waiting for the rest of the expedition.
@@ -1290,6 +1315,15 @@
 				</p>
 			</fieldset>
 			<fieldset class="visible-choices">
+				<legend>Skills</legend>
+				<div class="choice-row">
+					{#each [["random", "Random"], ["choose", "Choose skills"]] as [value, label]}<button
+							aria-pressed={newSkills === value}
+							onclick={() => (newSkills = value!)}>{label}</button
+						>{/each}
+				</div>
+			</fieldset>
+			<fieldset class="visible-choices">
 				<legend>Difficulty</legend>
 				<div class="choice-row">
 					{#each [1, 2, 3, 4] as n}<button aria-pressed={newDifficulty === n} onclick={() => (newDifficulty = n)}
@@ -1305,7 +1339,7 @@
 			><button
 				class="primary"
 				onclick={() => {
-					store.restart(newPlayers, newSeed, newDifficulty, newScenario);
+					store.restart(newPlayers, newSeed, newDifficulty, newScenario, newSkills);
 					newGame = false;
 					inspected = "";
 				}}>Begin expedition <span>→</span></button

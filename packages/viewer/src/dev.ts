@@ -66,8 +66,8 @@ store.selectSeat = (seat) => {
 	store.error = "";
 	publish();
 };
-store.restart = (players, seed, difficulty, scenario = 1) => {
-	game = initGame(players, { difficulty, scenario }, seed);
+store.restart = (players, seed, difficulty, scenario = 1, skillAssignment = "random") => {
+	game = initGame(players, { difficulty, scenario, skillAssignment }, seed);
 	store.seat = 0;
 	publish();
 };

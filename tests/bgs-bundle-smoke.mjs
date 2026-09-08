@@ -5,7 +5,7 @@ import path from "node:path";
 	const { initGame, applyMove, stripSecret, SKILLS, paths, comparison } = await import(
 		root + "/packages/engine/dist/index.js"
 	);
-	const game = initGame(3, { autoMovement: false, autoProgress: false }, "bridge-test");
+	const game = initGame(3, { autoMovement: false, autoProgress: false, skillAssignment: "fixed" }, "bridge-test");
 	const view = stripSecret(game, 2);
 	const browser = await chromium.launch({ headless: true, executablePath: process.env.FUJI_CHROMIUM_EXECUTABLE });
 	const page = await browser.newPage();
@@ -162,7 +162,7 @@ import path from "node:path";
 	if (await page.locator(".die-caption").count()) throw Error("Color labels did not turn off");
 	await page.keyboard.press("Escape");
 	if ((await page.locator(".village-marker").count()) !== 5) throw Error("Every village location needs a marker");
-	const conflictState = initGame(4, {}, "dice-conflicts");
+	const conflictState = initGame(4, { skillAssignment: "fixed" }, "dice-conflicts");
 	conflictState.phase = "reroll";
 	conflictState.board.forEach((c) => {
 		if (!c.lava) c.terrain = 16;

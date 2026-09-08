@@ -338,6 +338,13 @@ function chooseEquipment(
 
 export function chooseMove(game: View, seat: number, policy: AiPolicy = DEFAULT_AI_POLICY): Move {
 	const p = game.players[seat]!;
+	if (game.skillChoices?.length) {
+		const taken = game.players.filter((_, i) => !game.skillChoices!.includes(i)).map((p) => p.skill);
+		const skill = ["buddy", "gatherer", "manager", "survivalist", "scout", "tinkerer"].find(
+			(skill) => !taken.includes(skill as typeof p.skill)
+		);
+		return { action: "chooseSkill", skill };
+	}
 	if (game.pending) {
 		if (game.pending.kind === "lend") {
 			const die = lendingChoice(game, seat, game.pending.receiver!);

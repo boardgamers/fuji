@@ -32,13 +32,13 @@
 	const layout = $derived(
 		(
 			{
-				1: { guide: [14, 519, 385], counter: [114, 16] },
-				2: { guide: [14, 603, 485], counter: [714, 16] },
-				3: { guide: [14, 519, 485], counter: [314, 16] },
+				1: { guide: [14, 519, 385], counter: [state.players.length === 4 ? 714 : 614, 108] },
+				2: { guide: [14, 603, 485], counter: [714, state.players.length === 4 ? 184 : 268] },
+				3: { guide: [14, 519, 485], counter: [614, 435] },
 				4: { guide: [514, 435, 185], counter: [714, 16] },
-				5: { guide: [414, 519, 185], counter: [714, 16] },
-				6: { guide: [14, 351, 285], counter: [714, 16] },
-				7: { guide: [214, 267, 285], counter: [714, 16] },
+				5: { guide: [414, 519, 185], counter: [14, 184] },
+				6: { guide: [14, 351, 285], counter: [14, 519] },
+				7: { guide: [214, 267, 285], counter: [14, 268] },
 			} as Record<number, { guide: number[]; counter: number[] }>
 		)[state.scenario ?? 1]!
 	);

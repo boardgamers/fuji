@@ -93,6 +93,9 @@
 	],
 	"alias": null,
 	"links": {
-		"source": "https://codeberg.org/boardgamers/fuji"
+		"source": "https://codeberg.org/boardgamers/fuji",
+		"bgg": "https://boardgamegeek.com/boardgame/258308/fuji",
+		"publisher": "https://www.feuerland-spiele.de/",
+		"buy": "https://boardgamegeek.com/boardgame/258308/fuji/marketplace/stores"
 	}
 }

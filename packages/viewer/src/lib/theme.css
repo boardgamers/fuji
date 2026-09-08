@@ -103,6 +103,7 @@ h3 {
 }
 .teammate {
 	flex: 1;
+	flex-wrap: wrap;
 	min-width: 0;
 	display: flex;
 	align-items: center;
@@ -157,11 +158,33 @@ h3 {
 }
 .stamina-track {
 	display: block;
-	height: 3px;
+	position: relative;
+	flex: 0 0 100%;
+	height: 5px;
 	background: #142a23;
-	margin-top: 10px;
-	max-width: 130px;
-	overflow: hidden;
+	margin: 5px 0 2px;
+}
+.injury-tick {
+	position: absolute;
+	top: -2px;
+	width: 2px;
+	height: 9px;
+	background: #d8debd;
+	transform: translateX(-50%);
+}
+.injury-tick > span {
+	position: absolute;
+	font-size: 7px;
+	top: -8px;
+	left: 50%;
+	transform: translateX(-50%);
+	color: #d8debd;
+}
+.injury-tick.crossed {
+	background: #d5896b;
+}
+.injury-tick.crossed > span {
+	color: #d5896b;
 }
 .stamina-track i {
 	display: block;

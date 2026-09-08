@@ -18,6 +18,7 @@
 		EQUIPMENT,
 		INJURIES,
 		EXHAUSTION,
+		INJURY_AT,
 		CHARACTER_COLORS,
 		hasSkill,
 		activeDice,
@@ -300,8 +301,6 @@
 							>{SKILLS[p.skill].name}{#if p.skill === "gatherer"}<span class="public-bars">
 									· {p.powerBars} power bar{p.powerBars === 1 ? "" : "s"}</span
 								>{/if}</span
-						><span class="stamina-track" aria-hidden="true"
-							><i style:width={`${(1 - p.stamina / EXHAUSTION) * 100}%`}></i></span
 						>
 					</div>
 					<div class="teammate-status">
@@ -331,6 +330,15 @@
 													: ""}</span
 						>
 					</div>
+					<span class="stamina-track" title="Injuries at 20, 15, 10 and 5 stamina remaining." aria-hidden="true">
+						<i style:width={`${(1 - p.stamina / EXHAUSTION) * 100}%`}></i>
+						{#each INJURY_AT as threshold}<span
+								class="injury-tick"
+								class:crossed={p.stamina >= threshold}
+								style:left={`${(1 - threshold / EXHAUSTION) * 100}%`}
+								title={`Injury at ${EXHAUSTION - threshold} stamina remaining`}><span>◆</span></span
+							>{/each}
+					</span>
 				</button>
 			{/each}
 		</section>

@@ -29,7 +29,13 @@
 	import Die from "./lib/Die.svelte";
 	let { store }: { store: Store } = $props();
 	const s = $derived(store.state);
-	const actingSeats = $derived(s ? activePlayers(s) : []);
+	const actingSeats = $derived(
+		s
+			? activePlayers(s).filter(
+					(i) => !(!s.pending && ["planning", "equipment"].includes(s.phase) && s.players[i]!.ready)
+				)
+			: []
+	);
 	const seat = $derived(store.seat);
 	const me = $derived(seat === undefined ? undefined : s?.players[seat]);
 	let inspected = $state("");

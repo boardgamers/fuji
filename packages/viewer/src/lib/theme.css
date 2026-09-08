@@ -119,7 +119,6 @@ h3 {
 }
 .teammate.own {
 	background: #2846316b;
-	border-color: #d9c8835c;
 }
 .teammate:not(:disabled):hover {
 	background: #304e3980;
@@ -1325,4 +1324,9 @@ h3 {
 }
 .public-bars {
 	color: var(--gold);
+}
+
+.teammate.can-act {
+	border-color: var(--gold);
+	box-shadow: inset 0 0 0 1px var(--gold);
 }

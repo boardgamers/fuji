@@ -130,7 +130,7 @@
 			return;
 		}
 		if (s.phase === "reroll") {
-			store.dispatch(me.rerolls && dice.length ? { action: "reroll", ids: dice } : { action: "finishRerolls" });
+			document.querySelector(".reroll-actions")?.scrollIntoView({ behavior: "smooth", block: "center" });
 			return;
 		}
 		if (s.phase === "equipment") {
@@ -159,9 +159,7 @@
 								? "Change route"
 								: "Ready to travel"
 						: s.phase === "reroll"
-							? me.rerolls && dice.length
-								? "Reroll selected"
-								: "Keep dice"
+							? "Dice actions"
 							: s.phase === "equipment"
 								? "Equipment & reveal"
 								: s.phase === "movement"
@@ -320,21 +318,71 @@
 									die={d}
 									selected={dice.includes(d.id)}
 									relevant={s.phase !== "setup" && !!rule && matches(face(d), rule)}
-									disabled={(d.aside && !me.pendingInjuries) || store.waiting || s.phase === "setup"}
+									disabled={(d.aside && !me.pendingInjuries) ||
+										store.waiting ||
+										s.phase === "setup" ||
+										(s.phase === "reroll" && me.ready)}
 									onclick={() => pickDie(d.id)}
 								/>{/each}
 							{#if focusTerrain && s.phase !== "setup"}<div class="dice-total">
 									<strong>{localTotal}</strong><span>Matching dice total<br />{focusTerrain.name}</span>
 								</div>{/if}
 						</div>
-						<div class="skill-line">
-							<span class="skill-symbol">◇</span><span
-								>{me.injuries.includes("amnesia")
-									? "Your skill is unavailable due to amnesia."
-									: SKILLS[me.skill].description}</span
-							>{#if me.powerBars}<span class="power-bars">{me.powerBars} power bar{me.powerBars === 1 ? "" : "s"}</span
-								>{/if}
-						</div>
+						{#if s.phase === "reroll"}<section class="reroll-actions" aria-label="Dice actions">
+								{#if me.ready}<p class="confirmed">✓ Your dice are kept. Waiting for the team.</p>
+								{:else}
+									<div class="reroll-choice">
+										<strong>{me.rerolls} reroll{me.rerolls === 1 ? "" : "s"} remaining</strong>
+										{#if me.rerolls}<p>Select any dice, then reroll them together.</p>
+											<button
+												class="primary"
+												disabled={!dice.length || store.waiting}
+												onclick={() => store.dispatch({ action: "reroll", ids: dice })}
+												>Reroll {dice.length || "selected"} {dice.length === 1 ? "die" : "dice"} ↻</button
+											>
+										{:else}<p>
+												{rerollAllowance(s, seat!) === 0
+													? me.injuries.includes("eye")
+														? "Your eye injury prevents normal rerolls."
+														: `Your ${me.path.length - 1}-space route grants no rerolls.`
+													: "You have used all your rerolls."}
+											</p>{/if}
+									</div>
+									{#if hasSkill(me, "buddy")}<div class="reroll-choice buddy-choice">
+											<strong>Buddy · optional</strong>
+											{#if me.buddyUsed}<p>Die set aside: visible to everyone, excluded from comparisons this round.</p>
+											{:else}<p>
+													Set one die aside without spending a reroll. It becomes public and does not count this round.
+												</p>
+												<button
+													class="secondary"
+													disabled={dice.length !== 1 || store.waiting}
+													onclick={() => store.dispatch({ action: "buddy", ids: dice })}>Set selected die aside</button
+												>
+												{#if dice.length !== 1}<span class="muted small">Select exactly one die above.</span>{/if}
+											{/if}
+										</div>{/if}
+									<button
+										class="secondary finish-dice"
+										disabled={store.waiting}
+										onclick={() => store.dispatch({ action: "finishRerolls" })}
+										>Done with my dice{hasSkill(me, "gatherer") && me.rerolls
+											? ` · gain ${Math.min(me.rerolls, 3 - me.powerBars)} bars`
+											: ""}</button
+									>
+								{/if}
+							</section>{/if}
+						{#if s.phase !== "reroll" || !hasSkill(me, "buddy")}
+							<div class="skill-line">
+								<span class="skill-symbol">◇</span><span
+									>{me.injuries.includes("amnesia")
+										? "Your skill is unavailable due to amnesia."
+										: SKILLS[me.skill].description}</span
+								>{#if me.powerBars}<span class="power-bars"
+										>{me.powerBars} power bar{me.powerBars === 1 ? "" : "s"}</span
+									>{/if}
+							</div>
+						{/if}
 						{#if me.injuries.length}<div class="injury-list">
 								{#each me.injuries as injury}<span>{injury}</span>{/each}
 							</div>{/if}
@@ -503,31 +551,7 @@
 							Click adjacent locations to build your route. Click an earlier step to go back.
 						</p>{/if}
 				{:else if s.phase === "reroll"}
-					<p class="instruction">
-						No discussion during this phase. Select the dice you want to reroll, or keep your result.
-					</p>
-					<div class="reroll-count">
-						<strong>{me.rerolls}</strong><span>reroll{me.rerolls === 1 ? "" : "s"} remaining</span>
-					</div>
-					{#if !me.ready}<button
-							class="primary"
-							disabled={!me.rerolls || !dice.length || store.waiting}
-							onclick={() => store.dispatch({ action: "reroll", ids: dice })}
-							>Reroll {dice.length || "selected"} dice <span>↻</span></button
-						><button
-							class="secondary"
-							onclick={() => store.dispatch({ action: "finishRerolls" })}
-							disabled={store.waiting}
-							>Keep my dice{hasSkill(me, "gatherer") && me.rerolls
-								? ` · gain ${Math.min(me.rerolls, 3 - me.powerBars)} bars`
-								: ""}</button
-						>
-						{#if hasSkill(me, "buddy") && !me.buddyUsed}<button
-								class="text-button"
-								disabled={dice.length !== 1}
-								onclick={() => store.dispatch({ action: "buddy", ids: dice })}>Set one selected die aside</button
-							>{/if}
-					{:else}<p class="confirmed">✓ Your dice are kept. Waiting for the team.</p>{/if}
+					<p class="instruction">Reroll in silence. Your dice actions are below the map.</p>
 				{:else if s.phase === "equipment"}
 					<p class="instruction">
 						Discuss equipment with your teammates. Your dice are still private and your destination is locked.
@@ -628,7 +652,7 @@
 								{#if ["shovel", "torch", "tape", "machete", "compass", "map"].includes(actionTool ?? "")}<p
 										class="muted small"
 									>
-										Select the dice below the map. {dice.length} selected.
+										Select {actionTool === "machete" ? "one or two dice" : "the dice"} below the map. {dice.length} selected.
 									</p>{/if}
 								{#if actionTool === "shovel"}<label class="field"
 										>New value<select bind:value={turnFace}
@@ -647,7 +671,8 @@
 										!(info.phases as readonly number[]).includes(
 											s.phase === "planning" ? 2 : s.phase === "equipment" ? 4 : -1
 										) ||
-										!!s.pending}
+										!!s.pending ||
+										(actionTool === "machete" && (dice.length < 1 || dice.length > 2))}
 									onclick={confirmTool}>Use {info.name}</button
 								>
 								{#if hasSkill(me, "manager")}<label class="field"

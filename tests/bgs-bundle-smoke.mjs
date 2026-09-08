@@ -61,6 +61,22 @@ import path from "node:path";
 	if (await page.locator(".die-caption").count()) throw Error("Color labels did not turn off");
 	await page.keyboard.press("Escape");
 	if ((await page.locator(".village-marker").count()) !== 5) throw Error("Every village location needs a marker");
+	s.phase = "reroll";
+	s.players[0].rerolls = 0;
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
+	await page.locator(".personal .die").first().click();
+	const aside = page.getByRole("button", { name: "Set selected die aside" });
+	if (!(await aside.isEnabled())) throw Error("Buddy must be usable with zero rerolls");
+	await aside.click();
+	if ((await page.evaluate(() => window.captured.findLast((e) => e.name === "move")?.payload.action)) !== "buddy")
+		throw Error("Buddy action missing");
+	s.phase = "equipment";
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
+	await page.locator(".equipment-list button").filter({ hasText: "Machete" }).click();
+	const machete = page.getByRole("button", { name: "Use Machete", exact: true });
+	if (!(await machete.isDisabled())) throw Error("Machete needs selected dice");
+	await page.locator(".personal .die").first().click();
+	if (!(await machete.isEnabled())) throw Error("Machete should accept one selected die");
 	await page.evaluate((v) => {
 		window.bridge.emit("player", {});
 		window.bridge.emit("state", v);

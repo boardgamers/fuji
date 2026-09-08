@@ -734,6 +734,8 @@ h3 {
 	margin-bottom: 15px;
 }
 .error button {
+	display: flex;
+	margin-top: 8px;
 	padding: 5px 0;
 	font-size: 11px;
 }
@@ -1241,4 +1243,37 @@ h3 {
 	gap: 10px;
 	font-size: 13px;
 	margin: 18px 0;
+}
+
+.reroll-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin-top: 18px;
+	padding-top: 18px;
+	border-top: 1px solid #b4c8a433;
+	scroll-margin: 20px;
+}
+.reroll-choice {
+	flex: 1 1 240px;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+.reroll-choice strong {
+	font-size: 14px;
+	color: var(--gold);
+}
+.reroll-choice p {
+	font-size: 13px;
+	line-height: 1.5;
+	color: #bfd0bb;
+}
+.reroll-choice button {
+	margin: 0;
+}
+.finish-dice {
+	flex-basis: 100%;
+	margin: 0;
 }

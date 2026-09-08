@@ -45,13 +45,30 @@
 
 <div class="landscape" style:--route-color={ownColor} style:--landscape-art={`url(${art("land", 21)})`}>
 	<div class="scene-caption">
-		<span class="eyebrow">THE FUJI TRAIL</span><span
-			>Scenario 01 <span class="dot">·</span> Level {state.difficulty}</span
-		>
+		<span class="eyebrow">THE FUJI TRAIL</span>
+		<div class="scene-meta">
+			<span>Scenario 01 <span class="dot">·</span> Level {state.difficulty}</span><span
+				class="legend-end"
+				title="Everyone must reach any house-marked village location at the same time."
+				aria-label={`${state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} of ${state.players.length} players in the village`}
+			>
+				<svg
+					viewBox="0 0 24 24"
+					width="27"
+					height="27"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.7"
+					aria-hidden="true"><path d="m2 11 10-9 10 9M5 9v12h14V9M10 21v-7h4v7" /></svg
+				>
+				{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length}/{state.players
+					.length}</span
+			>
+		</div>
 	</div>
 	<div class="map-scroll">
 		<svg
-			viewBox={`0 0 ${mapWidth} 640`}
+			viewBox={`0 0 ${mapWidth} ${state.difficulty >= 3 ? 630 : 610}`}
 			class="map"
 			aria-label="Expedition map. Choose a location to inspect or plan a journey."
 		>
@@ -231,7 +248,7 @@
 					{#if i === seat}<path d="M-4 -28H4L0 -22Z" fill="#f4d888" />{/if}
 				</g>
 			{/each}
-			<foreignObject x="14" y="519" width="385" height="116" class="map-guides">
+			<foreignObject x="14" y="519" width="385" height={state.difficulty >= 3 ? 106 : 86} class="map-guides">
 				<div xmlns="http://www.w3.org/1999/xhtml">
 					<div class="scene-legend">
 						<span
@@ -240,27 +257,6 @@
 						><span><i class="legend-danger"></i>Next eruption</span>
 					</div>
 					<TravelGuide difficulty={state.difficulty} embedded />
-				</div>
-			</foreignObject>
-			<foreignObject x={mapWidth - 112} y="603" width="98" height="35">
-				<div xmlns="http://www.w3.org/1999/xhtml">
-					<span
-						class="legend-end"
-						title="Everyone must reach any house-marked village location at the same time."
-						aria-label={`${state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} of ${state.players.length} players in the village`}
-					>
-						<svg
-							viewBox="0 0 24 24"
-							width="27"
-							height="27"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.7"
-							aria-hidden="true"><path d="m2 11 10-9 10 9M5 9v12h14V9M10 21v-7h4v7" /></svg
-						>
-						{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length}/{state
-							.players.length}</span
-					>
 				</div>
 			</foreignObject>
 		</svg>
@@ -285,7 +281,15 @@
 			var(--landscape-art) center/cover;
 		z-index: -1;
 	}
+	.scene-meta {
+		display: flex;
+		align-items: center;
+		gap: 20px;
+		margin-left: auto;
+	}
 	.scene-caption {
+		flex-wrap: wrap;
+		gap: 10px;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;

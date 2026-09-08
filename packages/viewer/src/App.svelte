@@ -5,7 +5,6 @@
 		paths,
 		neighbors,
 		rerollAllowance,
-		requirementLabel,
 		matches,
 		face,
 		total,
@@ -28,6 +27,7 @@
 	import { art } from "./lib/assets";
 	import Landscape from "./lib/Landscape.svelte";
 	import Die from "./lib/Die.svelte";
+	import RequirementDisplay from "./lib/RequirementDisplay.svelte";
 	import PlayerChoices from "./lib/PlayerChoices.svelte";
 	import StaminaGuide from "./lib/StaminaGuide.svelte";
 	let { store }: { store: Store } = $props();
@@ -401,12 +401,12 @@
 											{/if}
 										</div>{/if}
 									<button
-										class="secondary finish-dice"
+										class="primary finish-dice"
 										disabled={store.waiting}
 										onclick={() => store.dispatch({ action: "finishRerolls" })}
 										>Done with my dice{hasSkill(me, "gatherer") && me.rerolls
 											? ` · gain ${Math.min(me.rerolls, 3 - me.powerBars)} bars`
-											: ""}</button
+											: ""}<span aria-hidden="true">→</span></button
 									>
 								{/if}
 							</section>{/if}
@@ -555,7 +555,7 @@
 							<div>
 								<span class="eyebrow">YOUR DESTINATION</span>
 								<h3>{destination.name}</h3>
-								<span>{requirementLabel(destination.requirement)}</span>
+								<RequirementDisplay requirement={destination.requirement} colorblind={store.colorblind} />
 							</div>
 						</div>
 						<div class="journey-stats">
@@ -790,9 +790,10 @@
 					</section>
 				{/if}
 				{#if focusTerrain && s.phase !== "setup"}<div class="location-detail">
-						<span class="eyebrow">INSPECTING THE TRAIL</span><strong>{focusTerrain.name}</strong><span
-							>{requirementLabel(focusTerrain.requirement)}</span
-						>
+						<span class="eyebrow">INSPECTING THE TRAIL</span><strong>{focusTerrain.name}</strong><RequirementDisplay
+							requirement={focusTerrain.requirement}
+							colorblind={store.colorblind}
+						/>
 						{#if reserved[focusId]}<span
 								>Reserved by {reserved[focusId]}. Choose another destination; you may still pass through.</span
 							>{/if}

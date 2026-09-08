@@ -23,10 +23,10 @@ fs.mkdirSync("work/browser", { recursive: true });
 	if (beforePreview !== (await page.evaluate(() => localStorage.getItem("fuji-dev-v1"))))
 		throw Error("Preview changed game state");
 	await page.screenshot({ path: "work/browser/fuji-setup.png", fullPage: true });
-	await page.getByRole("button", { name: "Ready for the journey" }).click();
+	if (await page.getByRole("button", { name: "Ready for the journey" }).count())
+		throw Error("Buddy must not need a preparation confirmation");
 	await page.getByText("Playtest tools", { exact: true }).click();
 	const step = page.getByRole("button", { name: "Play next teammate action" });
-	await step.click();
 	await step.click();
 	const state = () => page.evaluate(() => JSON.parse(localStorage.getItem("fuji-dev-v1")));
 	let s = await state();

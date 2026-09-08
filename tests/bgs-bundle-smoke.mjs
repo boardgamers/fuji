@@ -4,7 +4,7 @@ import path from "node:path";
 	const root = process.cwd();
 	const { initGame, applyMove, stripSecret, SKILLS, paths } = await import(root + "/packages/engine/dist/index.js");
 	const game = initGame(3, {}, "bridge-test");
-	const view = stripSecret(game, 0);
+	const view = stripSecret(game, 2);
 	const browser = await chromium.launch({ headless: true, executablePath: process.env.FUJI_CHROMIUM_EXECUTABLE });
 	const page = await browser.newPage();
 	const errors = [];
@@ -17,7 +17,7 @@ import path from "node:path";
 		window.bridge = window.fuji.launch("#app");
 		for (const name of ["ready", "move", "fetchState", "replaceLog", "update:preference"])
 			window.bridge.on(name, (payload) => window.captured.push({ name, payload }));
-		window.bridge.emit("player", { index: 0 });
+		window.bridge.emit("player", { index: 2 });
 		window.bridge.emit("state", view);
 	}, view);
 	await page.getByRole("button", { name: "Ready for the journey" }).click();
@@ -34,12 +34,15 @@ import path from "node:path";
 	if (await page.locator(".masthead, footer, .credits").count())
 		throw Error("Page framing leaked into embedded viewer");
 	let s = game;
-	for (let i = 0; i < 3; i++)
+	for (let i = 0; i < 3; i++) {
+		if (s.players[i].setupDone) continue;
 		s = applyMove(
 			s,
 			{ action: "setup", keep: s.players[i].cards.slice(0, SKILLS[s.players[i].skill].keep).map((c) => c.id) },
 			i
 		);
+	}
+	await page.evaluate(() => window.bridge.emit("player", { index: 0 }));
 	const teammatePath = Object.values(paths(s, 1)).find((route) => route.length > 1);
 	s = applyMove(s, { action: "plan", path: teammatePath }, 1);
 	s.players[1].radio = true;

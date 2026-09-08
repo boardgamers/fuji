@@ -291,7 +291,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 			aid: false,
 			bonus: 0,
 			resolved: false,
-			setupDone: false,
+			setupDone: SKILLS[skill].draw === SKILLS[skill].keep && SKILLS[skill].dice === 6,
 			buddyUsed: false,
 		};
 		for (let j = 0; j < SKILLS[skill].draw; j++) draw(s, p, 1);
@@ -309,6 +309,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 		s.ghostVisible = s.ghost.filter((_, j) => j % 2 === 0).map((d) => d.id);
 	}
 	event(s, "Scenario 1 · the path to the village", "phase");
+	if (s.players.every((p) => p.setupDone)) startRound(s);
 	return s;
 }
 function strings(value: unknown, max = 6): string[] {

@@ -461,22 +461,24 @@
 							{/if}
 							Routes become available once everyone is ready.
 						</p>
-						<div class="pack-options">
-							{#each me.cards as c}{@const info = EQUIPMENT.find((e) => e.id === c.id)!}<button
-									aria-pressed={keep.includes(c.id)}
-									disabled={me.cards.length === SKILLS[me.skill].keep}
-									class:selected={keep.includes(c.id)}
-									onclick={() => (keep = keep.includes(c.id) ? keep.filter((id) => id !== c.id) : [...keep, c.id])}
-									><img
-										src={art("equipment", EQUIPMENT.findIndex((x) => x.id === c.id) + 1)}
-										alt={EQUIPMENT.find((x) => x.id === c.id)?.name}
-									/><span class="pack-copy"
-										><strong>{info.name}</strong><small>{info.description}</small><small class="equipment-timing"
-											>Use during {info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}.</small
-										></span
-									><i>{keep.includes(c.id) ? "✓" : "+"}</i></button
-								>{/each}
-						</div>
+					{/if}
+					<div class="pack-options">
+						{#each me.cards as c}{@const info = EQUIPMENT.find((e) => e.id === c.id)!}<button
+								aria-pressed={keep.includes(c.id)}
+								disabled={me.setupDone || me.cards.length === SKILLS[me.skill].keep}
+								class:selected={keep.includes(c.id)}
+								onclick={() => (keep = keep.includes(c.id) ? keep.filter((id) => id !== c.id) : [...keep, c.id])}
+								><img
+									src={art("equipment", EQUIPMENT.findIndex((x) => x.id === c.id) + 1)}
+									alt={EQUIPMENT.find((x) => x.id === c.id)?.name}
+								/><span class="pack-copy"
+									><strong>{info.name}</strong><small>{info.description}</small><small class="equipment-timing"
+										>Use during {info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}.</small
+									></span
+								><i>{keep.includes(c.id) ? "✓" : "+"}</i></button
+							>{/each}
+					</div>
+					{#if !me.setupDone}
 						{#if SKILLS[me.skill].dice === 5}<label class="field"
 								>Choose the die to leave behind<select bind:value={drop}
 									>{#each me.dice as d}<option value={d.id}>Type {"ABC"[d.type]} · die {d.id.split("-")[1]}</option

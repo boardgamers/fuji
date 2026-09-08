@@ -20,6 +20,7 @@ function prepared(players = 3) {
 	let s = initGame(players, {}, "test-seed");
 	for (let i = 0; i < players; i++) {
 		const p = s.players[i]!;
+		if (p.setupDone) continue;
 		const keep = p.cards.slice(0, p.skill === "manager" ? 2 : 1).map((c) => c.id);
 		s = applyMove(s, { action: "setup", keep, drop: p.dice.at(-1)?.id }, i);
 	}
@@ -43,6 +44,27 @@ test("scenario 1 includes exactly 21 landscape locations and player-count villag
 	assert.equal(b.board.filter((c) => terrain(c.terrain).kind === "village").length, 6);
 	assert.equal(b.players[2]!.position, "1,2");
 	assert.equal(new Set(a.board.map((c) => c.terrain)).size, a.board.length);
+});
+test("preparation only waits for actual card or die choices", () => {
+	const s = initGame(4);
+	assert.deepEqual(
+		s.players.map((p) => p.setupDone),
+		[true, true, false, false]
+	);
+	assert.deepEqual(activePlayers(s), [2, 3]);
+	assert.equal(s.phase, "setup");
+	assert.equal(s.history.length, 0);
+	const scout = initGame(2, { skills: ["buddy", "scout"] });
+	assert.deepEqual(activePlayers(scout), [1]);
+});
+test("an expedition without preparation choices starts round one immediately", () => {
+	const s = initGame(2, {}, "automatic-preparation");
+	assert.equal(s.phase, "planning");
+	assert.equal(s.round, 1);
+	assert(s.players.every((p) => p.setupDone));
+	assert.deepEqual(activePlayers(s), [0, 1]);
+	assert.equal(s.history.length, 0);
+	assert.deepEqual(replay(s), s);
 });
 test("seeded setup, rolls and JSON round trips are deterministic", () => {
 	assert.deepEqual(prepared(), prepared());

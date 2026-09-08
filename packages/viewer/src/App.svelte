@@ -39,7 +39,6 @@
 	const seat = $derived(store.seat);
 	const me = $derived(seat === undefined ? undefined : s?.players[seat]);
 	let inspected = $state("");
-	let draft = $state<string[]>([]);
 	let dice = $state<string[]>([]);
 	let tilePicks = $state<string[]>([]);
 	let tool = $state<EquipmentId | null>(null);
@@ -59,7 +58,7 @@
 	const focusId = $derived(inspected || me?.path.at(-1) || s?.board.find((c) => c.terrain > 3)?.id || "");
 	const focus = $derived(s && focusId ? cell(s, focusId) : undefined);
 	const focusTerrain = $derived(focus ? terrain(focus.terrain) : undefined);
-	const currentRoute = $derived(draft.length ? draft : (me?.path ?? []));
+	const currentRoute = $derived(me?.path ?? []);
 	const destination = $derived(s && currentRoute.length ? terrain(cell(s, currentRoute.at(-1)!).terrain) : undefined);
 	const actionTool = $derived(tool === "knife" ? copied : tool);
 	const pendingMe = $derived(s?.pending && seat !== undefined && s.pending.players.includes(seat));
@@ -89,15 +88,18 @@
 		void revision;
 		void currentSeat;
 		dice = [];
-		draft = [];
 		tilePicks = [];
 		tool = null;
-		trace = false;
 		if (me) {
 			keep = me.cards.slice(0, SKILLS[me.skill].keep).map((c) => c.id);
 			drop = me.dice.at(-1)?.id ?? "";
 			target = seat ?? 0;
 		}
+	});
+	const traceContext = $derived(`${s?.phase}:${seat}`);
+	$effect(() => {
+		void traceContext;
+		trace = false;
 	});
 	function pickDie(id: string) {
 		dice = dice.includes(id) ? dice.filter((x) => x !== id) : [...dice, id];
@@ -111,20 +113,23 @@
 				: [...tilePicks, id].slice(actionTool === "rope" ? -1 : -2);
 			return;
 		}
-		if (s?.phase !== "planning" || !me || me.ready) return;
-		if (trace && draft.length) {
-			const last = draft.at(-1)!;
-			if (draft.includes(id)) {
-				draft = draft.slice(0, draft.indexOf(id) + 1);
+		if (s?.phase !== "planning" || !me || me.ready || store.waiting || s.pending) return;
+		let route = me.path;
+		if (trace) {
+			const last = route.at(-1)!;
+			if (route.includes(id)) {
+				route = route.slice(0, route.indexOf(id) + 1);
 			} else if (
 				walkable(cell(s, id)) &&
 				distance(cell(s, last), cell(s, id)) === 1 &&
-				draft.length < (hasSkill(me, "scout") ? 5 : 4)
+				route.length < (hasSkill(me, "scout") ? 5 : 4)
 			) {
-				draft = [...draft, id];
+				route = [...route, id];
 			}
-		} else if (reachable[id]) draft = reachable[id]!;
+		} else if (reachable[id]) route = reachable[id]!;
+		if (route.join(";") !== me.path.join(";")) store.dispatch({ action: "plan", path: route });
 	}
+
 	function mobileAction() {
 		if (!s || !me) return;
 		if (s.pending || me.pendingInjuries || s.phase === "setup") {
@@ -132,11 +137,7 @@
 			return;
 		}
 		if (s.phase === "planning") {
-			store.dispatch(
-				draft.length
-					? { action: "plan", path: draft }
-					: { action: me.ready ? "plan" : "ready", ...(me.ready ? { path: me.path } : {}) }
-			);
+			store.dispatch({ action: me.ready ? "plan" : "ready", ...(me.ready ? { path: me.path } : {}) });
 			return;
 		}
 		if (s.phase === "reroll") {
@@ -162,11 +163,9 @@
 				: s.phase === "setup"
 					? "Prepare expedition"
 					: s.phase === "planning"
-						? draft.length
-							? "Set route"
-							: me.ready
-								? "Change route"
-								: "Ready to travel"
+						? me.ready
+							? "Change route"
+							: "Ready to travel"
 						: s.phase === "reroll"
 							? "Dice actions"
 							: s.phase === "equipment"
@@ -555,11 +554,7 @@
 					{#if danger.includes(currentRoute.at(-1) ?? "")}<p class="warning">
 							This destination is threatened by the next eruption.
 						</p>{/if}
-					{#if draft.length}<button
-							class="primary"
-							disabled={store.waiting}
-							onclick={() => store.dispatch({ action: "plan", path: draft })}>Set this route <span>→</span></button
-						>{:else if !me.ready}<button
+					{#if !me.ready}<button
 							class="primary"
 							disabled={store.waiting}
 							onclick={() => store.dispatch({ action: "ready" })}>Ready to travel <span>→</span></button
@@ -569,9 +564,9 @@
 						>{/if}
 					<button
 						class="text-button trace-button"
+						disabled={me.ready || store.waiting}
 						onclick={() => {
 							trace = !trace;
-							if (trace) draft = [me.position];
 						}}>{trace ? "Stop tracing" : "Trace a specific path"}</button
 					>{#if trace}<p class="muted small">
 							Click adjacent locations to build your route. Click an earlier step to go back.

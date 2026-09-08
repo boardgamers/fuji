@@ -148,6 +148,7 @@ function phase(s: State, next: State["phase"]) {
 		}[next],
 		"phase"
 	);
+	if (next === "planning") s.log.at(-1)!.sound = "dice";
 	if (next === "movement") {
 		for (const p of s.players) diceEvent(s, `${p.name} revealed their dice`, p.dice);
 		if (s.ghost.length) diceEvent(s, "Neutral dice revealed", s.ghost);
@@ -184,6 +185,7 @@ function erupt(s: State) {
 	const next = threatened(s);
 	for (const c of s.board) if (next.includes(c.id)) c.lava = true;
 	event(s, `Lava consumed ${next.length} location${next.length === 1 ? "" : "s"}.`, "eruption");
+	s.log.at(-1)!.animation = { kind: "eruption", cells: next };
 	const victim = s.players.find((p) => cell(s, p.position).lava);
 	if (victim) end(s, "lost", `${victim.name} was caught by the lava.`);
 }
@@ -390,6 +392,7 @@ function useEquipment(s: State, seat: number, m: Move) {
 	if (!(info.phases as readonly number[]).includes(s.phase === "planning" ? 2 : 4))
 		throw Error("This equipment is not usable in this phase.");
 	const target = () => integer(m.target, 0, s.players.length - 1);
+	let setAside: Die[] | undefined;
 	switch (id) {
 		case "binoculars": {
 			const ids = strings(m.tiles, 2);
@@ -416,6 +419,8 @@ function useEquipment(s: State, seat: number, m: Move) {
 			const c = cell(s, ids[0]!);
 			if (!walkable(c) || terrain(c.terrain).kind !== "land" || distance(cell(s, p.position), c) !== 1)
 				throw Error("Choose an adjacent land location.");
+			event(s, `${p.name} moved to ${terrain(c.terrain).name} using Rope.`);
+			s.log.at(-1)!.animation = { kind: "move", seat, path: [p.position, c.id] };
 			p.position = c.id;
 			collect(s, p);
 			trigger(s, [c.id]);
@@ -453,7 +458,8 @@ function useEquipment(s: State, seat: number, m: Move) {
 			break;
 		}
 		case "machete":
-			for (const d of selectedDice(p, m.ids, 1, 2)) d.aside = true;
+			setAside = selectedDice(p, m.ids, 1, 2);
+			for (const d of setAside) d.aside = true;
 			break;
 		case "lighter": {
 			const donor = target();
@@ -480,6 +486,8 @@ function useEquipment(s: State, seat: number, m: Move) {
 	}
 	resetReady(s);
 	event(s, `${p.name} used ${equipment(card.id).name}${id !== card.id ? ` as ${info.name}` : ""}.`, "equipment");
+	if (id === "torch") s.log.at(-1)!.sound = "dice";
+	if (setAside) s.log.at(-1)!.setAside = structuredClone(setAside);
 }
 function execute(s: State, m: Move, seat: number) {
 	if (s.outcome) throw Error("The expedition has ended.");
@@ -506,6 +514,7 @@ function execute(s: State, m: Move, seat: number) {
 			}
 		} else throw Error("Resolve the equipment effect first.");
 		event(s, `${p.name} resolved an equipment effect.`, "equipment");
+		if (pending.kind === "reroll") s.log.at(-1)!.sound = "dice";
 		finishPending(s);
 		return;
 	}
@@ -550,7 +559,21 @@ function execute(s: State, m: Move, seat: number) {
 			if (s.phase !== "planning") event(s, `${p.name} is ready.`, "move", true);
 			if (s.players.every((p) => p.ready)) {
 				if (s.phase === "planning") {
-					for (const player of s.players) event(s, `${player.name} chose ${player.path.join(" → ")}.`);
+					for (const [seat, player] of s.players.entries()) {
+						event(
+							s,
+							`${player.name} chose ${terrain(cell(s, player.path.at(-1)!).terrain).name} · ${player.path.length - 1} steps · ${rerollAllowance(s, seat)} rerolls.`
+						);
+						s.log.at(-1)!.route = {
+							name: player.name,
+							character: player.character,
+							rerolls: rerollAllowance(s, seat),
+							cells: player.path.map((id) => {
+								const c = cell(s, id);
+								return { terrain: c.terrain, eruption: c.eruption, equipment: c.equipment };
+							}),
+						};
+					}
 					phase(s, "reroll");
 					s.players.forEach((p, i) => {
 						p.rerolls = rerollAllowance(s, i);
@@ -565,6 +588,7 @@ function execute(s: State, m: Move, seat: number) {
 			roll(s, dice);
 			p.rerolls--;
 			event(s, `${p.name} rerolled.`);
+			s.log.at(-1)!.sound = "dice";
 			break;
 		}
 		case "finishRerolls": {
@@ -578,9 +602,11 @@ function execute(s: State, m: Move, seat: number) {
 		case "buddy": {
 			if (s.phase !== "reroll" || p.ready || !hasSkill(p, "buddy") || p.buddyUsed)
 				throw Error("This skill is unavailable.");
-			selectedDice(p, m.ids, 1, 1)[0]!.aside = true;
+			const die = selectedDice(p, m.ids, 1, 1)[0]!;
+			die.aside = true;
 			p.buddyUsed = true;
 			event(s, `${p.name} set a die aside.`);
+			s.log.at(-1)!.setAside = [structuredClone(die)];
 			break;
 		}
 		case "give": {
@@ -694,6 +720,7 @@ function execute(s: State, m: Move, seat: number) {
 					`${p.name} reached ${terrain(cell(s, dest).terrain).name} (${result.own} vs ${Math.max(...result.peers.map((x) => x.total))}).`
 				);
 				s.log.at(-1)!.journey = journey;
+				if (journey.moved) s.log.at(-1)!.animation = { kind: "move", seat, path: [...route] };
 				win(s);
 				if (s.outcome) break;
 				collect(s, p);
@@ -934,7 +961,10 @@ export function applyMove(data: State, input: unknown, seat: number): State {
 	advanceForcedActions(s);
 	s.revision++;
 	const live =
-		data.phase === "planning" && s.phase === "planning" && (move.action === "plan" || move.action === "ready");
+		data.phase === "planning" &&
+		s.phase === "planning" &&
+		s.round === data.round &&
+		(move.action === "plan" || move.action === "ready");
 	if (live) {
 		s.liveUpdate = true;
 		s.planningSnapshot = {

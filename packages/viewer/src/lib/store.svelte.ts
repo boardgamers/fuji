@@ -1,6 +1,53 @@
+import { SoundDesign, type SoundCue } from "./sound";
 import type { View, Move } from "fuji-engine";
 export class Store {
 	state: View | null = $state(null);
+	private audio = new SoundDesign();
+	sound = $state(true);
+	setSound(enabled: boolean) {
+		this.sound = enabled;
+		this.audio.setEnabled(enabled);
+	}
+	testSound(cue: SoundCue) {
+		void this.audio.preview(cue);
+	}
+	destroy() {
+		this.dispose();
+		this.audio.destroy();
+	}
+	scene: View | null = $state(null);
+	journal: View["log"] = $state([]);
+	animating = $state(false);
+	private received: View | null = null;
+	private receivedSeat: number | undefined;
+	private frames: { scene: View; duration: number; cue?: SoundCue }[] = [];
+	private animationTimer: ReturnType<typeof setTimeout> | undefined;
+	private playFrame() {
+		const frame = this.frames.shift();
+		if (!frame) {
+			this.scene = this.state;
+			this.journal = this.state?.log ?? [];
+			this.animating = false;
+			this.waiting = false;
+			return;
+		}
+		this.animating = true;
+		this.waiting = true;
+		this.scene = frame.scene;
+		this.journal = frame.scene.log;
+		if (frame.cue) this.audio.play(frame.cue);
+		this.animationTimer = setTimeout(() => this.playFrame(), frame.duration);
+	}
+	dispose() {
+		clearTimeout(this.animationTimer);
+		this.audio.stop();
+		this.frames = [];
+		this.animating = false;
+	}
+	skipPresentation() {
+		this.dispose();
+		this.playFrame();
+	}
 	seat: number | undefined = $state(undefined);
 	error = $state("");
 	waiting = $state(false);
@@ -18,6 +65,7 @@ export class Store {
 	restart: (players: number, seed: string, difficulty: number) => void = () => {};
 	teammateStep: () => void = () => {};
 	dispatch(move: Move) {
+		if (this.animating) return;
 		this.error = "";
 		this.waiting = true;
 		try {
@@ -28,7 +76,53 @@ export class Store {
 		}
 	}
 	receive(s: View) {
+		const previous = this.received;
+		const reset =
+			!previous ||
+			this.receivedSeat !== this.seat ||
+			s.revision < previous.revision ||
+			s.log.length < previous.log.length ||
+			document.hidden;
+		this.received = s;
+		this.receivedSeat = this.seat;
 		this.state = s;
-		this.waiting = false;
+		if (reset) {
+			this.dispose();
+			this.scene = s;
+			this.journal = s.log;
+			this.waiting = false;
+			return;
+		}
+		if (s.revision === previous.revision) {
+			if (!this.animating) {
+				this.scene = s;
+				this.journal = s.log;
+				this.waiting = false;
+			}
+			return;
+		}
+		const scene = structuredClone(previous);
+		const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+		for (const event of s.log.slice(previous.log.length)) {
+			scene.log.push(event);
+			const action = event.animation;
+			const cue = event.sound ?? (event.type === "equipment" ? "gear" : undefined);
+			if (action?.kind === "move") {
+				for (const position of reducedMotion ? action.path.slice(-1) : action.path.slice(1)) {
+					scene.players[action.seat]!.position = position;
+					this.frames.push({ scene: structuredClone(scene), duration: 700, cue: "step" });
+				}
+			} else if (action?.kind === "eruption" && action.cells.length) {
+				for (const cell of scene.board) if (action.cells.includes(cell.id)) cell.lava = true;
+				this.frames.push({ scene: structuredClone(scene), duration: 1100, cue: "lava" });
+			} else if (!event.detail && (event.type !== "phase" || cue)) {
+				this.frames.push({
+					scene: structuredClone(scene),
+					duration: cue === "dice" ? 1500 : 1100,
+					cue,
+				});
+			}
+		}
+		if (!this.animating) this.playFrame();
 	}
 }

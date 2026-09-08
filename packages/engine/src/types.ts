@@ -44,6 +44,15 @@ export interface Cell {
 	eruption: number;
 }
 export interface Event {
+	setAside?: Die[];
+	sound?: "dice";
+	route?: {
+		name: string;
+		character: number;
+		rerolls: number;
+		cells: { terrain: number; eruption: number; equipment: boolean }[];
+	};
+	animation?: { kind: "move"; seat: number; path: string[] } | { kind: "eruption"; cells: string[] };
 	detail?: boolean;
 	transfer?: { id: EquipmentId; from: string; to: string };
 	journey?: {

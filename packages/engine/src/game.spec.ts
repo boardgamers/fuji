@@ -770,3 +770,94 @@ test("compact journey snapshots distinguish planned stays, failed comparisons an
 		);
 	}
 });
+
+test("AI rerolls weak matching dice but keeps strong matches without consulting hidden rolls", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = withPhase("reroll");
+	const p = s.players[1]!;
+	cell(s, p.path.at(-1)!).terrain = 4;
+	p.rerolls = 1;
+	p.dice.forEach((d) => (d.face = 1));
+	const weak = p.dice.find((d) => d.type === 1)!;
+	const strong = p.dice.find((d) => d.id !== weak.id)!;
+	strong.face = 6;
+	const choice = chooseMove(stripSecret(s, 1), 1);
+	assert.equal(choice.action, "reroll");
+	assert((choice.ids as string[]).includes(weak.id));
+	assert(!(choice.ids as string[]).includes(strong.id));
+	s.players[0]!.dice.forEach((d) => (d.face = 6));
+	assert.deepEqual(chooseMove(stripSecret(s, 1), 1), choice);
+	p.rerolls = 0;
+	assert.equal(chooseMove(stripSecret(s, 1), 1).action, "finishRerolls");
+});
+
+test("AI weighs reroll opportunities before committing to a weak three-step route", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = withPhase("planning");
+	s.players.forEach((p) => {
+		p.position = "0,0";
+		p.path = ["0,0"];
+		p.dice.forEach((d) => (d.face = 1));
+	});
+	s.board = [0, 1, 2, 3, 4].map((x) => ({
+		id: `${x},0`,
+		x,
+		y: 0,
+		terrain: x === 4 ? 30 : 4,
+		lava: false,
+		equipment: false,
+		eruption: 0,
+	}));
+	const choice = chooseMove(stripSecret(s, 1), 1);
+	const path = choice.action === "plan" ? (choice.path as string[]) : s.players[1]!.path;
+	assert(path.length < 4);
+	assert(rerollAllowance(s, 1, path) > 0);
+	s.players[0]!.dice.forEach((d) => (d.face = 6));
+	assert.deepEqual(chooseMove(stripSecret(s, 1), 1), choice);
+});
+
+test("confirmed route journal preserves terrain, pickups and untriggered eruptions", () => {
+	let s = withPhase("planning");
+	s.players[1]!.position = "0,3";
+	s.players[1]!.path = ["0,3"];
+	s.players[2]!.position = "1,2";
+	s.players[2]!.path = ["1,2"];
+	s.players[0]!.path = ["0,3", "1,3"];
+	cell(s, "1,3").eruption = 1;
+	cell(s, "1,3").equipment = true;
+	s.players[0]!.ready = true;
+	s.players[1]!.ready = true;
+	const expectedRerolls = rerollAllowance(s, 0);
+	s = applyMove(s, { action: "ready" }, 2);
+	const route = s.log.find((e) => e.route?.name === s.players[0]!.name)!.route!;
+	assert.equal(route.rerolls, expectedRerolls);
+	assert.deepEqual(route.cells.at(-1), { terrain: cell(s, "1,3").terrain, eruption: 1, equipment: true });
+	cell(s, "1,3").eruption = 0;
+	cell(s, "1,3").equipment = false;
+	assert.equal(route.cells.at(-1)!.eruption, 1);
+	assert.equal(route.cells.at(-1)!.equipment, true);
+});
+
+test("set-aside journal snapshots reveal only the chosen dice", () => {
+	for (const kind of ["buddy", "machete", "knife"] as const) {
+		let s = withPhase(kind === "buddy" ? "reroll" : "equipment");
+		const ids = s.players[0]!.dice.slice(0, kind === "buddy" ? 1 : 2).map((d) => d.id);
+		if (kind === "buddy") s = applyMove(s, { action: "buddy", ids }, 0);
+		else {
+			if (kind === "knife") s.players[1]!.cards = [{ id: "machete", used: 0, availableRound: 0 }];
+			s = equip(s, 0, kind, { ids, ...(kind === "knife" ? { copy: "machete" } : {}) });
+		}
+		const revealed = s.log.find((e) => e.setAside)!.setAside!;
+		assert.deepEqual(
+			revealed.map((d) => d.id),
+			ids
+		);
+		assert(revealed.every((d) => d.face > 0 && d.aside));
+		const frozen = structuredClone(revealed);
+		s.players[0]!.dice[0]!.face = 1;
+		assert.deepEqual(revealed, frozen);
+		const publicView = stripSecret(s, 1);
+		assert.deepEqual(publicView.log.find((e) => e.setAside)!.setAside, frozen);
+		assert(publicView.players[0]!.dice.filter((d) => !d.aside).every((d) => d.face === 0));
+	}
+});

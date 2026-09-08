@@ -27,6 +27,7 @@
 	import { art } from "./lib/assets";
 	import Landscape from "./lib/Landscape.svelte";
 	import Die from "./lib/Die.svelte";
+	import EquipmentIcon from "./lib/EquipmentIcon.svelte";
 	import JournalEntry from "./lib/JournalEntry.svelte";
 	import PhaseIcon from "./lib/PhaseIcon.svelte";
 	import RequirementDisplay from "./lib/RequirementDisplay.svelte";
@@ -56,7 +57,7 @@
 	let help = $state(false);
 	let journal = $state(true);
 	const journalEntries = $derived(
-		s?.log
+		store.journal
 			.filter((entry) => !entry.detail)
 			.slice()
 			.reverse() ?? []
@@ -81,7 +82,18 @@
 	const focusTerrain = $derived(focus ? terrain(focus.terrain) : undefined);
 	const currentRoute = $derived(me?.path ?? []);
 	const destination = $derived(s && currentRoute.length ? terrain(cell(s, currentRoute.at(-1)!).terrain) : undefined);
-	const actionTool = $derived(tool === "knife" ? copied : tool);
+	const copyOptions = $derived(
+		EQUIPMENT.filter(
+			(info) =>
+				info.id !== "knife" &&
+				(info.phases as readonly number[]).includes(s?.phase === "planning" ? 2 : 4) &&
+				s?.players.some((p, i) => i !== seat && p.cards.some((c) => c.id === info.id && c.availableRound <= s.round))
+		)
+	);
+	$effect(() => {
+		if (tool === "knife" && !copyOptions.some((c) => c.id === copied) && copyOptions[0]) copied = copyOptions[0].id;
+	});
+	const actionTool = $derived(tool === "knife" ? (copyOptions.some((c) => c.id === copied) ? copied : null) : tool);
 	const pendingMe = $derived(s?.pending && seat !== undefined && s.pending.players.includes(seat));
 	const revealed = $derived(s?.phase === "movement" || s?.phase === "eruption" || s?.phase === "ended");
 	const resolvingSeat = $derived(s?.activeResolution ?? seat);
@@ -271,8 +283,35 @@
 								onchange={(e) => store.setAutoTeammates(e.currentTarget.checked)}
 							/>Automatically play teammates</label
 						>
-						<button onclick={() => store.teammateStep()} disabled={!!s.outcome}>Play next teammate action</button>
+						<button onclick={() => store.teammateStep()} disabled={!!s.outcome || store.animating}
+							>Play next teammate action</button
+						>
+						<label class="auto-teammates"
+							><input
+								type="checkbox"
+								checked={store.sound}
+								onchange={(e) => {
+									store.setSound(e.currentTarget.checked);
+									localStorage.setItem("fuji-sound", String(e.currentTarget.checked));
+								}}
+							/>Sound effects</label
+						>
+						<fieldset class="visible-choices sound-tests">
+							<legend>Test sounds</legend>
+							<div class="choice-row">
+								<button disabled={!store.sound} onclick={() => store.testSound("step")}>Footstep</button>
+								<button disabled={!store.sound} onclick={() => store.testSound("dice")}>Dice</button>
+								<button disabled={!store.sound} onclick={() => store.testSound("lava")}>Lava</button>
+								<button disabled={!store.sound} onclick={() => store.testSound("gear")}>Equipment</button>
+							</div>
+						</fieldset>
 						<button onclick={() => (newGame = true)}>New game</button>
+						<button
+							onclick={() => {
+								newSeed = crypto.randomUUID().slice(0, 8);
+								store.restart(s.players.length, newSeed, s.difficulty);
+							}}>New random game</button
+						>
 					</div>
 				</details>{/if}
 		</div>
@@ -326,6 +365,30 @@
 													: ""}</span
 						>
 					</div>
+					{#if p.cards.length}<span class="teammate-equipment" aria-label="Equipment">
+							{#each p.cards as c}{@const info = EQUIPMENT.find((e) => e.id === c.id)!}
+								<span
+									class="equipment-chip"
+									class:packed={c.availableRound > s.round}
+									title={`${info.name}: ${info.description}`}
+								>
+									<EquipmentIcon id={c.id} />
+									<span class="equipment-preview">
+										<img src={art("equipment", EQUIPMENT.indexOf(info) + 1)} alt={info.name} />
+										<span
+											><strong>{info.name}</strong><span>{info.description}</span>
+											<span class="equipment-phases"
+												>{#each info.phases as phase}<span
+														title={phase === 2 ? "Use during planning" : "Use during equipment"}
+														><PhaseIcon phase={phase === 2 ? 0 : 2} />{phase === 2 ? "Plan" : "Equip"}</span
+													>{/each}</span
+											>
+											{#if c.availableRound > s.round}<em>Available from round {c.availableRound}</em>{/if}
+										</span>
+									</span>
+								</span>
+							{/each}
+						</span>{/if}
 					<span class="stamina-track" title="Injuries at 20, 15, 10 and 5 stamina remaining." aria-hidden="true">
 						<i style:width={`${(1 - p.stamina / EXHAUSTION) * 100}%`}></i>
 						{#each INJURY_AT as threshold}<span
@@ -340,9 +403,14 @@
 		</section>
 		<div class="game-layout">
 			<div class="world-column">
+				{#if store.animating}<div class="presentation-status" role="status">
+						<span>Playing expedition events…</span><button class="text-button" onclick={() => store.skipPresentation()}
+							>Skip to latest</button
+						>
+					</div>{/if}
 				<Landscape
 					colorblind={store.colorblind}
-					state={s}
+					state={store.scene ?? s}
 					{seat}
 					{reserved}
 					selected={s.phase === "setup" ? "" : tool ? (tilePicks.at(-1) ?? "") : (currentRoute.at(-1) ?? "")}
@@ -539,12 +607,14 @@
 							>{/each}
 					</div>
 					{#if !me.setupDone}
-						{#if SKILLS[me.skill].dice === 5}<label class="field"
-								>Choose the die to leave behind<select bind:value={drop}
-									>{#each me.dice as d}<option value={d.id}>Type {"ABC"[d.type]} · die {d.id.split("-")[1]}</option
-										>{/each}</select
-								></label
-							>{/if}
+						{#if SKILLS[me.skill].dice === 5}<fieldset class="visible-choices">
+								<legend>Choose the die to leave behind</legend>
+								<div class="choice-row">
+									{#each me.dice as d}<button aria-pressed={drop === d.id} onclick={() => (drop = d.id)}
+											>⚄ {"ABC"[d.type]} · {Number(d.id.split("-")[1]) + 1}</button
+										>{/each}
+								</div>
+							</fieldset>{/if}
 						<p class="packing-count">{keep.length} / {SKILLS[me.skill].keep} cards selected</p>
 						<button
 							class="primary"
@@ -731,7 +801,8 @@
 									(info.phases as readonly number[]).includes(
 										s.phase === "planning" ? 2 : s.phase === "equipment" ? 4 : -1
 									) &&
-									!s.pending}
+									!s.pending &&
+									(c.id !== "knife" || copyOptions.length > 0)}
 								<button
 									class:usable={available}
 									class:open={tool === c.id}
@@ -741,11 +812,13 @@
 										><strong>{info.name}</strong><span class="equipment-description">{info.description}</span><small
 											>{c.availableRound > s.round
 												? "Available next round"
-												: c.used
-													? "One use left"
-													: available
-														? "Available now"
-														: `Use during ${info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}`}</small
+												: c.id === "knife" && !copyOptions.length
+													? "No equipment to copy this phase"
+													: c.used
+														? "One use left"
+														: available
+															? "Available now"
+															: `Use during ${info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}`}</small
 										></span
 									><span class="equipment-plus">{tool === c.id ? "−" : "+"}</span></button
 								>
@@ -755,14 +828,33 @@
 								(c) => c.id === tool
 							)!}{@const info = EQUIPMENT.find((e) => e.id === tool)!}
 							<div class="tool-form">
-								<p>{info.description}</p>
-								{#if tool === "knife"}<label class="field"
-										>Copy equipment<select bind:value={copied}
-											>{#each s.players.flatMap( (p, i) => (i === seat ? [] : p.cards.filter((c) => c.id !== "knife" && c.availableRound <= s.round)) ) as c}<option
-													value={c.id}>{EQUIPMENT.find((e) => e.id === c.id)?.name}</option
-												>{/each}</select
-										></label
-									>{/if}
+								{#if tool !== "knife"}<p>{info.description}</p>{/if}
+								{#if tool === "knife"}<fieldset class="visible-choices equipment-copy">
+										<legend>Copy equipment</legend>
+										{#each copyOptions as option}<button
+												class="copy-option"
+												aria-pressed={copied === option.id}
+												onclick={() => {
+													copied = option.id;
+													dice = [];
+													tilePicks = [];
+												}}
+											>
+												<EquipmentIcon id={option.id} /><span
+													><strong>{option.name}</strong>
+													<small
+														>{s.players
+															.filter(
+																(p, i) =>
+																	i !== seat && p.cards.some((c) => c.id === option.id && c.availableRound <= s.round)
+															)
+															.map((p) => p.name)
+															.join(", ")}</small
+													>
+													<span>{option.description}</span></span
+												>
+											</button>{:else}<p>No equipment can be copied in this phase.</p>{/each}
+									</fieldset>{/if}
 								{#if ["water", "lighter", "map"].includes(actionTool ?? "")}
 									<PlayerChoices
 										players={s.players}
@@ -787,11 +879,17 @@
 												? "one or more dice to reroll"
 												: "the dice"} below the map. {dice.length} selected.
 									</p>{/if}
-								{#if actionTool === "shovel"}<label class="field"
-										>New value<select bind:value={turnFace}
-											>{#each [1, 2, 3, 4, 5, 6] as n}<option value={n}>{n}</option>{/each}</select
-										></label
-									>{/if}
+								{#if actionTool === "shovel"}<fieldset class="visible-choices">
+										<legend>New value</legend>
+										<div class="choice-row">
+											{#each [1, 2, 3, 4, 5, 6] as n}<Die
+													die={{ ...(me.dice.find((d) => dice.includes(d.id)) ?? me.dice[0]!), face: n }}
+													selected={turnFace === n}
+													colorblind={store.colorblind}
+													onclick={() => (turnFace = n)}
+												/>{/each}
+										</div>
+									</fieldset>{/if}
 								{#if ["binoculars", "rope"].includes(actionTool ?? "")}<p class="muted small">
 										Choose {actionTool === "rope" ? "one adjacent location" : "two empty land locations"} on the map. {tilePicks.length}
 										selected.
@@ -800,6 +898,7 @@
 									class="secondary"
 									disabled={store.waiting ||
 										c.availableRound > s.round ||
+										(tool === "knife" && !copyOptions.some((option) => option.id === copied)) ||
 										me.injuries.includes("arm") ||
 										!(info.phases as readonly number[]).includes(
 											s.phase === "planning" ? 2 : s.phase === "equipment" ? 4 : -1
@@ -807,6 +906,7 @@
 										!!s.pending ||
 										(actionTool === "machete" && (dice.length < 1 || dice.length > 2)) ||
 										(actionTool === "torch" && dice.length === 0) ||
+										(actionTool === "shovel" && dice.length !== 1) ||
 										(actionTool === "map" && (dice.length !== 1 || target === seat))}
 									onclick={confirmTool}>Use {info.name}</button
 								>
@@ -964,17 +1064,27 @@
 			>
 			<h2 id="new-title">Gather your expedition.</h2>
 			<p>This replaces the current local playtest.</p>
-			<label class="field"
-				>Adventurers<select bind:value={newPlayers}
-					><option value={2}>2 players · neutral dice variant</option><option value={3}>3 players</option><option
-						value={4}>4 players</option
-					></select
-				></label
-			><label class="field"
-				>Difficulty<select bind:value={newDifficulty}
-					>{#each [1, 2, 3, 4] as n}<option value={n}>Level {n}</option>{/each}</select
-				></label
-			><label class="field">Expedition seed<input bind:value={newSeed} /></label><button
+			<fieldset class="visible-choices">
+				<legend>Adventurers</legend>
+				<div class="choice-row">
+					{#each [2, 3, 4] as n}<button aria-pressed={newPlayers === n} onclick={() => (newPlayers = n)}
+							>{n} players</button
+						>{/each}
+				</div>
+				{#if newPlayers === 2}<p class="muted small">Includes neutral dice.</p>{/if}
+			</fieldset>
+			<fieldset class="visible-choices">
+				<legend>Difficulty</legend>
+				<div class="choice-row">
+					{#each [1, 2, 3, 4] as n}<button aria-pressed={newDifficulty === n} onclick={() => (newDifficulty = n)}
+							>Level {n}</button
+						>{/each}
+				</div>
+			</fieldset>
+			<label class="field">Expedition seed<input bind:value={newSeed} /></label><button
+				class="text-button"
+				onclick={() => (newSeed = crypto.randomUUID().slice(0, 8))}>Randomize seed ↻</button
+			><button
 				class="primary"
 				onclick={() => {
 					store.restart(newPlayers, newSeed, newDifficulty);

@@ -28,6 +28,7 @@ fs.mkdirSync("work/browser", { recursive: true });
 	await page.getByText("Playtest tools", { exact: true }).click();
 	const step = page.getByRole("button", { name: "Play next teammate action" });
 	await step.click();
+	await page.getByRole("button", { name: "Skip to latest", exact: true }).waitFor({ state: "hidden", timeout: 60000 });
 	const state = () => page.evaluate(() => JSON.parse(localStorage.getItem("fuji-dev-v1")));
 	let s = await state();
 	if (s.phase !== "planning") throw Error("Setup did not finish");
@@ -65,6 +66,8 @@ fs.mkdirSync("work/browser", { recursive: true });
 		if (await page.getByRole("button", { name: "Resolve my journey" }).count())
 			throw Error("New expeditions must not ask players to choose movement order");
 		await step.click();
+		if (await page.getByRole("button", { name: "Skip to latest", exact: true }).count())
+			await page.getByRole("button", { name: "Skip to latest", exact: true }).click();
 		count++;
 		if (await page.locator(".error").count()) throw Error(await page.locator(".error").innerText());
 	}

@@ -382,12 +382,24 @@
 	.lava .tile-art {
 		opacity: 0.65;
 	}
+	@keyframes lava-arrive {
+		from {
+			stroke-width: 10;
+			opacity: 0;
+		}
+		to {
+			stroke-width: 2;
+			opacity: 1;
+		}
+	}
 	.lava-crack {
 		fill: none;
 		stroke: #f5ae4a;
 		stroke-width: 2;
 		stroke-linecap: round;
-		animation: pulse 4s ease-in-out infinite;
+		animation:
+			lava-arrive 0.8s ease-out,
+			pulse 4s ease-in-out infinite;
 	}
 	.route-shadow {
 		fill: none;

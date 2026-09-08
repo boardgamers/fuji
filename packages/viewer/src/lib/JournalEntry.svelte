@@ -1,17 +1,45 @@
 <script lang="ts">
 	import { EQUIPMENT, terrain, type Event } from "fuji-engine";
 	import { art } from "./assets";
+	import PhaseIcon from "./PhaseIcon.svelte";
+	import RequirementDisplay from "./RequirementDisplay.svelte";
 	import Die from "./Die.svelte";
 	let { entry, colorblind }: { entry: Event; colorblind: boolean } = $props();
 </script>
 
-{#if entry.journey}{@const j = entry.journey}
+{#if entry.route}{@const r = entry.route}
+	<div class="route-log">
+		<img class="log-portrait" src={art("character", r.character + 1)} alt="" />
+		<strong>{r.name}</strong><span>planned</span>
+		<span class="route-locations">
+			{#each r.cells as c, i}
+				{#if i > 0}<span aria-hidden="true">→</span>{/if}
+				<span class="route-location" title={terrain(c.terrain).name}>
+					<img class="log-location" src={art("land", c.terrain)} alt={terrain(c.terrain).name} />
+					{#if i > 0 && c.eruption}<span class="route-hazard" title={`Triggers ${c.eruption} extra eruption(s)`}
+							><PhaseIcon phase={4} />{#if c.eruption > 1}{c.eruption}{/if}</span
+						>{/if}
+					{#if i === r.cells.length - 1 && c.equipment}<span title="Equipment at destination"
+							><PhaseIcon phase={2} /></span
+						>{/if}
+				</span>
+			{/each}
+		</span>
+		<span class="route-requirement"
+			><RequirementDisplay requirement={terrain(r.cells.at(-1)!.terrain).requirement} {colorblind} /></span
+		>
+		<span title="Movement distance">{r.cells.length - 1} step{r.cells.length === 2 ? "" : "s"}</span>
+		<span class="route-rerolls" title={`${r.rerolls} rerolls available on this route`}
+			><PhaseIcon phase={1} />{r.rerolls}</span
+		>
+	</div>
+{:else if entry.journey}{@const j = entry.journey}
 	<details class="journey-log">
 		<summary>
 			<img class="log-portrait" src={art("character", j.character + 1)} alt="" />
 			<strong>{j.name}</strong>
 			<span class:failed={j.reason === "comparison" || j.reason === "blocked"}>
-				{j.moved ? "→ Moved" : "• Stayed"}
+				{j.moved ? "→ Moved" : j.reason === "planned-stay" ? "• Stayed" : "× Could not move"}
 			</span>
 			<img class="log-location" src={art("land", j.terrain)} alt="" />
 			<span>{terrain(j.terrain).name}</span>
@@ -37,6 +65,11 @@
 		<img class="log-card" src={art("equipment", EQUIPMENT.findIndex((c) => c.id === t.id) + 1)} alt="" />
 		<span>{EQUIPMENT.find((c) => c.id === t.id)!.name}</span><span>→</span><strong>{t.to}</strong>
 	</div>
+{:else if entry.setAside}
+	<div class="journal-dice aside-log">
+		<span>{entry.text}</span>
+		{#each entry.setAside as d}<Die die={{ ...d, aside: false }} {colorblind} disabled />{/each}
+	</div>
 {:else if entry.dice}
 	<details class="revealed-log">
 		<summary>⚄ {entry.diceLabel ?? entry.text}</summary>
@@ -57,6 +90,39 @@
 {/if}
 
 <style>
+	.route-log,
+	.route-locations,
+	.route-location,
+	.route-rerolls {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.route-log {
+		flex-wrap: wrap;
+		gap: 6px 9px;
+	}
+	.route-locations {
+		flex-wrap: wrap;
+	}
+	.route-requirement {
+		width: 84px;
+	}
+	.route-requirement :global(svg) {
+		height: 24px;
+	}
+	.route-location :global(svg),
+	.route-rerolls :global(svg) {
+		width: 16px;
+		height: 16px;
+	}
+	.route-hazard {
+		display: inline-flex;
+		color: #e79b65;
+	}
+	.aside-log {
+		align-items: center;
+	}
 	.event-icon {
 		margin-right: 6px;
 	}

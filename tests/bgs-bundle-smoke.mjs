@@ -176,6 +176,32 @@ import path from "node:path";
 	const given = applyMove(managerState, giveMove, 0);
 	if (!given.players[2].cards.some((c) => c.id === "map")) throw Error("Map card was not transferred");
 
+	const knifeState = structuredClone(s);
+	knifeState.players[0].cards = [{ id: "knife", used: 0, availableRound: 0 }];
+	knifeState.players[1].cards = [
+		{ id: "map", used: 0, availableRound: 0 },
+		{ id: "shovel", used: 0, availableRound: 0 },
+	];
+	knifeState.players[2].cards = [{ id: "torch", used: 0, availableRound: 0 }];
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(knifeState, 0));
+	await page.locator(".equipment-list button").filter({ hasText: "Pocketknife" }).click();
+	const copies = page.getByRole("group", { name: "Copy equipment" });
+	if ((await copies.getByRole("button").count()) !== 2)
+		throw Error("Copy options must only show equipment usable in this phase");
+	await copies.getByRole("button", { name: /Shovel/ }).click();
+	await page.getByRole("group", { name: "New value" }).getByRole("button").nth(5).click();
+	if (await page.locator("select").count()) throw Error("Gameplay should expose choices without dropdowns");
+	await page.screenshot({ path: "work/browser/fuji-copy-equipment.png", fullPage: true });
+	knifeState.players[1].cards = [];
+	knifeState.revision++;
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(knifeState, 0));
+	const unavailableKnife = page.locator(".equipment-list button").filter({ hasText: "Pocketknife" });
+	if ((await unavailableKnife.getAttribute("class")).includes("usable"))
+		throw Error("Pocketknife advertised with no eligible copy target");
+	await unavailableKnife.click();
+	if (!(await page.getByRole("button", { name: "Use Pocketknife", exact: true }).isDisabled()))
+		throw Error("Empty copy action must be disabled");
+
 	s.phase = "movement";
 	s.activeResolution = null;
 	s.players[1].powerBars = 2;

@@ -7,13 +7,28 @@ import {
 	neighbors,
 	paths,
 	cell,
-	total,
+	rerollAllowance,
 	activeDice,
 	face,
 	threatened,
 } from "./game.js";
-import { terrain, SKILLS, matches } from "./data.js";
+import { terrain, SKILLS, matches, DICE, type Requirement } from "./data.js";
 import type { State, View, Move } from "./types.js";
+
+// Expected contribution after rolling, with the option to keep a result or
+// try again. This uses the published die faces, never a teammate's hidden roll.
+function rerollValue(type: number, requirement: Requirement, attempts: number): number {
+	let value = 0;
+	for (let i = 0; i < attempts; i++) {
+		const continuation = value;
+		value =
+			DICE[type]!.reduce((sum, color, index) => {
+				const contribution = matches({ color, value: index + 1 }, requirement) ? index + 1 : 0;
+				return sum + Math.max(contribution, continuation);
+			}, 0) / 6;
+	}
+	return value;
+}
 
 // Conservative playtest policy: spend the minimum that changes a failed
 // comparison into a success, rather than saving every bar indefinitely.
@@ -53,10 +68,33 @@ export function chooseMove(game: View, seat: number): Move {
 			const lavaDistance = Math.min(
 				...game.board.filter((tile) => tile.lava).map((tile) => Math.abs(c.x - tile.x) + Math.abs(c.y - tile.y))
 			);
+			const requirement = terrain(c.terrain).requirement;
+			const attempts = rerollAllowance(game, seat, path);
+			const expected = activeDice(p).reduce(
+				(sum, d) =>
+					sum + Math.max(matches(face(d), requirement) ? d.face : 0, rerollValue(d.type, requirement, attempts)),
+				p.bonus
+			);
+			const opposition = neighbors(game, seat).map((i) =>
+				activeDice(game.players[i]!).reduce(
+					(sum, d) =>
+						sum + (d.face ? (matches(face(d), requirement) ? d.face : 0) : rerollValue(d.type, requirement, 1)),
+					0
+				)
+			);
+			if (game.players.length === 2)
+				opposition.push(
+					game.ghost.reduce(
+						(sum, d) =>
+							sum + (d.face ? (matches(face(d), requirement) ? d.face : 0) : rerollValue(d.type, requirement, 1)),
+						0
+					)
+				);
+			const expectedLead = expected - Math.max(...opposition);
 			return (
 				(danger.has(c.id) ? -1000 : 0) -
 				12 / Math.max(1, lavaDistance) +
-				total(p, c.terrain) * 0.65 -
+				expectedLead * 1 -
 				closestVillage * 4 +
 				(terrain(c.terrain).kind === "village" ? 8 : 0) +
 				(c.equipment ? 1 : 0) -
@@ -72,7 +110,7 @@ export function chooseMove(game: View, seat: number): Move {
 	if (game.phase === "reroll") {
 		const r = terrain(cell(game, p.path.at(-1)!).terrain).requirement;
 		const ids = activeDice(p)
-			.filter((d) => !matches(face(d), r))
+			.filter((d) => (matches(face(d), r) ? d.face : 0) < rerollValue(d.type, r, p.rerolls))
 			.map((d) => d.id);
 		return p.rerolls && ids.length ? { action: "reroll", ids } : { action: "finishRerolls" };
 	}

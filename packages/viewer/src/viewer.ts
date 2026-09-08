@@ -13,6 +13,7 @@ export function launch(selector: string) {
 	store.savePreference = (name, value) => events.emit("update:preference", { name, value });
 	events.on<Record<string, unknown>>("preferences", (preferences) => {
 		store.colorblind = preferences?.colorblind === true;
+		store.setSound(preferences?.sound !== false);
 	});
 	store.send = (move) => events.emit("move", move);
 	events.on<View>("state", async (state) => {

@@ -1,0 +1,383 @@
+{
+	"training": [
+		{
+			"name": "baseline",
+			"policy": {
+				"equipment": false,
+				"lead": 1,
+				"progress": 4,
+				"success": 12,
+				"stamina": 2,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"family": "training",
+			"games": 180,
+			"wins": 51,
+			"moves": 8409,
+			"stalled": [],
+			"byPlayers": {
+				"2": {
+					"games": 60,
+					"wins": 26
+				},
+				"3": {
+					"games": 60,
+					"wins": 9
+				},
+				"4": {
+					"games": 60,
+					"wins": 16
+				}
+			},
+			"equipment": {},
+			"abilities": {
+				"help": 3
+			}
+		},
+		{
+			"name": "balanced",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 12,
+				"stamina": 2,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"family": "training",
+			"games": 180,
+			"wins": 70,
+			"moves": 8729,
+			"stalled": [],
+			"byPlayers": {
+				"2": {
+					"games": 60,
+					"wins": 31
+				},
+				"3": {
+					"games": 60,
+					"wins": 12
+				},
+				"4": {
+					"games": 60,
+					"wins": 27
+				}
+			},
+			"equipment": {
+				"shovel": 66,
+				"water": 51,
+				"machete": 32,
+				"rope": 41,
+				"radio": 40,
+				"binoculars": 65,
+				"map": 49,
+				"flare": 63,
+				"compass": 16,
+				"torch": 40,
+				"aid": 57,
+				"tape": 7
+			},
+			"abilities": {
+				"buddy": 520,
+				"help": 15,
+				"give": 42
+			}
+		},
+		{
+			"name": "stamina",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 8,
+				"stamina": 4,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"family": "training",
+			"games": 180,
+			"wins": 70,
+			"moves": 8734,
+			"stalled": [],
+			"byPlayers": {
+				"2": {
+					"games": 60,
+					"wins": 31
+				},
+				"3": {
+					"games": 60,
+					"wins": 12
+				},
+				"4": {
+					"games": 60,
+					"wins": 27
+				}
+			},
+			"equipment": {
+				"shovel": 66,
+				"water": 51,
+				"machete": 33,
+				"rope": 41,
+				"radio": 40,
+				"binoculars": 65,
+				"map": 50,
+				"flare": 63,
+				"compass": 16,
+				"torch": 40,
+				"aid": 58,
+				"tape": 7
+			},
+			"abilities": {
+				"buddy": 521,
+				"help": 15,
+				"give": 42
+			}
+		},
+		{
+			"name": "escape",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"family": "training",
+			"games": 180,
+			"wins": 71,
+			"moves": 8697,
+			"stalled": [],
+			"byPlayers": {
+				"2": {
+					"games": 60,
+					"wins": 31
+				},
+				"3": {
+					"games": 60,
+					"wins": 13
+				},
+				"4": {
+					"games": 60,
+					"wins": 27
+				}
+			},
+			"equipment": {
+				"shovel": 67,
+				"water": 51,
+				"machete": 32,
+				"rope": 41,
+				"radio": 40,
+				"binoculars": 65,
+				"map": 49,
+				"flare": 63,
+				"compass": 16,
+				"torch": 40,
+				"aid": 55,
+				"tape": 7
+			},
+			"abilities": {
+				"buddy": 517,
+				"help": 16,
+				"give": 41
+			}
+		},
+		{
+			"name": "cautious",
+			"policy": {
+				"equipment": true,
+				"lead": 1.5,
+				"progress": 4,
+				"success": 12,
+				"stamina": 2,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"family": "training",
+			"games": 180,
+			"wins": 58,
+			"moves": 9413,
+			"stalled": [
+				{
+					"players": 3,
+					"seed": 56,
+					"round": 9,
+					"error": "Error: No available destination."
+				}
+			],
+			"byPlayers": {
+				"2": {
+					"games": 60,
+					"wins": 27
+				},
+				"3": {
+					"games": 60,
+					"wins": 10
+				},
+				"4": {
+					"games": 60,
+					"wins": 21
+				}
+			},
+			"equipment": {
+				"shovel": 70,
+				"water": 59,
+				"machete": 37,
+				"rope": 46,
+				"radio": 38,
+				"aid": 58,
+				"torch": 40,
+				"binoculars": 65,
+				"map": 51,
+				"flare": 65,
+				"compass": 16,
+				"tape": 6
+			},
+			"abilities": {
+				"buddy": 560,
+				"help": 17,
+				"give": 35
+			}
+		},
+		{
+			"name": "progress",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 5,
+				"success": 12,
+				"stamina": 2,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"family": "training",
+			"games": 180,
+			"wins": 66,
+			"moves": 8436,
+			"stalled": [],
+			"byPlayers": {
+				"2": {
+					"games": 60,
+					"wins": 28
+				},
+				"3": {
+					"games": 60,
+					"wins": 14
+				},
+				"4": {
+					"games": 60,
+					"wins": 24
+				}
+			},
+			"equipment": {
+				"shovel": 66,
+				"water": 53,
+				"machete": 28,
+				"rope": 45,
+				"radio": 38,
+				"binoculars": 64,
+				"map": 47,
+				"flare": 63,
+				"compass": 18,
+				"torch": 36,
+				"aid": 56,
+				"tape": 7
+			},
+			"abilities": {
+				"buddy": 503,
+				"help": 9,
+				"give": 33
+			}
+		}
+	],
+	"heldout": [
+		{
+			"name": "baseline",
+			"policy": {
+				"equipment": false,
+				"lead": 1,
+				"progress": 4,
+				"success": 12,
+				"stamina": 2,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"family": "heldout",
+			"games": 300,
+			"wins": 87,
+			"moves": 14243,
+			"stalled": [],
+			"byPlayers": {
+				"2": {
+					"games": 100,
+					"wins": 39
+				},
+				"3": {
+					"games": 100,
+					"wins": 17
+				},
+				"4": {
+					"games": 100,
+					"wins": 31
+				}
+			},
+			"equipment": {},
+			"abilities": {
+				"help": 11
+			}
+		},
+		{
+			"name": "escape",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"family": "heldout",
+			"games": 300,
+			"wins": 112,
+			"moves": 15484,
+			"stalled": [],
+			"byPlayers": {
+				"2": {
+					"games": 100,
+					"wins": 45
+				},
+				"3": {
+					"games": 100,
+					"wins": 28
+				},
+				"4": {
+					"games": 100,
+					"wins": 39
+				}
+			},
+			"equipment": {
+				"shovel": 113,
+				"binoculars": 76,
+				"aid": 79,
+				"radio": 69,
+				"torch": 123,
+				"flare": 91,
+				"rope": 72,
+				"machete": 52,
+				"map": 87,
+				"tape": 31,
+				"water": 87,
+				"compass": 29
+			},
+			"abilities": {
+				"buddy": 903,
+				"help": 48,
+				"give": 80
+			}
+		}
+	]
+}

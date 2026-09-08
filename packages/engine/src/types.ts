@@ -73,6 +73,7 @@ export interface Event {
 	type: "phase" | "move" | "equipment" | "eruption" | "injury" | "end";
 }
 export interface Pending {
+	equipment?: EquipmentId;
 	kind: "reroll" | "lend";
 	players: number[];
 	remaining: number;

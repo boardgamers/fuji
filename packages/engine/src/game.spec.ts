@@ -701,6 +701,7 @@ test("AI leaves a threatened location even when staying has the best dice total"
 	const { chooseMove } = await import("../index.js");
 	const s = prepared();
 	cell(s, "0,2").lava = true;
+	s.players[1]!.cards = [];
 	cell(s, "0,3").terrain = 16;
 	s.players[1]!.dice.forEach((d) => (d.face = 6));
 	const move = chooseMove(stripSecret(s, 1), 1);
@@ -860,4 +861,190 @@ test("set-aside journal snapshots reveal only the chosen dice", () => {
 		assert.deepEqual(publicView.log.find((e) => e.setAside)!.setAside, frozen);
 		assert(publicView.players[0]!.dice.filter((d) => !d.aside).every((d) => d.face === 0));
 	}
+});
+
+test("AI estimates destination-specific distributions and conditions on revealed faces", async () => {
+	const { contributionDistribution } = await import("../index.js");
+	const die = { ...prepared().players[0]!.dice[0]!, type: 0, face: 0 };
+	const pink = contributionDistribution([die], { colors: ["pink"] });
+	const any = contributionDistribution([die], {});
+	const mean = (p: number[]) => p.reduce((sum, v, i) => sum + v * i, 0);
+	assert(Math.abs(mean(pink) - 7 / 6) < 1e-10);
+	assert(Math.abs(mean(any) - 3.5) < 1e-10);
+	assert.equal(contributionDistribution([{ ...die, face: 4 }], { colors: ["pink"] })[4], 1);
+});
+
+test("AI uses Flare for a weak result without reading hidden rolls, and conserves it when unbeatable", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = withPhase();
+	s.players.forEach((p, i) => {
+		p.position = ["0,3", "1,3", "1,2"][i]!;
+	});
+	for (const p of s.players) {
+		p.path = [p.position];
+		cell(s, p.position).terrain = 16;
+		p.dice.forEach((d) => (d.face = 3));
+	}
+	s.players[0]!.cards = [{ id: "flare", used: 0, availableRound: 0 }];
+	const move = chooseMove(stripSecret(s, 0), 0);
+	assert.equal(move.id, "flare");
+	assert.doesNotThrow(() => applyMove(s, move, 0));
+	s.players[1]!.dice.forEach((d) => (d.face = 6));
+	assert.deepEqual(chooseMove(stripSecret(s, 0), 0), move);
+	s.players[0]!.bonus = 100;
+	assert.equal(chooseMove(stripSecret(s, 0), 0).action, "ready");
+});
+
+test("Buddy and Machete remove conflicts without reducing their own matching total", async () => {
+	const { chooseMove } = await import("../index.js");
+	for (const ability of ["buddy", "machete"]) {
+		const s = withPhase(ability === "buddy" ? "reroll" : "equipment");
+		s.players.forEach((p, i) => {
+			p.position = ["0,3", "1,3", "1,2"][i]!;
+		});
+		for (const p of s.players) {
+			p.path = [p.position];
+			cell(s, p.position).terrain = 8;
+			p.cards = [];
+		}
+		const p = s.players[0]!;
+		cell(s, p.position).terrain = 19;
+		p.skill = "buddy";
+		p.buddyUsed = false;
+		p.rerolls = 0;
+		p.dice.forEach((d) => (d.face = 3));
+		p.dice[0]!.face = 6;
+		if (ability === "machete") p.cards = [{ id: "machete", used: 0, availableRound: 0 }];
+		const move = chooseMove(stripSecret(s, 0), 0);
+		assert.equal(ability === "buddy" ? move.action : move.id, ability);
+		assert.deepEqual(move.ids, [p.dice[0]!.id]);
+		assert.doesNotThrow(() => applyMove(s, move, 0));
+	}
+});
+
+test("AI flips useful dice only when the change does not strengthen teammates' opposition", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = withPhase();
+	s.players.forEach((p, i) => {
+		p.position = ["0,3", "1,3", "1,2"][i]!;
+	});
+	for (const p of s.players) {
+		p.path = [p.position];
+		cell(s, p.position).terrain = 19;
+		p.cards = [];
+	}
+	const p = s.players[0]!;
+	cell(s, p.position).terrain = 8;
+	p.cards = [{ id: "tape", used: 0, availableRound: 0 }];
+	p.dice.forEach((d) => (d.face = 1));
+	assert.equal(chooseMove(stripSecret(s, 0), 0).id, "tape");
+	cell(s, s.players[1]!.position).terrain = 16;
+	assert.equal(chooseMove(stripSecret(s, 0), 0).action, "ready");
+	p.injuries = ["arm"];
+	assert.equal(chooseMove(stripSecret(s, 0), 0).action, "ready");
+});
+
+test("AI lending and optional reroll responses choose useful dice or decline", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = withPhase();
+	s.players.forEach((p, i) => {
+		p.position = ["0,3", "1,3", "1,2"][i]!;
+	});
+	s.players.forEach((p) => {
+		p.path = [p.position];
+		cell(s, p.position).terrain = 19;
+	});
+	cell(s, s.players[1]!.position).terrain = 8;
+	s.players[0]!.dice.forEach((d) => (d.face = 3));
+	s.players[0]!.dice[0]!.face = 6;
+	s.pending = { kind: "lend", players: [0], receiver: 1, remaining: 1, required: false };
+	assert.deepEqual(chooseMove(stripSecret(s, 0), 0), { action: "respond", ids: [s.players[0]!.dice[0]!.id] });
+	s.players[0]!.dice[0]!.face = 3;
+	assert.equal(chooseMove(stripSecret(s, 0), 0).action, "decline");
+	s.pending = { kind: "reroll", players: [0], remaining: 2, required: false };
+	s.players[0]!.dice.forEach((d) => (d.face = 5));
+	assert.equal(chooseMove(stripSecret(s, 0), 0).action, "decline");
+});
+
+test("Wireless changes AI estimates only when the other player's dice become public", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = withPhase();
+	s.players.forEach((p, i) => {
+		p.position = ["0,3", "1,3", "1,2"][i]!;
+		p.path = [p.position];
+		cell(s, p.position).terrain = 16;
+		p.dice.forEach((d) => (d.face = i === 0 ? 3 : 1));
+	});
+	s.players[0]!.cards = [{ id: "flare", used: 0, availableRound: 0 }];
+	assert.equal(chooseMove(stripSecret(s, 0), 0).id, "flare");
+	s.players[1]!.radio = true;
+	s.players[2]!.radio = true;
+	assert.equal(chooseMove(stripSecret(s, 0), 0).action, "ready");
+});
+
+test("AI has legal useful choices for every equipment card, including copied effects", async () => {
+	const { chooseMove, EQUIPMENT } = await import("../index.js");
+	for (const card of EQUIPMENT) {
+		let used = false;
+		for (let example = 0; example < 180 && !used; example++) {
+			const s = withPhase((card.phases as readonly number[]).includes(4) ? "equipment" : "planning");
+			s.players.forEach((p, i) => {
+				p.position = ["0,3", "3,3", "3,2"][i]!;
+				p.path = [p.position];
+				p.radio = true;
+				p.cards = [];
+				cell(s, p.position).terrain = 4 + ((example * 7 + i * 11) % 24);
+				p.dice.forEach((d, j) => (d.face = 1 + ((example * 3 + i * 2 + j * 5) % 6)));
+			});
+			s.players[0]!.radio = false;
+			s.players[0]!.cards = [{ id: card.id, used: 0, availableRound: 0 }];
+			if (card.id === "knife") s.players[1]!.cards = [{ id: "flare", used: 0, availableRound: 0 }];
+			const view = stripSecret(s, 0),
+				before = structuredClone(view);
+			const move = chooseMove(view, 0);
+			assert.deepEqual(view, before);
+			if (move.action === "equipment" && move.id === card.id) {
+				assert.doesNotThrow(() => applyMove(s, move, 0), card.id);
+				used = true;
+			}
+		}
+		assert(used, `No useful example for ${card.id}`);
+	}
+});
+
+test("AI route selection reacts to Wireless reveals while hidden dice remain irrelevant", async () => {
+	const { chooseMove } = await import("../index.js");
+	let changed = false;
+	for (let example = 0; example < 30 && !changed; example++) {
+		const s = prepared();
+		s.players.forEach((p) => (p.cards = []));
+		s.players[0]!.dice.forEach((d, i) => (d.face = 1 + ((i + example) % 6)));
+		s.players[1]!.dice.forEach((d) => (d.face = 1));
+		const hidden = chooseMove(stripSecret(s, 0), 0);
+		s.players[1]!.dice.forEach((d) => (d.face = 6));
+		assert.deepEqual(chooseMove(stripSecret(s, 0), 0), hidden);
+		s.players[1]!.radio = true;
+		const high = chooseMove(stripSecret(s, 0), 0);
+		s.players[1]!.dice.forEach((d) => (d.face = 1));
+		const low = chooseMove(stripSecret(s, 0), 0);
+		if (JSON.stringify(high) !== JSON.stringify(low)) {
+			assert.doesNotThrow(() => applyMove(s, low, 0));
+			changed = true;
+		}
+	}
+	assert(changed, "Revealed contributions must influence route choice");
+});
+
+test("Water flask journal describes the recipient and each reroll without exposing private faces", () => {
+	let s = withPhase();
+	s.players[0]!.cards = [{ id: "water", used: 0, availableRound: 0 }];
+	s = applyMove(s, { action: "equipment", id: "water", target: 0 }, 0);
+	assert.match(s.log.at(-1)!.text, /gets up to 2 rerolls/);
+	const ids = s.players[0]!.dice.slice(0, 2).map((d) => d.id);
+	s = applyMove(s, { action: "respond", ids }, 0);
+	assert.match(s.log.at(-1)!.text, /rerolled 2 dice with Water flask/);
+	assert.equal(s.log.at(-1)!.dice, undefined);
+	assert.equal(stripSecret(s, 1).log.at(-1)!.dice, undefined);
+	s = applyMove(s, { action: "decline" }, 0);
+	assert.match(s.log.at(-1)!.text, /skipped the remaining Water flask reroll/);
 });

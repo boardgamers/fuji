@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from "svelte";
 	import {
 		terrain,
 		cell,
@@ -27,6 +28,7 @@
 	import { art } from "./lib/assets";
 	import Landscape from "./lib/Landscape.svelte";
 	import Die from "./lib/Die.svelte";
+	import InjuryIcon from "./lib/InjuryIcon.svelte";
 	import EquipmentIcon from "./lib/EquipmentIcon.svelte";
 	import JournalEntry from "./lib/JournalEntry.svelte";
 	import PhaseIcon from "./lib/PhaseIcon.svelte";
@@ -45,6 +47,8 @@
 	const seat = $derived(store.seat);
 	const me = $derived(seat === undefined ? undefined : s?.players[seat]);
 	let inspected = $state("");
+	let dangerousRoute = $state("");
+	let acceptedLavaRisk = $state("");
 	let dice = $state<string[]>([]);
 	let tilePicks = $state<string[]>([]);
 	let tool = $state<EquipmentId | null>(null);
@@ -141,21 +145,45 @@
 					ended: s.outcome === "won" ? "Together, you made it." : "The mountain won.",
 				}[s.phase]
 	);
+	let decision = "";
+	let decisionScreen = "";
 	$effect(() => {
-		const revision = s?.revision;
-		const currentSeat = seat;
-		void revision;
-		void currentSeat;
-		dice = [];
-		tilePicks = [];
-		tool = null;
-		if (me) {
-			keep = me.cards.slice(0, SKILLS[me.skill].keep).map((c) => c.id);
-			drop = me.dice.at(-1)?.id ?? "";
-			target = seat ?? 0;
-			giveTarget = seat === 0 ? 1 : 0;
-		}
+		const context = JSON.stringify([
+			seat,
+			s?.round,
+			s?.phase,
+			me?.ready,
+			me?.rerolls,
+			me?.pendingInjuries,
+			me?.dice,
+			s?.pending?.players.includes(seat ?? -1) ? s.pending : null,
+		]);
+		const player = me;
+		untrack(() => {
+			const screen = `${seat}:${s?.round}:${s?.phase}`;
+			if (screen !== decisionScreen) {
+				decisionScreen = screen;
+				dangerousRoute = "";
+				acceptedLavaRisk = "";
+			}
+			if (context !== decision) {
+				decision = context;
+				dice = [];
+				tilePicks = [];
+				tool = null;
+				if (player) {
+					keep = player.cards.slice(0, SKILLS[player.skill].keep).map((c) => c.id);
+					drop = player.dice.at(-1)?.id ?? "";
+					target = seat ?? 0;
+					giveTarget = seat === 0 ? 1 : 0;
+				}
+			} else if (tool && !player?.cards.some((c) => c.id === tool && c.availableRound <= (s?.round ?? 0))) {
+				tool = null;
+				tilePicks = [];
+			}
+		});
 	});
+
 	function pickDie(id: string) {
 		dice = dice.includes(id) ? dice.filter((x) => x !== id) : [...dice, id];
 	}
@@ -171,10 +199,30 @@
 		if (s?.phase !== "planning" || !me || me.ready || store.waiting || s.pending) return;
 		const route = reachable[id];
 		if (!route) return;
+		dangerousRoute = "";
+		if (danger.includes(id) && !reserved[id]) {
+			dangerousRoute = id;
+			return;
+		}
 		if (!reserved[route.at(-1)!] && route.join(";") !== me.path.join(";"))
 			store.dispatch({ action: "plan", path: route });
 	}
 
+	function confirmTravel() {
+		const id = currentRoute.at(-1) ?? "";
+		if (danger.includes(id) && acceptedLavaRisk !== `${s?.round}:${id}`) {
+			dangerousRoute = id;
+			return;
+		}
+		store.dispatch({ action: "ready" });
+	}
+	function acceptDangerousRoute() {
+		const path = reachable[dangerousRoute];
+		if (!path || reserved[dangerousRoute] || store.waiting) return;
+		acceptedLavaRisk = `${s?.round}:${dangerousRoute}`;
+		dangerousRoute = "";
+		store.dispatch({ action: "plan", path });
+	}
 	function mobileAction() {
 		if (!s || !me) return;
 		if (s.pending || me.pendingInjuries || s.phase === "setup") {
@@ -182,7 +230,8 @@
 			return;
 		}
 		if (s.phase === "planning") {
-			store.dispatch({ action: me.ready ? "plan" : "ready", ...(me.ready ? { path: me.path } : {}) });
+			if (me.ready) store.dispatch({ action: "plan", path: me.path });
+			else confirmTravel();
 			return;
 		}
 		if (s.phase === "reroll") {
@@ -366,7 +415,9 @@
 						<span class="teammate-name"
 							>{p.name}{#if seat === i}<small>YOU</small>{/if}</span
 						><span class="role-name"
-							>{SKILLS[p.skill].name}{#if p.skill === "gatherer"}<span class="public-bars">
+							>{SKILLS[p.skill].name}{#each p.injuries as injury}<InjuryIcon
+									{injury}
+								/>{/each}{#if p.skill === "gatherer"}<span class="public-bars">
 									· {p.powerBars} power bar{p.powerBars === 1 ? "" : "s"}</span
 								>{/if}</span
 						>
@@ -537,7 +588,7 @@
 							</div>
 						{/if}
 						{#if me.injuries.length}<div class="injury-list">
-								{#each me.injuries as injury}<span>{injury}</span>{/each}
+								{#each me.injuries as injury}<InjuryIcon {injury} />{/each}
 							</div>{/if}
 					{/if}
 				</section>
@@ -662,7 +713,8 @@
 								onclick={() => store.dispatch({ action: "injury", injury, die: dice[0] })}
 								disabled={injury === "leg" && dice.length !== 1}
 								><strong
-									>{injury === "amnesia" ? "Amnesia" : `${injury[0]!.toUpperCase()}${injury.slice(1)} injury`}</strong
+									><InjuryIcon {injury} />
+									{injury === "amnesia" ? "Amnesia" : `${injury[0]!.toUpperCase()}${injury.slice(1)} injury`}</strong
 								><span
 									>{{
 										leg: "Select one of your dice to lose after this round.",
@@ -698,6 +750,16 @@
 					<p class="instruction">
 						Choose a destination. Share your intentions, but keep numbers and exact dice results private.
 					</p>
+					{#if dangerousRoute && !me.ready}<div class="warning" role="alert">
+							<p>
+								Lava will reach {terrain(cell(s, dangerousRoute).terrain).name} at the next eruption. Choose a safer destination.
+							</p>
+							<button
+								class="text-button"
+								disabled={store.waiting || !!reserved[dangerousRoute]}
+								onclick={acceptDangerousRoute}>Choose this dangerous route</button
+							>
+						</div>{/if}
 					{#if destination}<div class="destination">
 							<img src={art("land", destination.id)} alt="" />
 							<div>
@@ -723,7 +785,7 @@
 					{#if !me.ready}<button
 							class="primary"
 							disabled={store.waiting || !!reserved[currentRoute.at(-1)!]}
-							onclick={() => store.dispatch({ action: "ready" })}>Ready to travel <span>→</span></button
+							onclick={confirmTravel}>Ready to travel <span>→</span></button
 						>{:else}<p class="confirmed">✓ Your route is set. Waiting for the team.</p>
 						<button class="text-button" onclick={() => store.dispatch({ action: "plan", path: me.path })}
 							>Change my route</button

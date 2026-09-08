@@ -393,6 +393,7 @@ function useEquipment(s: State, seat: number, m: Move) {
 		throw Error("This equipment is not usable in this phase.");
 	const target = () => integer(m.target, 0, s.players.length - 1);
 	let setAside: Die[] | undefined;
+	let effectText = "";
 	switch (id) {
 		case "binoculars": {
 			const ids = strings(m.tiles, 2);
@@ -407,11 +408,13 @@ function useEquipment(s: State, seat: number, m: Move) {
 					s.players.some((p) => p.position === c.id || (p.path.length > 0 && p.path.at(-1) === c.id))
 				)
 					throw Error("Both land locations must be completely empty.");
+			effectText = `swapped ${terrain(a.terrain).name} and ${terrain(b.terrain).name}`;
 			[a.terrain, b.terrain] = [b.terrain, a.terrain];
 			break;
 		}
 		case "flare":
 			p.bonus += 3;
+			effectText = "+3 movement value";
 			break;
 		case "rope": {
 			const ids = strings(m.tiles, 1);
@@ -433,21 +436,34 @@ function useEquipment(s: State, seat: number, m: Move) {
 		case "shovel": {
 			const d = selectedDice(p, m.ids, 1, 1)[0]!;
 			d.face = integer(m.face, 1, 6);
+			effectText = "turned 1 die";
 			break;
 		}
-		case "torch":
-			roll(s, selectedDice(p, m.ids, 1));
+		case "torch": {
+			const dice = selectedDice(p, m.ids, 1);
+			roll(s, dice);
+			effectText = `rerolled ${dice.length} ${dice.length === 1 ? "die" : "dice"}`;
 			break;
+		}
 		case "water": {
 			const recipient = target();
-			s.pending = { kind: "reroll", players: [recipient], remaining: recipient === seat ? 2 : 1, required: false };
+			s.pending = {
+				kind: "reroll",
+				equipment: id,
+				players: [recipient],
+				remaining: recipient === seat ? 2 : 1,
+				required: false,
+			};
+			effectText = `${s.players[recipient]!.name} gets ${recipient === seat ? "up to 2 rerolls" : "1 reroll"}`;
 			break;
 		}
 		case "aid":
 			p.aid = true;
+			effectText = "no stamina loss this round";
 			break;
 		case "radio":
 			p.radio = true;
+			effectText = "dice revealed to teammates for this phase";
 			break;
 		case "tape":
 		case "compass": {
@@ -455,6 +471,7 @@ function useEquipment(s: State, seat: number, m: Move) {
 			const from = id === "tape" ? 1 : 6;
 			if (dice.some((d) => d.face !== from)) throw Error(`Select dice showing ${from}.`);
 			for (const d of dice) d.face = 7 - from;
+			effectText = `turned ${dice.length} ${dice.length === 1 ? "die" : "dice"}`;
 			break;
 		}
 		case "machete":
@@ -464,11 +481,13 @@ function useEquipment(s: State, seat: number, m: Move) {
 		case "lighter": {
 			const donor = target();
 			if (donor === seat) throw Error("Choose a teammate.");
-			s.pending = { kind: "lend", players: [donor], receiver: seat, remaining: 1, required: false };
+			s.pending = { kind: "lend", equipment: id, players: [donor], receiver: seat, remaining: 1, required: false };
+			effectText = `asked ${s.players[donor]!.name} to lend a die`;
 			break;
 		}
 		case "carabiner":
-			s.pending = { kind: "reroll", players: s.players.map((_, i) => i), remaining: 1, required: true };
+			s.pending = { kind: "reroll", equipment: id, players: s.players.map((_, i) => i), remaining: 1, required: true };
+			effectText = "everyone rerolls 1 die";
 			break;
 		case "map": {
 			const recipient = target();
@@ -476,6 +495,7 @@ function useEquipment(s: State, seat: number, m: Move) {
 			const d = selectedDice(p, m.ids, 1, 1)[0]!;
 			p.dice = p.dice.filter((x) => x.id !== d.id);
 			s.players[recipient]!.dice.push(d);
+			effectText = `lent 1 die to ${s.players[recipient]!.name} until the end of the round`;
 			break;
 		}
 	}
@@ -485,7 +505,11 @@ function useEquipment(s: State, seat: number, m: Move) {
 		s.discard.push(card.id);
 	}
 	resetReady(s);
-	event(s, `${p.name} used ${equipment(card.id).name}${id !== card.id ? ` as ${info.name}` : ""}.`, "equipment");
+	event(
+		s,
+		`${p.name} used ${equipment(card.id).name}${id !== card.id ? ` as ${info.name}` : ""}${effectText ? ` · ${effectText}` : ""}.`,
+		"equipment"
+	);
 	if (id === "torch") s.log.at(-1)!.sound = "dice";
 	if (setAside) s.log.at(-1)!.setAside = structuredClone(setAside);
 }
@@ -495,6 +519,11 @@ function execute(s: State, m: Move, seat: number) {
 	if (!p) throw Error("Invalid player.");
 	if (s.pending) {
 		const pending = s.pending;
+		const source = pending.equipment ? equipment(pending.equipment).name : "equipment";
+		let responseText =
+			pending.kind === "lend"
+				? `declined the loan to ${s.players[pending.receiver!]!.name}`
+				: `skipped the remaining ${source} reroll${pending.remaining === 1 ? "" : "s"}`;
 		if (!pending.players.includes(seat)) throw Error("Waiting for another player.");
 		if (m.action === "decline") {
 			if (pending.required) throw Error("This reroll is mandatory.");
@@ -506,14 +535,16 @@ function execute(s: State, m: Move, seat: number) {
 				const d = dice[0]!;
 				p.dice = p.dice.filter((x) => x !== d);
 				s.players[pending.receiver!]!.dice.push(d);
+				responseText = `lent 1 die to ${s.players[pending.receiver!]!.name} until the end of the round`;
 				pending.players = [];
 			} else {
 				roll(s, dice);
+				responseText = `rerolled ${dice.length} ${dice.length === 1 ? "die" : "dice"} with ${source}`;
 				pending.remaining--;
 				if (pending.required || pending.remaining <= 0) pending.players = pending.players.filter((i) => i !== seat);
 			}
 		} else throw Error("Resolve the equipment effect first.");
-		event(s, `${p.name} resolved an equipment effect.`, "equipment");
+		event(s, `${p.name} ${responseText}.`, "equipment");
 		if (pending.kind === "reroll") s.log.at(-1)!.sound = "dice";
 		finishPending(s);
 		return;

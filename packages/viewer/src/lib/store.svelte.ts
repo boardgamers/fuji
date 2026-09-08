@@ -19,6 +19,7 @@ export class Store {
 	journal: View["log"] = $state([]);
 	animating = $state(false);
 	private received: View | null = null;
+	private blocksInput = true;
 	private receivedSeat: number | undefined;
 	private frames: { scene: View; duration: number; cue?: SoundCue }[] = [];
 	private animationTimer: ReturnType<typeof setTimeout> | undefined;
@@ -32,7 +33,7 @@ export class Store {
 			return;
 		}
 		this.animating = true;
-		this.waiting = true;
+		this.waiting = this.blocksInput;
 		this.scene = frame.scene;
 		this.journal = frame.scene.log;
 		if (frame.cue) this.audio.play(frame.cue);
@@ -65,7 +66,7 @@ export class Store {
 	restart: (players: number, seed: string, difficulty: number) => void = () => {};
 	teammateStep: () => void = () => {};
 	dispatch(move: Move) {
-		if (this.animating) return;
+		if (this.animating && this.blocksInput) return;
 		this.error = "";
 		this.waiting = true;
 		try {
@@ -86,6 +87,17 @@ export class Store {
 		this.received = s;
 		this.receivedSeat = this.seat;
 		this.state = s;
+		const localDecision = (view: View) =>
+			JSON.stringify([
+				view.round,
+				view.phase,
+				view.players[this.seat ?? -1],
+				view.pending?.players.includes(this.seat ?? -1) ? view.pending : null,
+			]);
+		const unrelated = previous && this.seat !== undefined && localDecision(previous) === localDecision(s);
+		// Teammate playback must not interrupt an unchanged local decision.
+		if (!this.animating || !unrelated) this.blocksInput = !unrelated;
+		this.waiting = this.animating && this.blocksInput;
 		if (reset) {
 			this.dispose();
 			this.scene = s;

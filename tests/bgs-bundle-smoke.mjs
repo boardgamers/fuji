@@ -50,6 +50,19 @@ import path from "node:path";
 	s = applyMove(s, { action: "plan", path: teammatePath }, 1);
 	s.players[1].radio = true;
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
+	const lavaWarning = structuredClone(s);
+	lavaWarning.board.find((c) => c.id === "0,2").lava = true;
+	lavaWarning.revision++;
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(lavaWarning, 0));
+	const moveCount = await page.evaluate(() => window.captured.filter((e) => e.name === "move").length);
+	await page.locator('.location.reachable[aria-label*="threatened by the next eruption"]').first().click();
+	await page.getByRole("button", { name: "Choose this dangerous route" }).waitFor();
+	if ((await page.evaluate(() => window.captured.filter((e) => e.name === "move").length)) !== moveCount)
+		throw Error("Dangerous route was selected without acknowledgement");
+	await page.getByRole("button", { name: "Choose this dangerous route" }).click();
+	if ((await page.evaluate(() => window.captured.findLast((e) => e.name === "move").payload.action)) !== "plan")
+		throw Error("Explicit lava override must remain possible");
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
 	await page.waitForSelector(".revealed-team");
 	await page.waitForSelector('.teammate-route[data-player="1"] .shared-route-line', { state: "attached" });
 	if (s.players[1].ready) throw Error("Shared route fixture must be unconfirmed");
@@ -122,6 +135,20 @@ import path from "node:path";
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(conflictState, 0));
 	if (JSON.stringify(await conflictMarkers.allTextContents()) !== JSON.stringify(markers))
 		throw Error("Conflict markers used hidden teammate rolls");
+	await page.locator(".personal .die:not(:disabled)").first().click();
+	const rerollSelection = page.locator(".personal .die.chosen");
+	if ((await rerollSelection.count()) !== 1) throw Error("Reroll fixture must have one selection");
+	conflictState.revision++;
+	conflictState.log.push({ round: conflictState.round, type: "move", text: "A teammate rerolled.", sound: "dice" });
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(conflictState, 0));
+	if ((await rerollSelection.count()) !== 1) throw Error("Teammate update reset the selected die");
+	if (!(await page.getByRole("button", { name: /^Reroll 1 die/ }).isEnabled()))
+		throw Error("Teammate playback blocked reroll input");
+	await page.getByRole("button", { name: "Skip to latest" }).click();
+	conflictState.players[0].injuries = ["arm"];
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(conflictState, 0));
+	if (!(await page.locator('.personal .injury-icon[title="Arm injury: cannot use equipment."]').count()))
+		throw Error("Injury needs icon and effect help");
 	await page.screenshot({ path: "work/browser/fuji-dice-conflicts.png", fullPage: true });
 	conflictState.phase = "equipment";
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(conflictState, 0));
@@ -223,7 +250,8 @@ import path from "node:path";
 	const unavailableKnife = page.locator(".equipment-list button").filter({ hasText: "Pocketknife" });
 	if ((await unavailableKnife.getAttribute("class")).includes("usable"))
 		throw Error("Pocketknife advertised with no eligible copy target");
-	await unavailableKnife.click();
+	if (!(await page.getByRole("button", { name: "Use Pocketknife", exact: true }).count()))
+		await unavailableKnife.click();
 	if (!(await page.getByRole("button", { name: "Use Pocketknife", exact: true }).isDisabled()))
 		throw Error("Empty copy action must be disabled");
 

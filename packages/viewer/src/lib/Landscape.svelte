@@ -122,12 +122,6 @@
 								stroke-width="1.8"
 							/>
 						</g>{/if}
-					{#if reachable.includes(c.id) && !c.lava}<circle
-							cx={x(c.id)}
-							cy={y(c.id) + 31}
-							r="3"
-							class="reachable-dot"
-						/>{/if}
 					{#if c.equipment && !c.lava}<g transform={`translate(${x(c.id) + 29},${y(c.id) - 25})`}
 							><circle r="10" class="equipment-dot" /><path
 								d="M-4 -2h8v6h-8z M-2 -2v-3h4v3"
@@ -188,7 +182,7 @@
 		<span
 			>{#if state.phase === "setup"}Map preview · choose your equipment first{:else}<i class="legend-line"></i>Your
 				route{/if}</span
-		>{#if reachable.length}<span class="range-legend">┄ Within movement range</span>{/if}<span
+		>{#if reachable.length}<span class="range-legend">Dimmed: out of range</span>{/if}<span
 			><i class="legend-danger"></i>Next eruption</span
 		><span class="legend-end" title="Everyone must reach any house-marked village location at the same time."
 			>{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} / {state
@@ -287,14 +281,6 @@
 	.location.selected .tile-art {
 		opacity: 1;
 	}
-	.location.reachable .location-ring {
-		stroke: #b9e5bf;
-		stroke-width: 2.5;
-		stroke-dasharray: 5 3;
-	}
-	.location.reachable .tile-art {
-		opacity: 1;
-	}
 	.location.out-of-range .tile-art {
 		opacity: 0.32;
 	}
@@ -308,13 +294,6 @@
 		stroke: #ffe19a;
 		stroke-width: 3.5;
 		stroke-dasharray: none;
-	}
-	.location.reachable:hover .location-ring,
-	.location.reachable:focus-visible .location-ring {
-		stroke-width: 3.5;
-	}
-	.reachable-dot {
-		fill: #e7db99;
 	}
 	.equipment-dot {
 		fill: #dfc176;

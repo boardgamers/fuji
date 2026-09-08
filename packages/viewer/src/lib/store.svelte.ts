@@ -5,6 +5,8 @@ export class Store {
 	error = $state("");
 	waiting = $state(false);
 	local = $state(false);
+	autoTeammates = $state(false);
+	setAutoTeammates: (enabled: boolean) => void = () => {};
 	colorblind = $state(false);
 	savePreference: (name: string, value: boolean) => void = () => {};
 	setColorblind(value: boolean) {

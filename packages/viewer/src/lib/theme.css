@@ -1390,3 +1390,14 @@ h3 {
 	margin: 0;
 	padding: 0 24px 24px;
 }
+
+.auto-teammates {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+	cursor: pointer;
+}
+.auto-teammates input {
+	accent-color: #e5c77e;
+}

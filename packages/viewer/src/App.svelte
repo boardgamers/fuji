@@ -267,6 +267,13 @@
 					<summary>Playtest tools</summary>
 					<div class="dev-toolbar">
 						<span>Local playtest</span><span>Click a player to switch seats.</span>
+						<label class="auto-teammates"
+							><input
+								type="checkbox"
+								checked={store.autoTeammates}
+								onchange={(e) => store.setAutoTeammates(e.currentTarget.checked)}
+							/>Automatically play teammates</label
+						>
 						<button onclick={() => store.teammateStep()} disabled={!!s.outcome}>Play next teammate action</button>
 						<button onclick={() => (newGame = true)}>New game</button>
 					</div>

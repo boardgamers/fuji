@@ -16,9 +16,36 @@ try {
 } catch {
 	game = initGame(3, {}, "first-light");
 }
+let teammateTimer: ReturnType<typeof setTimeout> | undefined;
+store.autoTeammates = localStorage.getItem("fuji-auto-teammates") === "true";
+function availableSeats() {
+	return activePlayers(game).filter((i) => !["planning", "equipment"].includes(game.phase) || !game.players[i]!.ready);
+}
+function scheduleTeammate() {
+	clearTimeout(teammateTimer);
+	if (!store.autoTeammates || game.outcome || !availableSeats().some((i) => i !== store.seat)) return;
+	teammateTimer = setTimeout(() => {
+		const seat = availableSeats().find((i) => i !== store.seat);
+		if (!store.autoTeammates || seat === undefined) return;
+		try {
+			game = moveAI(game, seat);
+			publish();
+		} catch (e) {
+			store.setAutoTeammates(false);
+			store.error = String(e);
+		}
+	}, 750);
+}
+store.setAutoTeammates = (enabled) => {
+	store.autoTeammates = enabled;
+	localStorage.setItem("fuji-auto-teammates", String(enabled));
+	scheduleTeammate();
+};
+if (import.meta.hot) import.meta.hot.dispose(() => clearTimeout(teammateTimer));
 function publish() {
 	localStorage.setItem("fuji-dev-v1", JSON.stringify(game));
 	store.receive(stripSecret(game, store.seat));
+	scheduleTeammate();
 }
 store.send = (move) => {
 	game = applyMove(game, move, store.seat!);
@@ -36,9 +63,7 @@ store.restart = (players, seed, difficulty) => {
 };
 store.teammateStep = () => {
 	try {
-		const available = activePlayers(game).filter(
-			(i) => !["planning", "equipment"].includes(game.phase) || !game.players[i]!.ready
-		);
+		const available = availableSeats();
 		const seat = available.find((i) => i !== store.seat) ?? available[0];
 		if (seat === undefined) return;
 		game = moveAI(game, seat);

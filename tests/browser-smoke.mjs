@@ -75,5 +75,25 @@ fs.mkdirSync("work/browser", { recursive: true });
 	);
 	if (errors.length || !s.outcome) throw Error("Playtest incomplete");
 	await page.screenshot({ path: "work/browser/fuji-result.png", fullPage: true });
+	const autoPage = await browser.newPage();
+	await autoPage.goto("http://127.0.0.1:5187");
+	await autoPage.getByText("Playtest tools", { exact: true }).click();
+	const auto = autoPage.getByRole("checkbox", { name: "Automatically play teammates" });
+	if (await auto.isChecked()) throw Error("Auto teammates should default off");
+	await auto.check();
+	await auto.uncheck();
+	const pausedState = await autoPage.evaluate(() => localStorage.getItem("fuji-dev-v1"));
+	await autoPage.waitForTimeout(900);
+	if (pausedState !== (await autoPage.evaluate(() => localStorage.getItem("fuji-dev-v1"))))
+		throw Error("Unchecking must cancel queued actions");
+	await auto.check();
+	await autoPage.waitForFunction(() => {
+		const game = JSON.parse(localStorage.getItem("fuji-dev-v1"));
+		return game.phase === "planning" && game.players.slice(1).every((p) => p.ready);
+	});
+	const autoState = await autoPage.evaluate(() => JSON.parse(localStorage.getItem("fuji-dev-v1")));
+	if (autoState.players[0].ready || autoState.players[0].path.length !== 1)
+		throw Error("Auto teammates played the user's seat");
+	await auto.uncheck();
 	await browser.close();
 })();

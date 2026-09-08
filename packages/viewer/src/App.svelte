@@ -42,6 +42,7 @@
 	let drop = $state("");
 	let trace = $state(false);
 	let help = $state(false);
+	let journal = $state(false);
 	let newGame = $state(false);
 	let newPlayers = $state(3);
 	let newDifficulty = $state(1);
@@ -189,6 +190,7 @@
 		function key(e: KeyboardEvent) {
 			if (e.key === "Escape") {
 				help = false;
+				journal = false;
 				newGame = false;
 			}
 			if (e.key === "Tab") {
@@ -219,11 +221,7 @@
 
 {#if s}
 	<main class="expedition">
-		<header class="masthead">
-			<div class="identity">
-				<span class="mountain-mark" aria-hidden="true">△</span>
-				<h1>FUJI<span>by Wolfgang Warsch</span></h1>
-			</div>
+		<div class="game-tools">
 			<div class="round-status">
 				<span class="live-dot"></span><span
 					>{s.phase === "setup" ? "THE EXPEDITION" : `ROUND ${String(s.round).padStart(2, "0")}`}</span
@@ -237,10 +235,17 @@
 								: s.phase}</span
 				>
 			</div>
-			<button class="text-button help-button" onclick={() => (help = true)} aria-label="Open playing guide"
-				>How to play <span>?</span></button
-			>
-		</header>
+			<button class="text-button" onclick={() => (help = true)} aria-label="Open playing guide">Help</button>
+			<button class="text-button" onclick={() => (journal = true)}>Journal</button>
+			{#if store.local}<details class="playtest-menu">
+					<summary>Playtest tools</summary>
+					<div class="dev-toolbar">
+						<span>Local playtest</span><span>Click a player to switch seats.</span>
+						<button onclick={() => store.teammateStep()} disabled={!!s.outcome}>Play next teammate action</button>
+						<button onclick={() => (newGame = true)}>New game</button>
+					</div>
+				</details>{/if}
+		</div>
 		<section class="team" aria-label="Your expedition">
 			{#each s.players as p, i}
 				<button
@@ -660,24 +665,6 @@
 					{#each s.ghost as d}<Die die={d} disabled />{/each}
 				</div>
 			</details>{/if}
-		<footer class="journal">
-			<div class="section-title">
-				<h3>Expedition journal</h3>
-				<span>ROUND {s.round}</span>
-			</div>
-			<ol>
-				{#each s.log.slice(-5).reverse() as e, i}<li class:latest={i === 0}>
-						<span class="journal-round">{String(e.round).padStart(2, "0")}</span><span>{e.text}</span>
-					</li>{/each}
-			</ol>
-		</footer>
-		<div class="credits">FUJI · Wolfgang Warsch <span>Illustrations by Weberson Santiago · Feuerland Spiele</span></div>
-		{#if store.local}<div class="dev-toolbar">
-				<span>Local playtest</span><span class="dev-hint">Click a player above to switch seats.</span><button
-					onclick={() => store.teammateStep()}
-					disabled={!!s.outcome}>Play next teammate action</button
-				><button onclick={() => (newGame = true)}>New game</button>
-			</div>{/if}
 		{#if me && !s.outcome}<div class="mobile-dock">
 				<div>
 					<span class="eyebrow">{s.phase}</span><strong
@@ -699,12 +686,32 @@
 		<h1>FUJI</h1>
 		<p>Waiting for the expedition…</p>
 	</div>{/if}
+{#if journal && s}<div class="modal-backdrop" role="presentation">
+		<div
+			class="modal journal"
+			use:modalFocus
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="journal-title"
+			tabindex="-1"
+		>
+			<button class="close" onclick={() => (journal = false)} aria-label="Close journal">×</button>
+			<span class="eyebrow">ROUND {s.round}</span>
+			<h2 id="journal-title">Expedition journal</h2>
+			<ol>
+				{#each s.log.slice().reverse() as e, i}<li class:latest={i === 0}>
+						<span class="journal-round">{String(e.round).padStart(2, "0")}</span><span>{e.text}</span>
+					</li>{/each}
+			</ol>
+		</div>
+	</div>{/if}
 {#if help}<div class="modal-backdrop" role="presentation">
 		<div class="modal" use:modalFocus role="dialog" aria-modal="true" aria-labelledby="help-title" tabindex="-1">
 			<button class="close" onclick={() => (help = false)} aria-label="Close guide">×</button><span class="eyebrow"
 				>THE ESSENTIALS</span
 			>
 			<h2 id="help-title">Escape together.</h2>
+			<p class="game-credits">FUJI · Wolfgang Warsch<br />Illustrations by Weberson Santiago · Feuerland Spiele</p>
 			<p>
 				Everyone must reach the village. If anyone is caught by lava or loses all stamina, the whole expedition loses.
 			</p>

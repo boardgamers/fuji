@@ -30,7 +30,9 @@ import path from "node:path";
 	if (move?.action !== "setup" || "move" in move) throw Error("Wrong move contract");
 	if (captured.filter((e) => e.name === "ready").length !== 1) throw Error("Wrong readiness handshake");
 	if (captured.filter((e) => e.name === "fetchState").length !== 2) throw Error("Updates must request state");
-	if (await page.locator(".dev-toolbar").count()) throw Error("Local harness leaked into bundle");
+	if (await page.locator(".dev-toolbar, .playtest-menu").count()) throw Error("Local harness leaked into bundle");
+	if (await page.locator(".masthead, footer, .credits").count())
+		throw Error("Page framing leaked into embedded viewer");
 	let s = game;
 	for (let i = 0; i < 3; i++)
 		s = applyMove(

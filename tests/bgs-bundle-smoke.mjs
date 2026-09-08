@@ -23,6 +23,23 @@ import path from "node:path";
 		window.bridge.emit("state", view);
 	}, view);
 	if ((await page.locator(".phase-track svg").count()) !== 5) throw Error("Phase strip must show five icons");
+	await page.evaluate(() =>
+		window.bridge.emit(
+			"avatars",
+			Array(3).fill(
+				"data:image/svg+xml," +
+					encodeURIComponent(
+						'<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" fill="teal"/></svg>'
+					)
+			)
+		)
+	);
+	await page.waitForFunction(() => document.querySelectorAll(".traveler .player-avatar").length === 3);
+	await page.evaluate(() => window.bridge.emit("avatars", ["data:image/png;base64,aW52YWxpZA=="]));
+	await page.waitForFunction(() => document.querySelectorAll(".traveler .player-avatar").length === 0);
+	if ((await page.locator(".traveler").first().locator("text").textContent()).trim() !== "1")
+		throw Error("Broken avatars must fall back to player numbers");
+	await page.evaluate(() => window.bridge.emit("avatars", []));
 	await page.getByRole("button", { name: "Ready for the journey" }).click();
 	await page.evaluate(() => {
 		window.bridge.emit("state:updated");
@@ -81,8 +98,7 @@ import path from "node:path";
 	const useBinoculars = page.getByRole("button", { name: "Use Binoculars", exact: true });
 	if (!(await useBinoculars.isDisabled())) throw Error("Binoculars needs two tiles");
 	await page
-		.locator(".location")
-		.nth(binocularState.board.findIndex((c) => c.id === "0,3"))
+		.locator(`.traveler[data-player="${binocularState.players.findIndex((p) => p.position === "0,3")}"]`)
 		.click();
 	await page.getByRole("status").filter({ hasText: "a player is here" }).waitFor();
 	for (const id of ["1,3", "6,6"]) {
@@ -184,7 +200,7 @@ import path from "node:path";
 	await page.screenshot({ path: "work/browser/fuji-dice-conflicts.png", fullPage: true });
 	conflictState.phase = "equipment";
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(conflictState, 0));
-	if (await conflictMarkers.count()) throw Error("Reroll conflict markers leaked into another phase");
+	if (!(await conflictMarkers.count())) throw Error("Equipment must retain teammate conflict markers");
 	s.phase = "reroll";
 	s.players[0].rerolls = 0;
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));

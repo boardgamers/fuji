@@ -15,7 +15,7 @@ import {
 	hasSkill,
 	walkable,
 } from "./game.js";
-import { terrain, SKILLS, matches, DICE, EQUIPMENT, type Requirement, type EquipmentId } from "./data.js";
+import { terrain, SKILLS, matches, DICE, EQUIPMENT, EXHAUSTION, type Requirement, type EquipmentId } from "./data.js";
 import type { State, View, Move, Die } from "./types.js";
 
 export interface AiPolicy {
@@ -40,6 +40,18 @@ const ruleAt = (game: View, seat: number) =>
 	terrain(cell(game, game.players[seat]!.path.at(-1) ?? game.players[seat]!.position).terrain).requirement;
 const valueOf = (d: Die, r: Requirement) => (matches(face(d), r) ? d.face : 0);
 const urgency = (game: View, seat: number) => (threatened(game).includes(game.players[seat]!.position) ? 3 : 1);
+
+// A resident can sacrifice its comparison when even the worst loss is survivable.
+function villageHelper(game: View, seat: number): boolean {
+	const p = game.players[seat]!;
+	return (
+		p.path.at(-1) === p.position &&
+		terrain(cell(game, p.position).terrain).kind === "village" &&
+		!threatened(game).includes(p.position) &&
+		EXHAUSTION - p.stamina > game.difficulty + 2 &&
+		neighbors(game, seat).some((i) => terrain(cell(game, game.players[i]!.position).terrain).kind !== "village")
+	);
+}
 
 function distancesToVillage(game: View): Map<string, number> {
 	// Measure progress along the trail, including detours around gaps and lava.
@@ -76,6 +88,14 @@ export function contributionDistribution(dice: Die[], rule: Requirement): number
 	return distribution;
 }
 function rollGain(game: View, seat: number, die: Die, attempts = 1): number {
+	if (villageHelper(game, seat)) {
+		return neighbors(game, seat).reduce((gain, other) => {
+			if (terrain(cell(game, game.players[other]!.position).terrain).kind === "village") return gain;
+			const rule = ruleAt(game, other);
+			const expected = DICE[die.type]!.reduce((sum, _, i) => sum + valueOf({ ...die, face: i + 1 }, rule), 0) / 6;
+			return gain + (valueOf(die, rule) - expected) * urgency(game, other);
+		}, 0);
+	}
 	const own = ruleAt(game, seat);
 	const gain = rerollValue(die.type, own, attempts) - valueOf(die, own);
 	const harm = neighbors(game, seat).reduce((sum, other) => {
@@ -165,17 +185,19 @@ function chooseEquipment(
 		});
 		return { win, loss };
 	};
+	const helping = villageHelper(game, seat);
 	const before = metrics(own, player.aid);
 	let best: { move: Move; score: number } | undefined;
 	const consider = (move: Move, after: Die[], bonus = 0, aid = false) => {
 		const gain = contribution(after, ownRule) + bonus - contribution(dice, ownRule);
 		const peerChanges = peers.map((i) => contribution(after, ruleFor(i)) - contribution(dice, ruleFor(i)));
-		if (gain < 0 || peerChanges.some((delta) => delta > 0)) return;
+		if ((!helping && gain < 0) || peerChanges.some((delta) => delta > 0)) return;
 		const result = metrics(own + gain, player.aid || aid);
 		const score =
-			(result.win - before.win) * policy.success * urgency(game, seat) +
-			(before.loss - result.loss) * policy.stamina -
-			peerChanges.reduce((sum, delta, index) => sum + delta * urgency(game, peers[index]!), 0) * policy.teamwork;
+			(result.win - before.win) * (helping ? 0 : policy.success * urgency(game, seat)) +
+			(before.loss - result.loss) * (helping ? 0.1 : policy.stamina) -
+			peerChanges.reduce((sum, delta, index) => sum + delta * urgency(game, peers[index]!), 0) *
+				(helping ? 1 : policy.teamwork);
 		if (score <= policy.cost) return;
 		// Preserve the flexible Pocketknife if a dedicated card is equally good.
 		const adjusted = score - (move.id === "knife" ? 0.05 : 0);
@@ -476,12 +498,16 @@ export function chooseMove(game: View, seat: number, policy: AiPolicy = DEFAULT_
 			const conflicts = (d: Die) =>
 				neighbors(game, seat).reduce((sum, i) => sum + valueOf(d, ruleAt(game, i)) * urgency(game, i), 0);
 			const die = activeDice(p)
-				.filter((d) => valueOf(d, r) === 0 && conflicts(d) > 0)
+				.filter((d) => (villageHelper(game, seat) || valueOf(d, r) === 0) && conflicts(d) > 0)
 				.sort((a, b) => conflicts(b) - conflicts(a))[0];
 			if (die) return { action: "buddy", ids: [die.id] };
 		}
 		const ids = activeDice(p)
-			.filter((d) => (matches(face(d), r) ? d.face : 0) < rerollValue(d.type, r, p.rerolls))
+			.filter((d) =>
+				villageHelper(game, seat)
+					? rollGain(game, seat, d) > 0
+					: (matches(face(d), r) ? d.face : 0) < rerollValue(d.type, r, p.rerolls)
+			)
 			.map((d) => d.id);
 		return p.rerolls && ids.length ? { action: "reroll", ids } : { action: "finishRerolls" };
 	}

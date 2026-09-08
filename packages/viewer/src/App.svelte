@@ -417,6 +417,17 @@
 								onchange={(e) => store.setAutoTeammates(e.currentTarget.checked)}
 							/>Automatically play teammates</label
 						>
+						<label class="auto-teammates" title="Use character portraits to preview BGS avatar markers.">
+							<input
+								type="checkbox"
+								checked={store.avatars.length > 0}
+								onchange={(e) => {
+									store.avatars = e.currentTarget.checked
+										? s.players.map((p) => art("character", p.character + 1))
+										: [];
+								}}
+							/>Preview avatar markers
+						</label>
 						<button onclick={() => store.teammateStep()} disabled={!!s.outcome || store.animating}
 							>Play next teammate action</button
 						>
@@ -571,6 +582,7 @@
 		<div class="game-layout">
 			<div class="world-column">
 				<Landscape
+					avatars={store.avatars}
 					colorblind={store.colorblind}
 					state={store.scene ?? s}
 					{seat}

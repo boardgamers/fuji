@@ -1,0 +1,125 @@
+{
+	"baselineCommit": "b769c7e",
+	"before": {
+		"name": "old",
+		"family": "village-help",
+		"policy": {
+			"equipment": true,
+			"lead": 1,
+			"progress": 4,
+			"success": 18,
+			"stamina": 1,
+			"teamwork": 0.4,
+			"cost": 0.8
+		},
+		"games": 252,
+		"wins": 65,
+		"moves": 16152,
+		"byScenario": {
+			"1": {
+				"games": 36,
+				"wins": 14
+			},
+			"2": {
+				"games": 36,
+				"wins": 10
+			},
+			"3": {
+				"games": 36,
+				"wins": 4
+			},
+			"4": {
+				"games": 36,
+				"wins": 8
+			},
+			"5": {
+				"games": 36,
+				"wins": 8
+			},
+			"6": {
+				"games": 36,
+				"wins": 13
+			},
+			"7": {
+				"games": 36,
+				"wins": 8
+			}
+		},
+		"equipment": {
+			"torch": 45,
+			"flare": 81,
+			"rope": 41,
+			"binoculars": 74,
+			"tape": 17,
+			"map": 94,
+			"aid": 99,
+			"radio": 60,
+			"shovel": 103,
+			"water": 62,
+			"machete": 35,
+			"compass": 34
+		},
+		"stalled": []
+	},
+	"after": {
+		"name": "current",
+		"family": "village-help",
+		"policy": {
+			"equipment": true,
+			"lead": 1,
+			"progress": 4,
+			"success": 18,
+			"stamina": 1,
+			"teamwork": 0.4,
+			"cost": 0.8
+		},
+		"games": 252,
+		"wins": 69,
+		"moves": 15991,
+		"byScenario": {
+			"1": {
+				"games": 36,
+				"wins": 15
+			},
+			"2": {
+				"games": 36,
+				"wins": 10
+			},
+			"3": {
+				"games": 36,
+				"wins": 4
+			},
+			"4": {
+				"games": 36,
+				"wins": 9
+			},
+			"5": {
+				"games": 36,
+				"wins": 10
+			},
+			"6": {
+				"games": 36,
+				"wins": 12
+			},
+			"7": {
+				"games": 36,
+				"wins": 9
+			}
+		},
+		"equipment": {
+			"torch": 44,
+			"flare": 80,
+			"rope": 41,
+			"binoculars": 74,
+			"tape": 16,
+			"map": 94,
+			"aid": 100,
+			"radio": 60,
+			"shovel": 103,
+			"water": 62,
+			"machete": 34,
+			"compass": 36
+		},
+		"stalled": []
+	}
+}

@@ -89,3 +89,10 @@ Reproduce a current-policy batch with `node scripts/benchmark-policy.mjs current
 Before using planning rerolls, the bot evaluates its desired route and any useful prospective Binoculars swap. A swap is considered useful only when the normal route planner would choose its improved destination. Torch and Water flask are evaluated against that intended destination, including its hypothetical post-swap requirements. The bot rolls first and reevaluates the route and swap afterward; it does not spend Binoculars merely to improve an unused nearby tile. A prospective swap does not place a destination marker, which would make that tile ineligible for swapping.
 
 Regression coverage verifies reroll selection against the proposed destination without mutating the board or consulting hidden teammate dice. A further 168 games spanning all scenarios, player counts and difficulties completed with exact replays and no deadlocks. This validation batch is not a matched win-rate comparison.
+
+
+## Helping from a safe village
+
+A bot staying on its current village tile can prioritise reducing its dice contributions against escaping comparison neighbours. It applies only outside the next eruption wave, with stamina strictly above the maximum possible loss for this round. Rerolls seek lower opposing contributions instead of improving the resident's own result. Buddy and Machete may set aside dice that also match the resident's own location. Residents at risk of exhaustion or threatened by lava retain the ordinary survival policy. Hidden teammate dice remain unavailable.
+
+A matched 252-game comparison across seven scenarios, 2–4 players and difficulties 1–4 increased complete-team wins from 65 (25.8%) to 69 (27.4%). Every game terminated and replayed exactly. This four-win difference is modest; it does not establish a universally stronger policy. Results are in `ai-village-help-benchmark.json`, using seed family `village-help`, 12 seeds per scenario/player-count combination. The baseline is the AI from commit b769c7e.

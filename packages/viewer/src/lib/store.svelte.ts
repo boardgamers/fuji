@@ -2,6 +2,7 @@ import { SoundDesign, type SoundCue } from "./sound";
 import type { View, Move } from "fuji-engine";
 export class Store {
 	state: View | null = $state(null);
+	avatars: string[] = $state([]);
 	private audio = new SoundDesign();
 	sound = $state(true);
 	setSound(enabled: boolean) {

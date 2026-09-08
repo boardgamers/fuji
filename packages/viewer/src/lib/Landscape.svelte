@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { terrain, cell, distance, threatened, CHARACTER_COLORS, requirementLabel, type View } from "fuji-engine";
+	import PlayerMarker from "./PlayerMarker.svelte";
 	import TravelGuide from "./TravelGuide.svelte";
 	import RequirementSymbols from "./RequirementSymbols.svelte";
 	import { art } from "./assets";
 	let {
 		state,
+		avatars = [],
 		colorblind = false,
 		seat,
 		reserved = {},
@@ -16,6 +18,7 @@
 		oninspect,
 	}: {
 		state: View;
+		avatars?: string[];
 		colorblind?: boolean;
 		seat?: number;
 		reserved?: Record<string, string>;
@@ -218,10 +221,7 @@
 								/>
 							{/if}
 							<g transform={`translate(${x(destination) + 27},${y(destination) - 27 + i * 20})`}>
-								<circle r="10" fill="#102b25" stroke={CHARACTER_COLORS[p.character]} stroke-width="2" />
-								<text y="4" text-anchor="middle" fill={CHARACTER_COLORS[p.character]} font-size="12" font-weight="700"
-									>{i + 1}</text
-								>
+								<PlayerMarker avatar={avatars[i]} number={i + 1} color={CHARACTER_COLORS[p.character]!} radius={10} />
 							</g>
 						</g>
 					{/if}
@@ -262,8 +262,7 @@
 							? ": opposite player, not your neighbour. Your dice are not compared with each other."
 							: ""}</title
 					>
-					<circle r="19" fill="#091e1b" stroke={CHARACTER_COLORS[p.character]} stroke-width={i === seat ? 3 : 2} />
-					<text text-anchor="middle" y="6" fill={CHARACTER_COLORS[p.character]} class="traveler-number">{i + 1}</text>
+					<PlayerMarker avatar={avatars[i]} number={i + 1} color={CHARACTER_COLORS[p.character]!} own={i === seat} />
 					{#if i === seat}<path d="M-4 -28H4L0 -22Z" fill="#f4d888" />{/if}
 				</g>
 			{/each}
@@ -482,9 +481,6 @@
 		transition: transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
 		pointer-events: auto;
 		filter: drop-shadow(0 4px 3px #0007);
-	}
-	.traveler-number {
-		font: 600 17px var(--font-ui);
 	}
 	.scene-legend {
 		flex-wrap: wrap;

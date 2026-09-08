@@ -1273,3 +1273,36 @@ test("skip injury choices when a resolved explorer is certain to die in the erup
 		}
 	}
 });
+
+test("safe village residents sacrifice strong dice for escaping neighbors without risking exhaustion", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = withPhase("reroll");
+	s.board.forEach((c) => (c.lava = false));
+	s.players.forEach((p, i) => {
+		p.position = ["4,2", "2,2", "3,3"][i]!;
+		p.path = [p.position];
+		p.cards = [];
+		p.dice.forEach((d) => (d.face = 6));
+		cell(s, p.position).terrain = i === 0 ? 33 : 16;
+	});
+	const p = s.players[0]!;
+	p.skill = "gatherer";
+	p.stamina = 0;
+	p.rerolls = 2;
+	const roll = chooseMove(stripSecret(s, 0), 0);
+	assert.equal(roll.action, "reroll");
+	assert.equal((roll.ids as string[]).length, p.dice.length);
+	s.players[1]!.dice.forEach((d) => (d.face = 1));
+	assert.deepEqual(chooseMove(stripSecret(s, 0), 0), roll);
+	p.stamina = 25 - (s.difficulty + 2);
+	assert.equal(chooseMove(stripSecret(s, 0), 0).action, "finishRerolls");
+	p.stamina = 0;
+	cell(s, "4,1").lava = true;
+	assert.equal(chooseMove(stripSecret(s, 0), 0).action, "finishRerolls");
+	cell(s, "4,1").lava = false;
+	p.skill = "buddy";
+	assert.equal(chooseMove(stripSecret(s, 0), 0).action, "buddy");
+	s.phase = "equipment";
+	p.cards = [{ id: "machete", used: 0, availableRound: 0 }];
+	assert.equal(chooseMove(stripSecret(s, 0), 0).id, "machete");
+});

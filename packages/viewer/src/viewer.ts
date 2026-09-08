@@ -15,6 +15,9 @@ export function launch(selector: string) {
 		store.colorblind = preferences?.colorblind === true;
 		store.setSound(preferences?.sound !== false);
 	});
+	events.on<string[]>("avatars", (avatars) => {
+		store.avatars = avatars;
+	});
 	store.send = (move) => events.emit("move", move);
 	events.on<View>("state", async (state) => {
 		store.receive(state);

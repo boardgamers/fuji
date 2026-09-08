@@ -146,11 +146,17 @@ import path from "node:path";
 	managerState.players[0].cards = [{ id: "map", used: 0, availableRound: 0 }];
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(managerState, 0));
 	await page.locator(".equipment-list button").filter({ hasText: "Map" }).click();
-	await page.getByLabel(/Lend a die to/).selectOption("1");
-	if (await page.getByLabel(/Give card to/).isVisible()) throw Error("Card transfer should start collapsed");
+	await page.getByRole("group", { name: "Lend a die to" }).getByRole("button", { name: "Lady Livingstone" }).click();
+	if (await page.getByRole("group", { name: "Give card to" }).isVisible())
+		throw Error("Card transfer should start collapsed");
 	await page.getByText("Give this card…", { exact: true }).click();
-	await page.getByLabel(/Give card to/).selectOption("2");
-	if ((await page.getByLabel(/Lend a die to/).inputValue()) !== "1")
+	await page.getByRole("group", { name: "Give card to" }).getByRole("button", { name: "Hiromi" }).click();
+	if (
+		(await page
+			.getByRole("group", { name: "Lend a die to" })
+			.getByRole("button", { name: "Lady Livingstone" })
+			.getAttribute("aria-pressed")) !== "true"
+	)
 		throw Error("Card transfer must not change the die recipient");
 	await page.screenshot({ path: "work/browser/fuji-equipment-transfer.png", fullPage: true });
 	await page.getByRole("button", { name: "Give Map card", exact: true }).click();

@@ -28,6 +28,7 @@
 	import { art } from "./lib/assets";
 	import Landscape from "./lib/Landscape.svelte";
 	import Die from "./lib/Die.svelte";
+	import PlayerChoices from "./lib/PlayerChoices.svelte";
 	let { store }: { store: Store } = $props();
 	const s = $derived(store.state);
 	const actingSeats = $derived(
@@ -202,7 +203,7 @@
 	}
 	function chooseTool(id: EquipmentId) {
 		tool = tool === id ? null : id;
-		target = id === "map" ? (seat === 0 ? 1 : 0) : (seat ?? 0);
+		target = ["map", "lighter"].includes(id) ? (seat === 0 ? 1 : 0) : (seat ?? 0);
 		tilePicks = [];
 		dice = [];
 	}
@@ -725,16 +726,21 @@
 												>{/each}</select
 										></label
 									>{/if}
-								{#if ["water", "lighter", "map"].includes(actionTool ?? "")}<label class="field"
-										>{actionTool === "map"
+								{#if ["water", "lighter", "map"].includes(actionTool ?? "")}
+									<PlayerChoices
+										players={s.players}
+										{seat}
+										value={target}
+										disabled={store.waiting}
+										label={actionTool === "map"
 											? "Lend a die to"
 											: actionTool === "lighter"
 												? "Borrow a die from"
-												: "Reroll dice for"}<select bind:value={target}
-											>{#each s.players as p, i}<option value={i}>{p.name}{i === seat ? " (you)" : ""}</option
-												>{/each}</select
-										></label
-									>{/if}
+												: "Reroll dice for"}
+										excludeSelf={actionTool === "map" || actionTool === "lighter"}
+										onchange={(i) => (target = i)}
+									/>
+								{/if}
 								{#if ["shovel", "torch", "tape", "machete", "compass", "map"].includes(actionTool ?? "")}<p
 										class="muted small"
 									>
@@ -772,11 +778,15 @@
 										<p class="muted small">
 											Transfer the {info.name} card to a teammate using your Equipment Manager ability.
 										</p>
-										<label class="field"
-											>Give card to<select bind:value={giveTarget}>
-												{#each s.players as p, i}{#if i !== seat}<option value={i}>{p.name}</option>{/if}{/each}
-											</select></label
-										>
+										<PlayerChoices
+											players={s.players}
+											{seat}
+											value={giveTarget}
+											label="Give card to"
+											excludeSelf
+											disabled={store.waiting}
+											onchange={(i) => (giveTarget = i)}
+										/>
 										<button
 											class="secondary"
 											disabled={store.waiting || !!s.pending || !["planning", "equipment"].includes(s.phase)}

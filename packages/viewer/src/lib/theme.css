@@ -1308,3 +1308,21 @@ h3 {
 .comparison .comparison-dice .die-caption {
 	font-size: 6px;
 }
+
+.ready-label.active-label {
+	color: #dfedc4;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+.active-label::before {
+	content: "";
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #bcdfa4;
+	flex: none;
+}
+.public-bars {
+	color: var(--gold);
+}

@@ -19,6 +19,7 @@
 		CHARACTER_COLORS,
 		hasSkill,
 		activeDice,
+		activePlayers,
 		type EquipmentId,
 		type View,
 	} from "fuji-engine";
@@ -28,6 +29,7 @@
 	import Die from "./lib/Die.svelte";
 	let { store }: { store: Store } = $props();
 	const s = $derived(store.state);
+	const actingSeats = $derived(s ? activePlayers(s) : []);
 	const seat = $derived(store.seat);
 	const me = $derived(seat === undefined ? undefined : s?.players[seat]);
 	let inspected = $state("");
@@ -250,36 +252,51 @@
 				<button
 					class="teammate"
 					class:own={seat === i}
+					class:can-act={actingSeats.includes(i)}
 					style:--player-color={CHARACTER_COLORS[p.character]}
 					onclick={() => {
 						if (store.local) store.selectSeat(i);
 					}}
 					disabled={!store.local}
-					aria-label={`${p.name}${seat === i ? ", you" : ""}. ${EXHAUSTION - p.stamina} stamina remaining${store.local ? ". Switch to this player." : ""}`}
+					aria-label={`${p.name}${seat === i ? ", you" : ""}${actingSeats.includes(i) ? ", can act now" : ""}. ${EXHAUSTION - p.stamina} stamina remaining${store.local ? ". Switch to this player." : ""}`}
 				>
 					<img src={art("character", p.character + 1)} alt="" class="portrait" />
 					<div class="teammate-info">
 						<span class="teammate-name"
 							>{p.name}{#if seat === i}<small>YOU</small>{/if}</span
-						><span class="role-name">{SKILLS[p.skill].name}</span><span class="stamina-track" aria-hidden="true"
+						><span class="role-name"
+							>{SKILLS[p.skill].name}{#if p.skill === "gatherer"}<span class="public-bars">
+									· {p.powerBars} power bar{p.powerBars === 1 ? "" : "s"}</span
+								>{/if}</span
+						><span class="stamina-track" aria-hidden="true"
 							><i style:width={`${(1 - p.stamina / EXHAUSTION) * 100}%`}></i></span
 						>
 					</div>
 					<div class="teammate-status">
 						<span title="Remaining stamina. At zero, the whole expedition loses."
 							>{EXHAUSTION - p.stamina}<small> / {EXHAUSTION} stamina</small></span
-						><span class="ready-label"
-							>{p.pendingInjuries
-								? "Injured"
-								: p.ready || (p.setupDone && s.phase === "setup")
-									? "Ready ✓"
-									: p.resolved && s.phase === "movement"
-										? "Moved"
-										: s.phase === "setup"
-											? "Packing"
-											: p.injuries.length
-												? `${p.injuries.length} injury`
-												: ""}</span
+						><span class="ready-label" class:active-label={actingSeats.includes(i)}
+							>{actingSeats.includes(i)
+								? s.pending
+									? "Respond"
+									: p.pendingInjuries
+										? "Choose injury"
+										: s.phase === "movement" && s.activeResolution !== null
+											? s.activeResolution === i
+												? "Resolving"
+												: "Can help"
+											: "Can act"
+								: p.pendingInjuries
+									? "Injured"
+									: p.ready || (p.setupDone && s.phase === "setup")
+										? "Ready ✓"
+										: p.resolved && s.phase === "movement"
+											? "Moved"
+											: s.phase === "setup"
+												? "Packing"
+												: p.injuries.length
+													? `${p.injuries.length} injury`
+													: ""}</span
 						>
 					</div>
 				</button>

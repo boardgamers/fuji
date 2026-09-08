@@ -712,7 +712,7 @@ export function stripSecret(s: State, seat?: number): View {
 	});
 	return { ...publicState, deckCount: deck.length };
 }
-export function activePlayers(s: State): number[] {
+export function activePlayers(s: State | View): number[] {
 	if (s.outcome) return [];
 	if (s.pending) return s.pending.players;
 	const injured = s.players.flatMap((p, i) => (p.pendingInjuries ? [i] : []));

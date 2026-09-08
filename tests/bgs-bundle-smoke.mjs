@@ -87,8 +87,14 @@ import path from "node:path";
 	if (s.players[0].cards.some((c) => c.id === "machete")) throw Error("Machete was not consumed");
 	s.phase = "movement";
 	s.activeResolution = 0;
+	s.players[1].powerBars = 2;
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
 	await page.getByRole("button", { name: "Confirm result" }).waitFor();
+	if ((await page.locator(".teammate.can-act").count()) !== 2) throw Error("Resolver and Gatherer should be active");
+	if (!(await page.locator(".public-bars").innerText()).includes("2 power bars"))
+		throw Error("Public power bars missing");
+	if (!(await page.getByText("Can help", { exact: true }).isVisible()))
+		throw Error("Gatherer help availability missing");
 	if ((await page.locator(".comparison-player").count()) !== 3) throw Error("Comparison must show every participant");
 	if (await page.locator(".comparison-dice .die.aside").count()) throw Error("Set-aside dice must not count");
 	const countedBeforeHover = await page.locator(".comparison").innerText();

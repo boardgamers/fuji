@@ -1616,3 +1616,9 @@ h3 {
 .visible-choices button:not(.die):hover {
 	background: #294136;
 }
+
+.dice-conflict-guide {
+	margin: 0 0 12px;
+	font-size: 12px;
+	color: #aebfa3;
+}

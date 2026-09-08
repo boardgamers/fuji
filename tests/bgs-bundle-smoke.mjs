@@ -101,6 +101,31 @@ import path from "node:path";
 	if (await page.locator(".die-caption").count()) throw Error("Color labels did not turn off");
 	await page.keyboard.press("Escape");
 	if ((await page.locator(".village-marker").count()) !== 5) throw Error("Every village location needs a marker");
+	const conflictState = initGame(4, {}, "dice-conflicts");
+	conflictState.phase = "reroll";
+	conflictState.board.forEach((c) => {
+		if (!c.lava) c.terrain = 16;
+	});
+	conflictState.players.forEach((p) => {
+		p.path = [p.position];
+		p.ready = false;
+		p.rerolls = 1;
+	});
+	conflictState.players[0].dice.forEach((d) => (d.face = 1));
+	conflictState.players[0].dice[0].aside = true;
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(conflictState, 0));
+	const conflictMarkers = page.locator(".personal .conflict-badges > span");
+	const markers = await conflictMarkers.allTextContents();
+	if (markers.length !== 10 || markers.some((m) => !["2", "4"].includes(m)))
+		throw Error("Only comparison neighbors should be marked; set-aside dice must be excluded");
+	conflictState.players[1].dice.forEach((d) => (d.face = 6));
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(conflictState, 0));
+	if (JSON.stringify(await conflictMarkers.allTextContents()) !== JSON.stringify(markers))
+		throw Error("Conflict markers used hidden teammate rolls");
+	await page.screenshot({ path: "work/browser/fuji-dice-conflicts.png", fullPage: true });
+	conflictState.phase = "equipment";
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(conflictState, 0));
+	if (await conflictMarkers.count()) throw Error("Reroll conflict markers leaked into another phase");
 	s.phase = "reroll";
 	s.players[0].rerolls = 0;
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));

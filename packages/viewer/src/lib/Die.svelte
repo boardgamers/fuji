@@ -5,6 +5,7 @@
 		selected = false,
 		colorblind = false,
 		relevant = false,
+		conflicts = [],
 		disabled = false,
 		onclick = () => {},
 	}: {
@@ -12,10 +13,14 @@
 		colorblind?: boolean;
 		selected?: boolean;
 		relevant?: boolean;
+		conflicts?: { seat: number; name: string; color: string; location: string }[];
 		disabled?: boolean;
 		onclick?: () => void;
 	} = $props();
 	const f = $derived(face(die));
+	const conflictHelp = $derived(
+		conflicts.map((p) => `Adds ${die.face} to the total ${p.name} must beat at ${p.location}`).join(". ")
+	);
 	const layouts: Record<number, number[]> = {
 		1: [4],
 		2: [0, 8],
@@ -35,8 +40,9 @@
 	style:--die-color={die.face ? { blue: "#82ccdb", pink: "#e16d9a", yellow: "#f2cd5d" }[f.color] : "#27433c"}
 	{disabled}
 	{onclick}
+	title={conflictHelp || undefined}
 	aria-label={die.face
-		? `${f.color} ${die.face}${die.aside ? ", set aside" : relevant ? `, counts +${die.face}` : ""}`
+		? `${f.color} ${die.face}${die.aside ? ", set aside" : relevant ? `, counts +${die.face}` : ""}${conflictHelp ? `. ${conflictHelp}` : ""}`
 		: "Hidden die"}
 	aria-pressed={selected}
 >
@@ -48,6 +54,9 @@
 	{#if die.face}<span class="pips" aria-hidden="true"
 			>{#each Array(9) as _, i}<i class:filled={layouts[die.face]?.includes(i)}></i>{/each}</span
 		>{#if colorblind}<span class="die-caption">{f.color}</span>{/if}{:else}<span aria-hidden="true">?</span>{/if}
+	{#if conflicts.length && die.face && !die.aside}<span class="conflict-badges" aria-hidden="true">
+			{#each conflicts as player}<span style:--player-color={player.color}>{player.seat + 1}</span>{/each}
+		</span>{/if}
 </button>
 
 <style>
@@ -102,6 +111,28 @@
 		pointer-events: none;
 	}
 
+	.conflict-badges {
+		position: absolute;
+		bottom: -12px;
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		gap: 3px;
+		pointer-events: none;
+	}
+	.conflict-badges > span {
+		display: grid;
+		place-items: center;
+		width: 19px;
+		height: 19px;
+		border: 1.5px solid var(--player-color);
+		border-radius: 50%;
+		background: #102c25;
+		color: var(--player-color);
+		font-size: 11px;
+		font-weight: 700;
+		box-shadow: 0 2px 4px #0005;
+	}
 	.die.aside {
 		opacity: 0.5;
 		transform: scale(0.85);

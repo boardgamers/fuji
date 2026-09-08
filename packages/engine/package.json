@@ -1,0 +1,29 @@
+{
+	"name": "fuji-engine",
+	"version": "0.1.0",
+	"private": true,
+	"license": "AGPL-3.0-only",
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": "./dist/index.js",
+		"./wrapper": "./dist/wrapper.js"
+	},
+	"scripts": {
+		"build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+		"test": "tsc --outDir dist-test && node --test dist-test/src/*.spec.js",
+		"prepack": "pnpm build"
+	},
+	"dependencies": {
+		"seedrandom": "3.0.5"
+	},
+	"devDependencies": {
+		"@types/node": "24.10.1",
+		"@types/seedrandom": "3.0.8",
+		"typescript": "5.9.3"
+	}
+}

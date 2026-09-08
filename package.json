@@ -1,0 +1,20 @@
+{
+	"name": "fuji",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "pnpm --filter fuji-engine build && pnpm --filter fuji-viewer dev",
+		"build": "pnpm --filter fuji-engine build && pnpm --filter fuji-viewer build",
+		"test": "pnpm --filter fuji-engine test",
+		"check": "pnpm fmt:check && pnpm build && pnpm --filter fuji-viewer check && pnpm test",
+		"fmt": "oxfmt",
+		"fmt:check": "oxfmt --check",
+		"simulate": "pnpm --filter fuji-engine build && node scripts/simulate.mjs",
+		"test:browser": "node tests/browser-smoke.mjs && node tests/bgs-bundle-smoke.mjs"
+	},
+	"devDependencies": {
+		"oxfmt": "0.61.0",
+		"playwright": "1.62.1"
+	},
+	"packageManager": "pnpm@11.18.0"
+}

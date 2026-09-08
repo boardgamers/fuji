@@ -1,0 +1,49 @@
+# Rules status
+
+## Evidence
+
+The publisher-supplied English production rulebook is `EN_Fuji_Regel_PRINT_3_130918.pdf` (13 September 2018). Terrain faces are transcribed from `fuji_land_front_Print3.pdf`; setup from scenario card 1; skills and equipment from the English fronts and rulebook appendix. The stamina track has exhaustion at step 25, with injury thresholds at steps 5, 10, 15 and 20.
+
+The terrain names used in the UI are descriptive navigation labels, not printed card titles. Terrain IDs are the one-based production PDF page numbers.
+
+Dice were inferred from 17 user-supplied groups (88 dice, 148 visible faces). Under the three-types/two-of-each model, exactly one value/color composition fits every observation:
+
+| Value | A      | B      | C      |
+| ----- | ------ | ------ | ------ |
+| 1     | Blue   | Yellow | Pink   |
+| 2     | Yellow | Pink   | Blue   |
+| 3     | Pink   | Blue   | Yellow |
+| 4     | Pink   | Blue   | Yellow |
+| 5     | Yellow | Pink   | Blue   |
+| 6     | Blue   | Yellow | Pink   |
+
+Each full set contains two of each type. This remains observation-derived rather than publisher-certified. Faces 1 and 6 have different values but the same color in all three types, so Tape and Compass do not introduce a color change.
+
+## Implemented first slice
+
+- Scenario 1, including the additional village and split starting positions at four players.
+- All 24 landscape and 6 village card criteria, including AND/OR conditions and reroll symbols; scenario setup shuffles the appropriate decks.
+- Two-player variant A: six neutral dice, three visible during planning and three hidden until reveal. No neutral pawn.
+- Four difficulty levels; strict comparisons against seated neighbors; ties fail; stamina and immediate team defeat/victory.
+- Equipment preparation choices and one-die removal for five-die skills.
+- Six skills, fifteen equipment effects, donor consent for the lighter, per-player mandatory Carabiner rerolls, staged Water rerolls and Tinkerer reuse.
+- Set-aside dice visible to everyone and excluded from comparisons; temporary loans return after the round; leg-injury removal occurs after all comparisons.
+- Phase-five movement order is chosen by the players. Power bars are offered by their owner, rather than automatically spent by the recipient.
+- Additional eruptions are applied when traversing eruption markers; ordinary eruptions propagate one wave, never recursively through the entire map.
+- Win triggers as soon as everyone reaches the village, before further stamina deductions or eruptions.
+
+## Deliberate alpha boundaries and interpretations
+
+1. Only scenario 1 is enabled. Scenarios 2–7, the advanced two-player variant B and the extra-thrill double-eruption variant are not yet implemented.
+2. For a five-die skill, the player chooses which die to leave behind before any dice are rolled. The supplied material has not established the official selection procedure. This is an explicit provisional rule.
+3. The two-player simple variant splits one of each inferred type into the visible and hidden halves. The text specifies three visible and three hidden dice but does not mandate this split.
+4. A planned path is explicit. If an earlier extra eruption blocks that path, resolution treats it as a failed move unless an alternative legal path to the same locked destination is supplied. Check this interpretation against the publisher before beta release.
+5. Pocketknife follows the printed English equipment card: copy equipment belonging to another player. The appendix wording is broader; confirm whether copying one's own equipment should also be allowed.
+6. The local skill assignment is fixed for the first slice (Buddy, Gatherer, Equipment manager, then Survivalist); the engine accepts a `skills` array, but a complete pregame skill/character selection UI is still needed.
+7. Dropping a player ends the cooperative expedition. No replacement bot is enabled in the BGS wrapper.
+8. Live state and the journal work. Full server replay exists, but viewer replay controls are not implemented, so the BGS viewer must be registered with `replayable: false`.
+9. Original PDF art is usable and extracted, but the environment is still a first visual pass. It is not yet the final animation/presentation quality intended for Feuerland.
+
+## Next acceptance checks
+
+Play full expeditions with people familiar with the physical game. Verify the provisional interpretations, five-die selection and every equipment/skill combination against the physical reference. Extend scenario data from the already-supplied seven cards. Validate BGS multiplayer, clocks, reconnection and cooperative outcomes before publication.

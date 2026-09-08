@@ -1,0 +1,28 @@
+{
+	"label": "Fuji",
+	"description": "Escape Mount Fuji together. Private alpha: scenario 1.",
+	"players": [2, 3, 4],
+	"credits": "Game design: Wolfgang Warsch. Illustrations: Weberson Santiago. Publisher: Feuerland Spiele.",
+	"public": false,
+	"engine": { "package": { "name": "fuji-engine", "version": "0.1.0" }, "entryPoint": "dist/wrapper.js" },
+	"viewer": {
+		"url": "",
+		"topLevelVariable": "fuji",
+		"replayable": false,
+		"dependencies": { "scripts": [], "stylesheets": [] }
+	},
+	"options": [
+		{
+			"name": "difficulty",
+			"label": "Difficulty",
+			"type": "select",
+			"default": "1",
+			"items": [
+				{ "name": "1", "label": "Level 1" },
+				{ "name": "2", "label": "Level 2" },
+				{ "name": "3", "label": "Level 3" },
+				{ "name": "4", "label": "Level 4" }
+			]
+		}
+	]
+}

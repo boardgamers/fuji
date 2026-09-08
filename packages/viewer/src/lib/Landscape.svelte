@@ -1,0 +1,413 @@
+<script lang="ts">
+	import { terrain, cell, distance, threatened, CHARACTER_COLORS, requirementLabel, type View } from "fuji-engine";
+	import { art } from "./assets";
+	let {
+		state,
+		seat,
+		route = [],
+		selected = "",
+		reachable = [],
+		onclick,
+		oninspect,
+	}: {
+		state: View;
+		seat?: number;
+		route?: string[];
+		selected?: string;
+		reachable?: string[];
+		onclick: (id: string) => void;
+		oninspect: (id: string) => void;
+	} = $props();
+	const danger = $derived(threatened(state));
+	const x = (id: string) => 58 + cell(state, id).x * 100;
+	const y = (id: string) => 54 + cell(state, id).y * 84;
+	const edges = $derived(
+		state.board.flatMap((a) =>
+			state.board.filter((b) => distance(a, b) === 1 && (b.x > a.x || b.y > a.y)).map((b) => ({ a, b }))
+		)
+	);
+	function badge(id: number) {
+		const r = terrain(id).requirement;
+		const c = r.colors?.length === 3 ? "" : (r.colors?.map((c) => c[0]!.toUpperCase()).join("+") ?? "");
+		const v = r.values?.join("/") ?? "";
+		return [c, r.combine === "or" ? "or" : "", r.parity === "odd" ? "odd" : r.parity === "even" ? "even" : "", v]
+			.filter(Boolean)
+			.join(" ");
+	}
+	const routeLine = $derived(route.map((id) => `${x(id)},${y(id)}`).join(" "));
+</script>
+
+<div class="landscape" style:--landscape-art={`url(${art("land", 21)})`}>
+	<div class="scene-caption">
+		<span class="eyebrow">THE FUJI TRAIL</span><span
+			>Scenario 01 <span class="dot">·</span> Level {state.difficulty}</span
+		>
+	</div>
+	<div class="map-scroll">
+		<svg viewBox="0 0 835 630" class="map" aria-label="Expedition map. Choose a location to inspect or plan a journey.">
+			<defs>
+				<radialGradient id="feather"
+					><stop offset="65%" stop-color="white" /><stop offset="100%" stop-color="black" /></radialGradient
+				>
+				<mask id="land-mask" maskContentUnits="objectBoundingBox"
+					><rect width="1" height="1" fill="url(#feather)" /></mask
+				>
+				<linearGradient id="lava-gradient" x2="1" y2="1"
+					><stop stop-color="#ffcd64" /><stop offset=".45" stop-color="#e45931" /><stop
+						offset="1"
+						stop-color="#751f21"
+					/></linearGradient
+				>
+				<filter id="glow"><feGaussianBlur stdDeviation="4" /></filter>
+			</defs>
+			<text x="405" y="9" class="map-region">THE VILLAGE</text>
+			<text x="45" y="607" class="map-note">ORTHOGONAL PATHS · ESCAPE TOGETHER</text>
+			{#each edges as { a, b }}<line
+					x1={x(a.id)}
+					y1={y(a.id)}
+					x2={x(b.id)}
+					y2={y(b.id)}
+					class="trail"
+					class:burnt={a.lava || b.lava}
+				/>{/each}
+			{#each state.board as c (c.id)}
+				{@const data = terrain(c.terrain)}
+				<g
+					class="location"
+					class:reachable={reachable.includes(c.id)}
+					class:selected={selected === c.id}
+					class:lava={c.lava}
+					role="button"
+					tabindex="0"
+					aria-label={`${data.name}${c.lava ? ", covered in lava" : ""}${c.equipment ? ", equipment here" : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
+					onclick={() => onclick(c.id)}
+					onkeydown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							onclick(c.id);
+						}
+					}}
+					onmouseenter={() => oninspect(c.id)}
+					onfocus={() => oninspect(c.id)}
+				>
+					<rect x={x(c.id) - 44} y={y(c.id) - 35} width="88" height="70" rx="13" class="land-base" />
+					<image
+						href={art("land", c.lava ? 1 : c.terrain)}
+						x={x(c.id) - 47}
+						y={y(c.id) - 39}
+						width="94"
+						height="78"
+						preserveAspectRatio="xMidYMid slice"
+						mask="url(#land-mask)"
+						class="tile-art"
+					/>
+					{#if c.lava}<path
+							d={`M ${x(c.id) - 35} ${y(c.id) + 15} l 20 -12 -5 -14 25 4 18 -16 M ${x(c.id) + 5} ${y(c.id) - 8} l 12 18 -8 15`}
+							class="lava-crack"
+						/>{/if}
+					<rect x={x(c.id) - 44} y={y(c.id) - 35} width="88" height="70" rx="13" class="location-ring" />
+					{#if reachable.includes(c.id) && !c.lava}<circle
+							cx={x(c.id)}
+							cy={y(c.id) + 31}
+							r="3"
+							class="reachable-dot"
+						/>{/if}
+					{#if c.equipment && !c.lava}<g transform={`translate(${x(c.id) + 29},${y(c.id) - 25})`}
+							><circle r="10" class="equipment-dot" /><path
+								d="M-4 -2h8v6h-8z M-2 -2v-3h4v3"
+								class="equipment-icon"
+							/></g
+						>{/if}
+					{#if c.eruption && !c.lava}<g transform={`translate(${x(c.id) - 29},${y(c.id) - 25})`}
+							><path d="M0 -10 10 8H-10Z" class="eruption-dot" /><text y="5" text-anchor="middle" class="warning-mark"
+								>!</text
+							></g
+						>{/if}
+					{#if danger.includes(c.id)}<rect
+							x={x(c.id) - 44}
+							y={y(c.id) - 35}
+							width="88"
+							height="70"
+							rx="13"
+							class="danger-ring"
+						/>{/if}
+					{#if !c.lava && ["land", "village"].includes(data.kind)}<rect
+							x={x(c.id) - 40}
+							y={y(c.id) + 17}
+							width="80"
+							height="18"
+							rx="4"
+							fill="#112820e6"
+						/><text x={x(c.id)} y={y(c.id) + 30} text-anchor="middle" class="requirement-badge">{badge(c.terrain)}</text
+						>{/if}
+					{#if data.reroll && !c.lava}<text x={x(c.id) - 34} y={y(c.id) - 16} class="reroll-mark">↻</text>{/if}
+				</g>
+			{/each}
+			{#if route.length > 1}<polyline points={routeLine} class="route-shadow" /><polyline
+					points={routeLine}
+					class="route-line"
+				/>{/if}
+			{#each state.players as p, i (i)}
+				{#if p.ready && state.phase === "planning" && p.path.length}
+					<circle
+						cx={x(p.path.at(-1)!)}
+						cy={y(p.path.at(-1)!)}
+						r="25"
+						fill="none"
+						stroke={CHARACTER_COLORS[p.character]}
+						stroke-width="2"
+						stroke-dasharray="3 5"
+					/>
+				{/if}
+				{@const occupants = state.players.map((q, j) => (q.position === p.position ? j : -1)).filter((j) => j >= 0)}
+				{@const offset = (occupants.indexOf(i) - (occupants.length - 1) / 2) * 27}
+				<g class="traveler" style:transform={`translate(${x(p.position) + offset}px,${y(p.position)}px)`}>
+					<circle r="19" fill="#091e1b" stroke={CHARACTER_COLORS[p.character]} stroke-width={i === seat ? 3 : 2} />
+					<text text-anchor="middle" y="6" fill={CHARACTER_COLORS[p.character]} class="traveler-number">{i + 1}</text>
+					{#if i === seat}<path d="M-4 -28H4L0 -22Z" fill="#f4d888" />{/if}
+				</g>
+			{/each}
+		</svg>
+	</div>
+	<div class="scene-legend">
+		<span><i class="legend-line"></i>Your route</span><span><i class="legend-danger"></i>Next eruption</span><span
+			class="legend-end"
+			>{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} / {state
+				.players.length} in the village</span
+		>
+	</div>
+</div>
+
+<style>
+	.landscape {
+		position: relative;
+		overflow: hidden;
+		background: #142f29;
+		isolation: isolate;
+		border: 1px solid #c9ddac16;
+		border-radius: 4px;
+	}
+	.landscape:before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		background:
+			linear-gradient(120deg, #132e2adb, #122c28ea),
+			var(--landscape-art) center/cover;
+		z-index: -1;
+	}
+	.scene-caption {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 23px 26px 0;
+		font-size: 12px;
+		color: #a1b5a4;
+	}
+	.dot {
+		margin: 0 5px;
+		color: #cfb873;
+	}
+	.map {
+		width: 100%;
+		height: clamp(390px, calc(100vh - 430px), 610px);
+		display: block;
+	}
+	.requirement-badge {
+		font: 600 11px var(--font-ui);
+		fill: #e6e2b9;
+	}
+	.map-region {
+		font: 11px var(--font-ui);
+		letter-spacing: 5px;
+		fill: #c6c88788;
+	}
+	.map-note {
+		font: 9px var(--font-ui);
+		letter-spacing: 2px;
+		fill: #a1b5a44d;
+	}
+	.trail {
+		stroke: #b7bd8450;
+		stroke-width: 3;
+		stroke-linecap: round;
+		stroke-dasharray: 2 7;
+	}
+	.trail.burnt {
+		stroke: #d8734555;
+	}
+	.land-base {
+		fill: #213e2e;
+	}
+	.tile-art {
+		opacity: 0.86;
+		transition: opacity 0.2s;
+	}
+	.location {
+		cursor: pointer;
+		outline: none;
+	}
+	.location-ring {
+		fill: none;
+		stroke: #dbc47d25;
+		stroke-width: 1;
+		transition:
+			stroke 0.15s,
+			stroke-width 0.15s;
+	}
+	.location:hover .location-ring,
+	.location:focus .location-ring {
+		stroke: #f2d49a;
+		stroke-width: 2;
+	}
+	.location:hover .tile-art {
+		opacity: 1;
+	}
+	.location.selected .location-ring {
+		stroke: #f9df99;
+		stroke-width: 2.5;
+	}
+	.location.selected .tile-art {
+		opacity: 1;
+	}
+	.location.reachable .location-ring {
+		stroke: #c3d6a865;
+	}
+	.reachable-dot {
+		fill: #e7db99;
+	}
+	.equipment-dot {
+		fill: #dfc176;
+		stroke: #192f26;
+		stroke-width: 2;
+	}
+	.equipment-icon {
+		fill: none;
+		stroke: #29392a;
+		stroke-width: 1.5;
+		stroke-linejoin: round;
+	}
+	.eruption-dot {
+		fill: #e88a54;
+		stroke: #482c27;
+		stroke-width: 1.5;
+	}
+	.warning-mark {
+		font: bold 12px var(--font-ui);
+		fill: #452c25;
+	}
+	.reroll-mark {
+		font:
+			22px Georgia,
+			serif;
+		fill: #e8edbb;
+	}
+	.danger-ring {
+		fill: none;
+		stroke: #eb8c5e;
+		stroke-width: 2;
+		stroke-dasharray: 4 5;
+		animation: pulse 3s ease-in-out infinite;
+		pointer-events: none;
+	}
+	.lava .tile-art {
+		opacity: 0.65;
+	}
+	.lava-crack {
+		fill: none;
+		stroke: #f5ae4a;
+		stroke-width: 2;
+		stroke-linecap: round;
+		animation: pulse 4s ease-in-out infinite;
+	}
+	.route-shadow {
+		fill: none;
+		stroke: #293d28;
+		stroke-width: 7;
+		stroke-linejoin: round;
+		pointer-events: none;
+	}
+	.route-line {
+		fill: none;
+		stroke: #f1d584;
+		stroke-width: 3;
+		stroke-linejoin: round;
+		stroke-dasharray: 6 6;
+		animation: route-flow 3s linear infinite;
+		pointer-events: none;
+	}
+	.traveler {
+		transition: transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
+		pointer-events: none;
+		filter: drop-shadow(0 4px 3px #0007);
+	}
+	.traveler-number {
+		font: 600 17px var(--font-ui);
+	}
+	.scene-legend {
+		padding: 0 25px 20px;
+		display: flex;
+		gap: 20px;
+		color: #a7b9a8;
+		font-size: 12px;
+		align-items: center;
+	}
+	.scene-legend span {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+	}
+	.legend-line {
+		width: 20px;
+		border-top: 2px dashed #f1d584;
+	}
+	.legend-danger {
+		width: 9px;
+		height: 9px;
+		border: 1px dashed #eb8c5e;
+		border-radius: 2px;
+	}
+	.legend-end {
+		margin-left: auto;
+		color: #d7d7a7;
+	}
+	@keyframes pulse {
+		50% {
+			opacity: 0.5;
+		}
+	}
+	@keyframes route-flow {
+		to {
+			stroke-dashoffset: -24;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.route-line,
+		.danger-ring,
+		.lava-crack {
+			animation: none;
+		}
+		.traveler {
+			transition: none;
+		}
+	}
+	@media (max-width: 650px) {
+		.map-scroll {
+			overflow-x: auto;
+		}
+		.map {
+			min-width: 610px;
+			height: auto;
+		}
+		.scene-caption {
+			padding: 16px 16px 0;
+		}
+		.scene-legend {
+			padding: 8px 16px 16px;
+			gap: 12px;
+		}
+		.legend-end {
+			display: none !important;
+		}
+	}
+</style>

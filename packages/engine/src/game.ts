@@ -1,0 +1,718 @@
+import seedrandom from "seedrandom";
+import {
+	DICE,
+	EQUIPMENT,
+	EXHAUSTION,
+	INJURIES,
+	INJURY_AT,
+	SCENARIO_ONE,
+	SKILLS,
+	CHARACTERS,
+	terrain,
+	matches,
+	equipment,
+	type Skill,
+	type EquipmentId,
+	type Injury,
+} from "./data.js";
+import type { State, View, Player, Die, Cell, Move, ResolvedFace } from "./types.js";
+export const assert = (ok: unknown, message: string): asserts ok => {
+	if (!ok) throw Error(message);
+};
+export function face(d: Die): ResolvedFace {
+	return { value: d.face, color: DICE[d.type]?.[d.face - 1] ?? "blue" };
+}
+function random(s: State): number {
+	return seedrandom(`${s.seed}:${s.counter++}`)();
+}
+function shuffle<T>(s: State, items: T[]): T[] {
+	const a = [...items];
+	for (let i = a.length - 1; i > 0; i--) {
+		const j = Math.floor(random(s) * (i + 1));
+		[a[i], a[j]] = [a[j]!, a[i]!];
+	}
+	return a;
+}
+function roll(s: State, dice: Die[]) {
+	for (const d of dice) d.face = 1 + Math.floor(random(s) * 6);
+}
+export function cell(s: State | View, id: string): Cell {
+	const c = s.board.find((c) => c.id === id);
+	if (!c) throw Error("Unknown location");
+	return c;
+}
+export function neighbors(s: State | View, seat: number): number[] {
+	const n = s.players.length;
+	return [...new Set([(seat + n - 1) % n, (seat + 1) % n])];
+}
+export function hasSkill(p: Player, skill: Skill) {
+	return p.skill === skill && !p.injuries.includes("amnesia");
+}
+export function activeDice(p: Player) {
+	return p.dice.filter((d) => !d.aside);
+}
+export function distance(a: Cell, b: Cell) {
+	return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+export function walkable(c: Cell) {
+	return !c.lava && !["rubble", "volcano"].includes(terrain(c.terrain).kind);
+}
+export function paths(s: State | View, seat: number, max?: number): Record<string, string[]> {
+	const p = s.players[seat];
+	if (!p) return {};
+	const limit = max ?? (hasSkill(p, "scout") ? 4 : 3);
+	const found: Record<string, string[]> = { [p.position]: [p.position] };
+	const queue = [found[p.position]!];
+	while (queue.length) {
+		const path = queue.shift()!;
+		if (path.length - 1 >= limit) continue;
+		const last = cell(s, path.at(-1)!);
+		for (const next of s.board.filter((c) => walkable(c) && distance(last, c) === 1)) {
+			if (found[next.id]) continue;
+			found[next.id] = [...path, next.id];
+			queue.push(found[next.id]!);
+		}
+	}
+	return found;
+}
+export function rerollAllowance(s: State | View, seat: number, path?: string[]): number {
+	const p = s.players[seat]!;
+	const chosen = path ?? p.path;
+	const dist = chosen.length - 1;
+	if (hasSkill(p, "scout") && dist === 4) return 0;
+	const base = p.injuries.includes("eye")
+		? 0
+		: (dist === 0 ? 2 : dist <= 2 ? 1 : 0) + (terrain(cell(s, chosen.at(-1)!).terrain).reroll ? 1 : 0);
+	return base + (hasSkill(p, "survivalist") ? 1 : 0);
+}
+export function total(p: Player, tile: number): number {
+	return activeDice(p).reduce((n, d) => n + (matches(face(d), terrain(tile).requirement) ? d.face : 0), 0);
+}
+export function comparison(s: State | View, seat: number) {
+	const p = s.players[seat]!;
+	const tile = cell(s, p.path.at(-1) ?? p.position).terrain;
+	const own = total(p, tile) + p.bonus;
+	const peers = neighbors(s, seat).map((i) => ({ seat: i, total: total(s.players[i]!, tile) }));
+	if (s.players.length === 2)
+		peers.push({
+			seat: -1,
+			total: s.ghost.reduce((n, d) => n + (matches(face(d), terrain(tile).requirement) ? d.face : 0), 0),
+		});
+	const highest = Math.max(...peers.map((p) => p.total));
+	const margin = own - highest;
+	const loss = p.aid ? 0 : margin <= 0 ? s.difficulty + 2 : Math.max(0, s.difficulty + 2 - Math.ceil(margin / 2));
+	return { own, peers, margin, loss, success: margin > 0 };
+}
+function event(s: State, text: string, type: State["log"][number]["type"] = "move") {
+	s.log.push({ round: s.round, text, type });
+}
+function phase(s: State, next: State["phase"]) {
+	s.phase = next;
+	for (const p of s.players) {
+		p.ready = false;
+		p.radio = false;
+	}
+	event(
+		s,
+		{
+			setup: "Prepare your expedition",
+			planning: "Choose your routes",
+			reroll: "Reroll in silence",
+			equipment: "Use equipment",
+			movement: "Reveal and move",
+			eruption: "The volcano erupts",
+			ended: "Expedition complete",
+		}[next],
+		"phase"
+	);
+}
+function end(s: State, outcome: "won" | "lost", reason: string) {
+	s.outcome = outcome;
+	s.reason = reason;
+	s.phase = "ended";
+	s.pending = null;
+	event(s, reason, "end");
+}
+function win(s: State) {
+	if (s.players.every((p) => terrain(cell(s, p.position).terrain).kind === "village"))
+		end(s, "won", "Everyone reached the village.");
+}
+function draw(s: State, p: Player, availableRound = s.round + 1) {
+	const id = s.deck.shift();
+	if (id) p.cards.push({ id, used: 0, availableRound });
+}
+function collect(s: State, p: Player) {
+	const c = cell(s, p.position);
+	if (c.equipment) {
+		c.equipment = false;
+		draw(s, p);
+		event(s, `${p.name} found equipment.`, "equipment");
+	}
+}
+export function threatened(s: State | View): string[] {
+	return s.board.filter((c) => !c.lava && s.board.some((l) => l.lava && distance(c, l) === 1)).map((c) => c.id);
+}
+function erupt(s: State) {
+	const next = threatened(s);
+	for (const c of s.board) if (next.includes(c.id)) c.lava = true;
+	event(s, `Lava consumed ${next.length} location${next.length === 1 ? "" : "s"}.`, "eruption");
+	const victim = s.players.find((p) => cell(s, p.position).lava);
+	if (victim) end(s, "lost", `${victim.name} was caught by the lava.`);
+}
+function trigger(s: State, path: string[]) {
+	for (const id of path) {
+		const c = cell(s, id);
+		const count = c.eruption;
+		c.eruption = 0;
+		for (let i = 0; i < count && !s.outcome; i++) erupt(s);
+	}
+}
+function startRound(s: State) {
+	s.round++;
+	s.activeResolution = null;
+	s.pending = null;
+	const all = s.players.flatMap((p) => p.dice).filter((d) => !d.remove);
+	for (let i = 0; i < s.players.length; i++) {
+		const p = s.players[i]!;
+		p.dice = all.filter((d) => d.owner === i);
+		for (const d of p.dice) d.aside = false;
+		p.path = [p.position];
+		p.resolved = false;
+		p.buddyUsed = false;
+		p.aid = false;
+		p.bonus = 0;
+		p.rerolls = 0;
+		roll(s, p.dice);
+	}
+	roll(s, s.ghost);
+	phase(s, "planning");
+}
+export function initGame(players = 3, options: Record<string, unknown> = {}, seed = "fuji"): State {
+	if (!Number.isInteger(players) || players < 2 || players > 4) throw Error("Fuji supports 2–4 players.");
+	const difficulty = Number(options.difficulty ?? 1);
+	if (!Number.isInteger(difficulty) || difficulty < 1 || difficulty > 4) throw Error("Choose difficulty 1–4.");
+	if (options.scenario !== undefined && Number(options.scenario) !== 1)
+		throw Error("This edition currently implements scenario 1.");
+	const s: State = {
+		schemaVersion: 1,
+		seed,
+		counter: 0,
+		round: 0,
+		phase: "setup",
+		players: [],
+		board: [],
+		deck: [],
+		discard: [],
+		difficulty,
+		log: [],
+		revision: 0,
+		outcome: null,
+		reason: "",
+		activeResolution: null,
+		pending: null,
+		ghost: [],
+		ghostVisible: [],
+		history: [],
+		initOptions: { ...options },
+	};
+	const lands = shuffle(
+		s,
+		Array.from({ length: 24 }, (_, i) => i + 4)
+	);
+	const villages = shuffle(s, [28, 29, 30, 31, 32, 33]);
+	let rubble = 2;
+	SCENARIO_ONE.forEach((row, y) =>
+		row.forEach((code, x) => {
+			if (code === " " || (code === "V4" && players !== 4)) return;
+			const village = code.startsWith("v") || code === "V4";
+			const id = code === "V" ? 1 : code === "R" ? rubble++ : village ? villages.shift()! : lands.shift()!;
+			s.board.push({
+				id: `${x},${y}`,
+				x,
+				y,
+				terrain: id,
+				lava: code === "V",
+				equipment: code.includes("E"),
+				eruption: code === "X" ? 1 : 0,
+			});
+		})
+	);
+	s.deck = shuffle(
+		s,
+		EQUIPMENT.map((c) => c.id)
+	);
+	const skillList: Skill[] = Array.isArray(options.skills)
+		? (options.skills as Skill[])
+		: (["buddy", "gatherer", "manager", "survivalist"] as Skill[]);
+	if (skillList.length < players || skillList.some((x) => !(x in SKILLS))) throw Error("Invalid skill selection.");
+	for (let i = 0; i < players; i++) {
+		const skill = skillList[i]!;
+		const pos = players === 4 && i >= 2 ? "1,2" : "0,3";
+		const p: Player = {
+			name: CHARACTERS[i]!,
+			character: i,
+			skill,
+			position: pos,
+			path: [pos],
+			dice: Array.from({ length: 6 }, (_, j) => ({
+				id: `${i}-${j}`,
+				type: Math.floor(j / 2),
+				owner: i,
+				face: 0,
+				aside: false,
+				remove: false,
+			})),
+			cards: [],
+			stamina: 0,
+			injuries: [],
+			pendingInjuries: 0,
+			ready: false,
+			rerolls: 0,
+			powerBars: 0,
+			radio: false,
+			aid: false,
+			bonus: 0,
+			resolved: false,
+			setupDone: false,
+			buddyUsed: false,
+		};
+		for (let j = 0; j < SKILLS[skill].draw; j++) draw(s, p, 1);
+		s.players.push(p);
+	}
+	if (players === 2) {
+		s.ghost = Array.from({ length: 6 }, (_, j) => ({
+			id: `ghost-${j}`,
+			type: Math.floor(j / 2),
+			owner: -1,
+			face: 0,
+			aside: false,
+			remove: false,
+		}));
+		s.ghostVisible = s.ghost.filter((_, j) => j % 2 === 0).map((d) => d.id);
+	}
+	event(s, "Scenario 1 · the path to the village", "phase");
+	return s;
+}
+function strings(value: unknown, max = 6): string[] {
+	if (
+		!Array.isArray(value) ||
+		value.length > max ||
+		value.some((x) => typeof x !== "string") ||
+		new Set(value).size !== value.length
+	)
+		throw Error("Invalid selection.");
+	return [...value] as string[];
+}
+function integer(value: unknown, min: number, max: number) {
+	if (typeof value !== "number" || !Number.isInteger(value) || value < min || value > max)
+		throw Error("Invalid choice.");
+	return value;
+}
+function selectedDice(p: Player, value: unknown, min = 0, max = 6): Die[] {
+	const ids = strings(value, max);
+	if (ids.length < min) throw Error("Select a die.");
+	return ids.map((id) => {
+		const d = p.dice.find((d) => d.id === id && !d.aside);
+		if (!d) throw Error("This die is unavailable.");
+		return d;
+	});
+}
+function validatePath(s: State, p: Player, input: unknown, max: number) {
+	const route = strings(input, 5);
+	if (!route.length || route[0] !== p.position || route.length - 1 > max) throw Error("Choose a reachable route.");
+	for (let i = 1; i < route.length; i++) {
+		if (!walkable(cell(s, route[i]!)) || distance(cell(s, route[i - 1]!), cell(s, route[i]!)) !== 1)
+			throw Error("The route must follow adjacent safe locations.");
+	}
+	return route;
+}
+function resetReady(s: State) {
+	for (const p of s.players) p.ready = false;
+}
+function afterMovement(s: State) {
+	if (s.outcome) return;
+	if (s.players.some((p) => p.pendingInjuries)) return;
+	s.activeResolution = null;
+	if (s.players.every((p) => p.resolved)) phase(s, "eruption");
+}
+function finishPending(s: State) {
+	if (s.pending?.players.length === 0) s.pending = null;
+}
+function useEquipment(s: State, seat: number, m: Move) {
+	const p = s.players[seat]!;
+	if (s.phase !== "planning" && s.phase !== "equipment") throw Error("Equipment cannot be used in this phase.");
+	if (p.injuries.includes("arm")) throw Error("Your arm injury prevents equipment use.");
+	const card = p.cards.find((c) => c.id === m.id);
+	if (!card || card.availableRound > s.round) throw Error("This equipment is not available yet.");
+	let id = card.id;
+	if (id === "knife") {
+		const copied = EQUIPMENT.find((c) => c.id === m.copy && c.id !== "knife");
+		if (
+			!copied ||
+			!s.players.some(
+				(other, i) => i !== seat && other.cards.some((c) => c.id === copied.id && c.availableRound <= s.round)
+			)
+		)
+			throw Error("Choose another player’s available equipment.");
+		id = copied.id;
+	}
+	const info = equipment(id);
+	if (!(info.phases as readonly number[]).includes(s.phase === "planning" ? 2 : 4))
+		throw Error("This equipment is not usable in this phase.");
+	const target = () => integer(m.target, 0, s.players.length - 1);
+	switch (id) {
+		case "binoculars": {
+			const ids = strings(m.tiles, 2);
+			if (ids.length !== 2) throw Error("Choose two land locations.");
+			const [a, b] = ids.map((id) => cell(s, id)) as [Cell, Cell];
+			for (const c of [a, b])
+				if (
+					terrain(c.terrain).kind !== "land" ||
+					c.lava ||
+					c.equipment ||
+					c.eruption ||
+					s.players.some((p) => p.position === c.id || (p.path.length > 0 && p.path.at(-1) === c.id))
+				)
+					throw Error("Both land locations must be completely empty.");
+			[a.terrain, b.terrain] = [b.terrain, a.terrain];
+			break;
+		}
+		case "flare":
+			p.bonus += 3;
+			break;
+		case "rope": {
+			const ids = strings(m.tiles, 1);
+			if (ids.length !== 1) throw Error("Choose an adjacent land location.");
+			const c = cell(s, ids[0]!);
+			if (!walkable(c) || terrain(c.terrain).kind !== "land" || distance(cell(s, p.position), c) !== 1)
+				throw Error("Choose an adjacent land location.");
+			p.position = c.id;
+			collect(s, p);
+			trigger(s, [c.id]);
+			if (s.phase === "planning") {
+				p.path = [p.position];
+			}
+			win(s);
+			break;
+		}
+		case "shovel": {
+			const d = selectedDice(p, m.ids, 1, 1)[0]!;
+			d.face = integer(m.face, 1, 6);
+			break;
+		}
+		case "torch":
+			roll(s, selectedDice(p, m.ids, 1));
+			break;
+		case "water": {
+			const recipient = target();
+			s.pending = { kind: "reroll", players: [recipient], remaining: recipient === seat ? 2 : 1, required: false };
+			break;
+		}
+		case "aid":
+			p.aid = true;
+			break;
+		case "radio":
+			p.radio = true;
+			break;
+		case "tape":
+		case "compass": {
+			const dice = selectedDice(p, m.ids, 1);
+			const from = id === "tape" ? 1 : 6;
+			if (dice.some((d) => d.face !== from)) throw Error(`Select dice showing ${from}.`);
+			for (const d of dice) d.face = 7 - from;
+			break;
+		}
+		case "machete":
+			for (const d of selectedDice(p, m.ids, 1, 2)) d.aside = true;
+			break;
+		case "lighter": {
+			const donor = target();
+			if (donor === seat) throw Error("Choose a teammate.");
+			s.pending = { kind: "lend", players: [donor], receiver: seat, remaining: 1, required: false };
+			break;
+		}
+		case "carabiner":
+			s.pending = { kind: "reroll", players: s.players.map((_, i) => i), remaining: 1, required: true };
+			break;
+		case "map": {
+			const recipient = target();
+			if (recipient === seat) throw Error("Choose a teammate.");
+			const d = selectedDice(p, m.ids, 1, 1)[0]!;
+			p.dice = p.dice.filter((x) => x.id !== d.id);
+			s.players[recipient]!.dice.push(d);
+			break;
+		}
+	}
+	card.used++;
+	if (!hasSkill(p, "tinkerer") || card.used >= 2) {
+		p.cards = p.cards.filter((c) => c !== card);
+		s.discard.push(card.id);
+	}
+	resetReady(s);
+	event(s, `${p.name} used ${equipment(card.id).name}${id !== card.id ? ` as ${info.name}` : ""}.`, "equipment");
+}
+function execute(s: State, m: Move, seat: number) {
+	if (s.outcome) throw Error("The expedition has ended.");
+	const p = s.players[seat];
+	if (!p) throw Error("Invalid player.");
+	if (s.pending) {
+		const pending = s.pending;
+		if (!pending.players.includes(seat)) throw Error("Waiting for another player.");
+		if (m.action === "decline") {
+			if (pending.required) throw Error("This reroll is mandatory.");
+			pending.players = pending.players.filter((i) => i !== seat);
+		} else if (m.action === "respond") {
+			const dice = selectedDice(p, m.ids, pending.required ? 1 : 0, pending.required ? 1 : 6);
+			if (pending.kind === "lend") {
+				if (dice.length !== 1) throw Error("Choose one die to lend.");
+				const d = dice[0]!;
+				p.dice = p.dice.filter((x) => x !== d);
+				s.players[pending.receiver!]!.dice.push(d);
+				pending.players = [];
+			} else {
+				roll(s, dice);
+				pending.remaining--;
+				if (pending.required || pending.remaining <= 0) pending.players = pending.players.filter((i) => i !== seat);
+			}
+		} else throw Error("Resolve the equipment effect first.");
+		event(s, `${p.name} resolved an equipment effect.`, "equipment");
+		finishPending(s);
+		return;
+	}
+	if (s.players.some((p) => p.pendingInjuries) && m.action !== "injury") throw Error("Choose an injury first.");
+	switch (m.action) {
+		case "setup": {
+			if (s.phase !== "setup" || p.setupDone) throw Error("Preparation is already complete.");
+			const keep = strings(m.keep, 4);
+			const spec = SKILLS[p.skill];
+			if (keep.length !== spec.keep || keep.some((id) => !p.cards.some((c) => c.id === id)))
+				throw Error(`Keep ${spec.keep} equipment card(s).`);
+			if (spec.dice === 5) {
+				const d = p.dice.find((d) => d.id === m.drop);
+				if (!d) throw Error("Choose one die to leave behind.");
+				p.dice = p.dice.filter((x) => x !== d);
+			}
+			const rest = p.cards.filter((c) => !keep.includes(c.id));
+			p.cards = p.cards.filter((c) => keep.includes(c.id));
+			s.deck.push(...rest.map((c) => c.id));
+			p.setupDone = true;
+			if (s.players.every((p) => p.setupDone)) startRound(s);
+			break;
+		}
+		case "plan": {
+			if (s.phase !== "planning") throw Error("Routes are locked for this round.");
+			const route = validatePath(s, p, m.path, hasSkill(p, "scout") ? 4 : 3);
+			if (neighbors(s, seat).some((i) => s.players[i]!.path.at(-1) === route.at(-1) && s.players[i]!.ready))
+				throw Error("A neighbor has already selected that destination.");
+			p.path = route;
+			p.ready = false;
+			event(s, `${p.name} is planning a route.`);
+			break;
+		}
+		case "ready": {
+			if (s.phase !== "planning" && s.phase !== "equipment") throw Error("You cannot confirm in this phase.");
+			if (p.ready) throw Error("Already ready.");
+			if (s.phase === "planning") {
+				validatePath(s, p, p.path, hasSkill(p, "scout") ? 4 : 3);
+				if (neighbors(s, seat).some((i) => s.players[i]!.ready && s.players[i]!.path.at(-1) === p.path.at(-1)))
+					throw Error("Neighbors need different destinations.");
+			}
+			p.ready = true;
+			event(s, `${p.name} is ready.`);
+			if (s.players.every((p) => p.ready)) {
+				if (s.phase === "planning") {
+					phase(s, "reroll");
+					s.players.forEach((p, i) => {
+						p.rerolls = rerollAllowance(s, i);
+					});
+				} else phase(s, "movement");
+			}
+			break;
+		}
+		case "reroll": {
+			if (s.phase !== "reroll" || p.ready || p.rerolls < 1) throw Error("No rerolls available.");
+			const dice = selectedDice(p, m.ids, 1);
+			roll(s, dice);
+			p.rerolls--;
+			event(s, `${p.name} rerolled.`);
+			break;
+		}
+		case "finishRerolls": {
+			if (s.phase !== "reroll" || p.ready) throw Error("Rerolls are already complete.");
+			if (hasSkill(p, "gatherer")) p.powerBars = Math.min(3, p.powerBars + p.rerolls);
+			p.rerolls = 0;
+			p.ready = true;
+			if (s.players.every((p) => p.ready)) phase(s, "equipment");
+			break;
+		}
+		case "buddy": {
+			if (s.phase !== "reroll" || p.ready || !hasSkill(p, "buddy") || p.buddyUsed)
+				throw Error("This skill is unavailable.");
+			selectedDice(p, m.ids, 1, 1)[0]!.aside = true;
+			p.buddyUsed = true;
+			event(s, `${p.name} set a die aside.`);
+			break;
+		}
+		case "give": {
+			if (!hasSkill(p, "manager")) throw Error("Only the Equipment manager can give equipment.");
+			const target = integer(m.target, 0, s.players.length - 1);
+			if (target === seat) throw Error("Choose a teammate.");
+			const c = p.cards.find((c) => c.id === m.id);
+			if (!c) throw Error("Unknown equipment.");
+			p.cards = p.cards.filter((x) => x !== c);
+			s.players[target]!.cards.push(c);
+			if (s.phase === "planning" || s.phase === "equipment") resetReady(s);
+			event(s, `${p.name} gave equipment to ${s.players[target]!.name}.`, "equipment");
+			break;
+		}
+		case "equipment":
+			useEquipment(s, seat, m);
+			break;
+		case "beginMovement": {
+			if (s.phase !== "movement" || s.activeResolution !== null || p.resolved)
+				throw Error("Choose an unresolved player to move.");
+			s.activeResolution = seat;
+			event(s, `${p.name} is resolving their journey.`);
+			break;
+		}
+		case "bar": {
+			if (s.phase !== "movement" || s.activeResolution === null || !hasSkill(p, "gatherer") || p.powerBars < 1)
+				throw Error("No power bar is available now.");
+			p.powerBars--;
+			s.players[s.activeResolution]!.bonus++;
+			event(s, `${p.name} used a power bar.`);
+			break;
+		}
+		case "resolve": {
+			if (s.phase !== "movement" || s.activeResolution !== seat || p.resolved)
+				throw Error("It is not your movement turn.");
+			const dest = p.path.at(-1)!;
+			let route = p.path;
+			if (route[0] !== p.position) route = paths(s, seat)[dest] ?? [];
+			if (m.path !== undefined) {
+				route = validatePath(s, p, m.path, hasSkill(p, "scout") ? 4 : 3);
+				if (route.at(-1) !== dest) throw Error("Your destination cannot change.");
+			}
+			const result = comparison(s, seat);
+			let canMove = result.success && route.length > 0;
+			if (route.slice(1).some((id) => !walkable(cell(s, id)))) canMove = false;
+			if (canMove) {
+				p.position = dest;
+				event(
+					s,
+					`${p.name} reached ${terrain(cell(s, dest).terrain).name} (${result.own} vs ${Math.max(...result.peers.map((x) => x.total))}).`
+				);
+				win(s);
+				if (s.outcome) break;
+				collect(s, p);
+				trigger(s, route.slice(1));
+				if (s.outcome) break;
+			} else event(s, `${p.name} stayed in place (${result.own} vs ${Math.max(...result.peers.map((x) => x.total))}).`);
+			const loss = p.aid ? 0 : canMove ? result.loss : s.difficulty + 2;
+			const old = p.stamina;
+			p.stamina = Math.min(EXHAUSTION, p.stamina + loss);
+			p.pendingInjuries += INJURY_AT.filter((n) => n > old && n <= p.stamina).length;
+			event(s, `${p.name} lost ${loss} stamina.`);
+			p.resolved = true;
+			if (p.stamina >= EXHAUSTION) end(s, "lost", `${p.name} collapsed from exhaustion.`);
+			else afterMovement(s);
+			break;
+		}
+		case "injury": {
+			if (!p.pendingInjuries || !INJURIES.includes(m.injury as Injury) || p.injuries.includes(m.injury as Injury))
+				throw Error("Choose a new injury.");
+			const injury = m.injury as Injury;
+			if (injury === "leg") {
+				const d = s.players.flatMap((p) => p.dice).find((d) => d.id === m.die);
+				if (!d || d.owner !== seat || d.remove) throw Error("Choose one of your own dice.");
+				d.remove = true;
+			}
+			if (injury === "amnesia" && p.skill === "tinkerer") {
+				const discarded = p.cards.filter((c) => c.used > 0);
+				s.discard.push(...discarded.map((c) => c.id));
+				p.cards = p.cards.filter((c) => c.used === 0);
+			}
+			p.injuries.push(injury);
+			p.pendingInjuries--;
+			event(s, `${p.name} suffered ${injury === "amnesia" ? "amnesia" : `a ${injury} injury`}.`, "injury");
+			afterMovement(s);
+			break;
+		}
+		case "erupt":
+			if (s.phase !== "eruption") throw Error("It is not time for an eruption.");
+			erupt(s);
+			if (!s.outcome) startRound(s);
+			break;
+		default:
+			throw Error("Unknown action.");
+	}
+}
+export function applyMove(data: State, input: unknown, seat: number): State {
+	if (!Number.isInteger(seat) || seat < 0 || seat >= data.players.length) throw Error("Invalid player.");
+	if (!input || typeof input !== "object" || Array.isArray(input)) throw Error("Invalid move.");
+	const raw = input as Record<string, unknown>;
+	if (typeof raw.action !== "string") throw Error("Invalid action.");
+	const allowed = ["action", "keep", "drop", "path", "ids", "id", "target", "tiles", "face", "copy", "injury", "die"];
+	const move = Object.fromEntries(allowed.filter((k) => Object.hasOwn(raw, k)).map((k) => [k, raw[k]])) as Move;
+	if (JSON.stringify(move).length > 3000) throw Error("Move is too large.");
+	const s = structuredClone(data);
+	execute(s, move, seat);
+	s.revision++;
+	s.history.push({ player: seat, move });
+	return s;
+}
+export function stripSecret(s: State, seat?: number): View {
+	const { seed: _, counter: __, deck, history: ___, initOptions: ____, ...publicState } = structuredClone(s);
+	const revealed = s.phase === "movement" || s.phase === "eruption" || s.phase === "ended";
+	publicState.players.forEach((p, i) => {
+		p.dice.forEach((d) => {
+			if (!revealed && i !== seat && !p.radio && !d.aside) d.face = 0;
+		});
+	});
+	publicState.ghost.forEach((d) => {
+		if (!revealed && !s.ghostVisible.includes(d.id)) d.face = 0;
+	});
+	return { ...publicState, deckCount: deck.length };
+}
+export function activePlayers(s: State): number[] {
+	if (s.outcome) return [];
+	if (s.pending) return s.pending.players;
+	const injured = s.players.flatMap((p, i) => (p.pendingInjuries ? [i] : []));
+	if (injured.length) return injured;
+	if (s.phase === "movement")
+		return s.activeResolution === null
+			? s.players.flatMap((p, i) => (p.resolved ? [] : [i]))
+			: [
+					s.activeResolution,
+					...s.players.flatMap((p, i) =>
+						i !== s.activeResolution && hasSkill(p, "gatherer") && p.powerBars > 0 ? [i] : []
+					),
+				];
+	if (s.phase === "eruption") return [0];
+	if (s.phase === "planning" || s.phase === "equipment") return s.players.map((_, i) => i);
+	return s.players.flatMap((p, i) => ((s.phase === "setup" ? p.setupDone : p.ready) ? [] : [i]));
+}
+export function dropGamePlayer(s: State, seat: number): State {
+	if (!s.players[seat]) throw Error("Invalid player.");
+	const next = structuredClone(s);
+	end(next, "lost", `${next.players[seat]!.name} left the expedition.`);
+	next.revision++;
+	next.history.push({ player: seat, move: { action: "$drop" } });
+	return next;
+}
+export function setPlayerName(s: State, seat: number, name: string): State {
+	if (!s.players[seat] || typeof name !== "string") throw Error("Invalid player metadata.");
+	const next = structuredClone(s);
+	next.players[seat]!.name = name;
+	next.history.push({ player: seat, move: { action: "$name", name } });
+	return next;
+}
+export function replay(s: State, to = s.history.length): State {
+	let state = initGame(s.players.length, s.initOptions, s.seed);
+	for (const e of s.history.slice(0, to)) {
+		if (e.move.action === "$drop") state = dropGamePlayer(state, e.player);
+		else if (e.move.action === "$name") state = setPlayerName(state, e.player, e.move.name as string);
+		else state = applyMove(state, e.move, e.player);
+	}
+	return state;
+}

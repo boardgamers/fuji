@@ -1,0 +1,762 @@
+<script lang="ts">
+	import {
+		terrain,
+		cell,
+		paths,
+		rerollAllowance,
+		requirementLabel,
+		matches,
+		face,
+		total,
+		comparison,
+		threatened,
+		walkable,
+		distance,
+		SKILLS,
+		EQUIPMENT,
+		INJURIES,
+		EXHAUSTION,
+		CHARACTER_COLORS,
+		hasSkill,
+		activeDice,
+		type EquipmentId,
+		type View,
+	} from "fuji-engine";
+	import type { Store } from "./lib/store.svelte";
+	import { art } from "./lib/assets";
+	import Landscape from "./lib/Landscape.svelte";
+	import Die from "./lib/Die.svelte";
+	let { store }: { store: Store } = $props();
+	const s = $derived(store.state);
+	const seat = $derived(store.seat);
+	const me = $derived(seat === undefined ? undefined : s?.players[seat]);
+	let inspected = $state("");
+	let draft = $state<string[]>([]);
+	let dice = $state<string[]>([]);
+	let tilePicks = $state<string[]>([]);
+	let tool = $state<EquipmentId | null>(null);
+	let copied = $state<EquipmentId>("torch");
+	let target = $state(0);
+	let turnFace = $state(1);
+	let keep = $state<string[]>([]);
+	let drop = $state("");
+	let trace = $state(false);
+	let help = $state(false);
+	let newGame = $state(false);
+	let newPlayers = $state(3);
+	let newDifficulty = $state(1);
+	let newSeed = $state("first-light");
+	const reachable = $derived(s && seat !== undefined ? paths(s, seat) : {});
+	const focusId = $derived(inspected || me?.path.at(-1) || s?.board.find((c) => c.terrain > 3)?.id || "");
+	const focus = $derived(s && focusId ? cell(s, focusId) : undefined);
+	const focusTerrain = $derived(focus ? terrain(focus.terrain) : undefined);
+	const currentRoute = $derived(draft.length ? draft : (me?.path ?? []));
+	const destination = $derived(s && currentRoute.length ? terrain(cell(s, currentRoute.at(-1)!).terrain) : undefined);
+	const actionTool = $derived(tool === "knife" ? copied : tool);
+	const pendingMe = $derived(s?.pending && seat !== undefined && s.pending.players.includes(seat));
+	const revealed = $derived(s?.phase === "movement" || s?.phase === "eruption" || s?.phase === "ended");
+	const result = $derived(s && seat !== undefined && revealed ? comparison(s, seat) : null);
+	const rule = $derived(focusTerrain?.requirement);
+	const localTotal = $derived(me && focusTerrain ? total(me, focusTerrain.id) : 0);
+	const danger = $derived(s ? threatened(s) : []);
+	const nextAction = $derived(
+		!s
+			? ""
+			: {
+					setup: "Prepare your expedition",
+					planning: "Find your way forward",
+					reroll: "A moment of silence",
+					equipment: "Make the most of your gear",
+					movement: "Every step counts",
+					eruption: "The mountain is waking",
+					ended: s.outcome === "won" ? "Together, you made it." : "The mountain won.",
+				}[s.phase]
+	);
+	$effect(() => {
+		const revision = s?.revision;
+		const currentSeat = seat;
+		void revision;
+		void currentSeat;
+		dice = [];
+		draft = [];
+		tilePicks = [];
+		tool = null;
+		trace = false;
+		if (me) {
+			keep = me.cards.slice(0, SKILLS[me.skill].keep).map((c) => c.id);
+			drop = me.dice.at(-1)?.id ?? "";
+			target = seat ?? 0;
+		}
+	});
+	function pickDie(id: string) {
+		dice = dice.includes(id) ? dice.filter((x) => x !== id) : [...dice, id];
+	}
+	function chooseLocation(id: string) {
+		inspected = id;
+		if (tool && ["binoculars", "rope"].includes(actionTool ?? "")) {
+			tilePicks = tilePicks.includes(id)
+				? tilePicks.filter((x) => x !== id)
+				: [...tilePicks, id].slice(actionTool === "rope" ? -1 : -2);
+			return;
+		}
+		if (s?.phase !== "planning" || !me || me.ready) return;
+		if (trace && draft.length) {
+			const last = draft.at(-1)!;
+			if (draft.includes(id)) {
+				draft = draft.slice(0, draft.indexOf(id) + 1);
+			} else if (
+				walkable(cell(s, id)) &&
+				distance(cell(s, last), cell(s, id)) === 1 &&
+				draft.length < (hasSkill(me, "scout") ? 5 : 4)
+			) {
+				draft = [...draft, id];
+			}
+		} else if (reachable[id]) draft = reachable[id]!;
+	}
+	function mobileAction() {
+		if (!s || !me) return;
+		if (s.pending || me.pendingInjuries || s.phase === "setup") {
+			document.querySelector(".journey")?.scrollIntoView({ behavior: "smooth" });
+			return;
+		}
+		if (s.phase === "planning") {
+			store.dispatch(
+				draft.length
+					? { action: "plan", path: draft }
+					: { action: me.ready ? "plan" : "ready", ...(me.ready ? { path: me.path } : {}) }
+			);
+			return;
+		}
+		if (s.phase === "reroll") {
+			store.dispatch(me.rerolls && dice.length ? { action: "reroll", ids: dice } : { action: "finishRerolls" });
+			return;
+		}
+		if (s.phase === "equipment") {
+			document.querySelector(".journey")?.scrollIntoView({ behavior: "smooth" });
+			return;
+		}
+		if (s.phase === "movement") {
+			if (s.activeResolution === null && !me.resolved) store.dispatch({ action: "beginMovement" });
+			else if (s.activeResolution === seat) store.dispatch({ action: "resolve" });
+			else document.querySelector(".journey")?.scrollIntoView({ behavior: "smooth" });
+			return;
+		}
+		if (s.phase === "eruption" && seat === 0) store.dispatch({ action: "erupt" });
+	}
+	const mobileLabel = $derived(
+		!s || !me
+			? ""
+			: s.pending || me.pendingInjuries
+				? "Resolve effect"
+				: s.phase === "setup"
+					? "Prepare expedition"
+					: s.phase === "planning"
+						? draft.length
+							? "Set route"
+							: me.ready
+								? "Change route"
+								: "Ready to travel"
+						: s.phase === "reroll"
+							? me.rerolls && dice.length
+								? "Reroll selected"
+								: "Keep dice"
+							: s.phase === "equipment"
+								? "Equipment & reveal"
+								: s.phase === "movement"
+									? "Resolve journey"
+									: "Advance lava"
+	);
+	function confirmTool() {
+		if (!tool) return;
+		store.dispatch({
+			action: "equipment",
+			id: tool,
+			copy: copied,
+			ids: dice,
+			tiles: tilePicks,
+			target,
+			face: turnFace,
+		});
+	}
+	function chooseTool(id: EquipmentId) {
+		tool = tool === id ? null : id;
+		tilePicks = [];
+		dice = [];
+	}
+	function modalFocus(node: HTMLElement) {
+		const previous = document.activeElement as HTMLElement | null;
+		queueMicrotask(() => node.querySelector<HTMLElement>("button")?.focus());
+		function key(e: KeyboardEvent) {
+			if (e.key === "Escape") {
+				help = false;
+				newGame = false;
+			}
+			if (e.key === "Tab") {
+				const all = [...node.querySelectorAll<HTMLElement>('button:not(:disabled),input,select,[tabindex="0"]')];
+				const first = all[0],
+					last = all.at(-1);
+				if (e.shiftKey && document.activeElement === first) {
+					e.preventDefault();
+					last?.focus();
+				} else if (!e.shiftKey && document.activeElement === last) {
+					e.preventDefault();
+					first?.focus();
+				}
+			}
+		}
+		node.addEventListener("keydown", key);
+		return {
+			destroy() {
+				node.removeEventListener("keydown", key);
+				previous?.focus();
+			},
+		};
+	}
+	const phaseNumber = $derived(
+		!s ? 0 : ["setup", "planning", "reroll", "equipment", "movement", "eruption", "ended"].indexOf(s.phase)
+	);
+</script>
+
+{#if s}
+	<main class="expedition">
+		<header class="masthead">
+			<div class="identity">
+				<span class="mountain-mark" aria-hidden="true">△</span>
+				<h1>FUJI<span>by Wolfgang Warsch</span></h1>
+			</div>
+			<div class="round-status">
+				<span class="live-dot"></span><span
+					>{s.phase === "setup" ? "THE EXPEDITION" : `ROUND ${String(s.round).padStart(2, "0")}`}</span
+				><span class="separator">/</span><span
+					>{s.outcome
+						? "Journey complete"
+						: s.phase === "reroll"
+							? "Quiet phase"
+							: s.phase === "setup"
+								? "Preparation"
+								: s.phase}</span
+				>
+			</div>
+			<button class="text-button help-button" onclick={() => (help = true)} aria-label="Open playing guide"
+				>How to play <span>?</span></button
+			>
+		</header>
+		<section class="team" aria-label="Your expedition">
+			{#each s.players as p, i}
+				<button
+					class="teammate"
+					class:own={seat === i}
+					style:--player-color={CHARACTER_COLORS[p.character]}
+					onclick={() => {
+						if (store.local) store.selectSeat(i);
+					}}
+					disabled={!store.local}
+					aria-label={`${p.name}${seat === i ? ", you" : ""}. ${EXHAUSTION - p.stamina} stamina remaining${store.local ? ". Switch to this player." : ""}`}
+				>
+					<img src={art("character", p.character + 1)} alt="" class="portrait" />
+					<div class="teammate-info">
+						<span class="teammate-name"
+							>{p.name}{#if seat === i}<small>YOU</small>{/if}</span
+						><span class="role-name">{SKILLS[p.skill].name}</span><span class="stamina-track" aria-hidden="true"
+							><i style:width={`${(1 - p.stamina / EXHAUSTION) * 100}%`}></i></span
+						>
+					</div>
+					<div class="teammate-status">
+						<span>{EXHAUSTION - p.stamina}<small> / {EXHAUSTION}</small></span><span class="ready-label"
+							>{p.pendingInjuries
+								? "Injured"
+								: p.ready || (p.setupDone && s.phase === "setup")
+									? "Ready ✓"
+									: p.resolved && s.phase === "movement"
+										? "Moved"
+										: s.phase === "setup"
+											? "Packing"
+											: p.injuries.length
+												? `${p.injuries.length} injury`
+												: "Stamina"}</span
+						>
+					</div>
+				</button>
+			{/each}
+		</section>
+		<div class="game-layout">
+			<div class="world-column">
+				<Landscape
+					state={s}
+					{seat}
+					route={currentRoute}
+					selected={tool ? (tilePicks.at(-1) ?? focusId) : (currentRoute.at(-1) ?? focusId)}
+					reachable={s.phase === "planning" && !me?.ready ? Object.keys(reachable) : []}
+					onclick={chooseLocation}
+					oninspect={(id) => (inspected = id)}
+				/>
+				<section class="personal" aria-label="Your dice">
+					<div class="personal-title">
+						<div>
+							<span class="eyebrow"
+								>{seat === undefined ? "SPECTATOR VIEW" : revealed ? "DICE REVEALED" : "BEHIND YOUR SCREEN"}</span
+							>
+							<h2>{me ? SKILLS[me.skill].name : "The expedition"}</h2>
+						</div>
+						<span class="privacy-tag"
+							>{revealed ? "Visible to everyone" : me?.radio ? "Wireless is active" : "Only you can see these"}</span
+						>
+					</div>
+					{#if me}
+						<div class="dice-row">
+							{#each me.dice as d (d.id)}<Die
+									die={d}
+									selected={dice.includes(d.id)}
+									relevant={!!rule && matches(face(d), rule)}
+									disabled={(d.aside && !me.pendingInjuries) || store.waiting || s.phase === "setup"}
+									onclick={() => pickDie(d.id)}
+								/>{/each}
+							{#if focusTerrain && s.phase !== "setup"}<div class="dice-total">
+									<strong>{localTotal}</strong><span>your total<br />for this location</span>
+								</div>{/if}
+						</div>
+						<div class="skill-line">
+							<span class="skill-symbol">◇</span><span
+								>{me.injuries.includes("amnesia")
+									? "Your skill is unavailable due to amnesia."
+									: SKILLS[me.skill].description}</span
+							>{#if me.powerBars}<span class="power-bars">{me.powerBars} power bar{me.powerBars === 1 ? "" : "s"}</span
+								>{/if}
+						</div>
+						{#if me.injuries.length}<div class="injury-list">
+								{#each me.injuries as injury}<span>{injury}</span>{/each}
+							</div>{/if}
+					{/if}
+				</section>
+			</div>
+			<aside class="journey">
+				<div class="phase-heading">
+					<span class="eyebrow"
+						>{s.outcome
+							? "EXPEDITION RESULT"
+							: s.phase === "setup"
+								? "BEFORE YOU BEGIN"
+								: `PHASE ${phaseNumber + 1} OF 6`}</span
+					>
+					<h2>{nextAction}</h2>
+				</div>
+				<nav class="phase-track" aria-label="Round phases">
+					{#each ["Plan", "Reroll", "Equip", "Move", "Erupt"] as label, i}<span
+							class:active={phaseNumber === i + 1}
+							class:complete={phaseNumber > i + 1}>{label}</span
+						>{/each}
+				</nav>
+				{#if store.error}<div class="error" role="alert">
+						{store.error}<button
+							class="text-button"
+							onclick={() => {
+								store.waiting = false;
+								store.error = "";
+							}}>Dismiss</button
+						>
+					</div>{/if}
+				{#if s.outcome}
+					<div class="outcome" class:won={s.outcome === "won"}>
+						<span class="outcome-icon">{s.outcome === "won" ? "✧" : "△"}</span>
+						<p>{s.reason}</p>
+						<p class="muted">{s.round} rounds · {s.players.length} adventurers</p>
+						{#if s.outcome === "won"}<strong
+								>{s.players.reduce((n, p) => n + 4 - p.injuries.length + p.cards.length, 0)} expedition points</strong
+							>{/if}
+					</div>
+					{#if store.local}<button class="primary" onclick={() => (newGame = true)}>Start a new expedition</button>{/if}
+				{:else if !me}<p class="instruction">Follow the expedition. Private dice remain hidden until the reveal.</p>
+				{:else if s.phase === "setup"}
+					{#if me.setupDone}<p class="instruction">
+							Your bag is packed. Waiting for the rest of the expedition.
+						</p>{:else}
+						<p class="instruction">
+							Keep {SKILLS[me.skill].keep} equipment card{SKILLS[me.skill].keep > 1 ? "s" : ""} for the journey.
+						</p>
+						<div class="pack-options">
+							{#each me.cards as c}<button
+									class:selected={keep.includes(c.id)}
+									onclick={() => (keep = keep.includes(c.id) ? keep.filter((id) => id !== c.id) : [...keep, c.id])}
+									><img
+										src={art("equipment", EQUIPMENT.findIndex((x) => x.id === c.id) + 1)}
+										alt={EQUIPMENT.find((x) => x.id === c.id)?.name}
+									/><span>{EQUIPMENT.find((x) => x.id === c.id)?.name}</span><i>{keep.includes(c.id) ? "✓" : "+"}</i
+									></button
+								>{/each}
+						</div>
+						{#if SKILLS[me.skill].dice === 5}<label class="field"
+								>Choose the die to leave behind<select bind:value={drop}
+									>{#each me.dice as d}<option value={d.id}>Type {"ABC"[d.type]} · die {d.id.split("-")[1]}</option
+										>{/each}</select
+								></label
+							>{/if}
+						<button
+							class="primary"
+							disabled={keep.length !== SKILLS[me.skill].keep || store.waiting}
+							onclick={() => store.dispatch({ action: "setup", keep, drop })}
+							>Ready for the journey <span>→</span></button
+						>
+					{/if}
+				{:else if me.pendingInjuries}
+					<p class="instruction">Choose an injury. Its effect lasts for the rest of the expedition.</p>
+					<div class="injury-options">
+						{#each INJURIES.filter((i) => !me.injuries.includes(i)) as injury}<button
+								onclick={() => store.dispatch({ action: "injury", injury, die: dice[0] })}
+								disabled={injury === "leg" && dice.length !== 1}
+								><strong
+									>{injury === "amnesia" ? "Amnesia" : `${injury[0]!.toUpperCase()}${injury.slice(1)} injury`}</strong
+								><span
+									>{{
+										leg: "Select one of your dice to lose after this round.",
+										arm: "You can no longer use equipment.",
+										eye: "Lose normal rerolls. Skill and equipment rerolls still work.",
+										amnesia: "Lose your character skill.",
+									}[injury]}</span
+								></button
+							>{/each}
+					</div>
+				{:else if s.pending}
+					{#if pendingMe}<p class="instruction">
+							{s.pending.kind === "lend"
+								? "A teammate asks to borrow a die. Select one to lend, or decline."
+								: s.pending.required
+									? "Choose exactly one die to reroll."
+									: "Select any dice to reroll. You may also stop."}
+						</p>
+						<button
+							class="primary"
+							disabled={store.waiting ||
+								(s.pending.required && dice.length !== 1) ||
+								(s.pending.kind === "lend" && dice.length !== 1)}
+							onclick={() => store.dispatch({ action: "respond", ids: dice })}
+							>{s.pending.kind === "lend" ? "Lend selected die" : "Reroll selected dice"}</button
+						>{#if !s.pending.required}<button class="secondary" onclick={() => store.dispatch({ action: "decline" })}
+								>{s.pending.kind === "lend" ? "Decline" : "Finish rerolls"}</button
+							>{/if}
+					{:else}<p class="instruction">
+							Waiting for {s.pending.players.map((i) => s.players[i]!.name).join(", ")} to resolve an equipment effect.
+						</p>{/if}
+				{:else if s.phase === "planning"}
+					<p class="instruction">
+						Choose a destination. Share your intentions, but keep numbers and exact dice results private.
+					</p>
+					{#if destination}<div class="destination">
+							<img src={art("land", destination.id)} alt="" />
+							<div>
+								<span class="eyebrow">YOUR DESTINATION</span>
+								<h3>{destination.name}</h3>
+								<span>{requirementLabel(destination.requirement)}</span>
+							</div>
+						</div>
+						<div class="journey-stats">
+							<div><strong>{currentRoute.length - 1}</strong><span>spaces</span></div>
+							<div><strong>{rerollAllowance(s, seat!, currentRoute)}</strong><span>rerolls</span></div>
+							<div><strong>{total(me, destination.id)}</strong><span>your total</span></div>
+						</div>{/if}
+					{#if currentRoute.some((id) => cell(s, id).eruption)}<p class="warning">
+							This route crosses an eruption marker. Moving here triggers extra lava.
+						</p>{/if}
+					{#if danger.includes(currentRoute.at(-1) ?? "")}<p class="warning">
+							This destination is threatened by the next eruption.
+						</p>{/if}
+					{#if draft.length}<button
+							class="primary"
+							disabled={store.waiting}
+							onclick={() => store.dispatch({ action: "plan", path: draft })}>Set this route <span>→</span></button
+						>{:else if !me.ready}<button
+							class="primary"
+							disabled={store.waiting}
+							onclick={() => store.dispatch({ action: "ready" })}>Ready to travel <span>→</span></button
+						>{:else}<p class="confirmed">✓ Your route is set. Waiting for the team.</p>
+						<button class="text-button" onclick={() => store.dispatch({ action: "plan", path: me.path })}
+							>Change my route</button
+						>{/if}
+					<button
+						class="text-button trace-button"
+						onclick={() => {
+							trace = !trace;
+							if (trace) draft = [me.position];
+						}}>{trace ? "Stop tracing" : "Trace a specific path"}</button
+					>{#if trace}<p class="muted small">
+							Click adjacent locations to build your route. Click an earlier step to go back.
+						</p>{/if}
+				{:else if s.phase === "reroll"}
+					<p class="instruction">
+						No discussion during this phase. Select the dice you want to reroll, or keep your result.
+					</p>
+					<div class="reroll-count">
+						<strong>{me.rerolls}</strong><span>reroll{me.rerolls === 1 ? "" : "s"} remaining</span>
+					</div>
+					{#if !me.ready}<button
+							class="primary"
+							disabled={!me.rerolls || !dice.length || store.waiting}
+							onclick={() => store.dispatch({ action: "reroll", ids: dice })}
+							>Reroll {dice.length || "selected"} dice <span>↻</span></button
+						><button
+							class="secondary"
+							onclick={() => store.dispatch({ action: "finishRerolls" })}
+							disabled={store.waiting}
+							>Keep my dice{hasSkill(me, "gatherer") && me.rerolls
+								? ` · gain ${Math.min(me.rerolls, 3 - me.powerBars)} bars`
+								: ""}</button
+						>
+						{#if hasSkill(me, "buddy") && !me.buddyUsed}<button
+								class="text-button"
+								disabled={dice.length !== 1}
+								onclick={() => store.dispatch({ action: "buddy", ids: dice })}>Set one selected die aside</button
+							>{/if}
+					{:else}<p class="confirmed">✓ Your dice are kept. Waiting for the team.</p>{/if}
+				{:else if s.phase === "equipment"}
+					<p class="instruction">
+						Discuss equipment with your teammates. Your dice are still private and your destination is locked.
+					</p>
+					{#if !me.ready}<button
+							class="primary"
+							onclick={() => store.dispatch({ action: "ready" })}
+							disabled={store.waiting}>Ready to reveal <span>→</span></button
+						>{:else}<p class="confirmed">✓ Ready. Waiting for the team.</p>{/if}
+				{:else if s.phase === "movement"}
+					{#if s.activeResolution === null}<p class="instruction">
+							Choose who moves next. A route that triggers extra lava is often best resolved last.
+						</p>
+						{#if !me.resolved}<button class="primary" onclick={() => store.dispatch({ action: "beginMovement" })}
+								>Resolve my journey <span>→</span></button
+							>{:else}<p class="confirmed">✓ Your journey is resolved.</p>{/if}
+					{:else if s.activeResolution === seat && result}<div class="comparison">
+							<span class="eyebrow">{result.success ? "YOU CAN MOVE" : "YOU MUST STAY"}</span><strong
+								>{result.own}<small> vs </small>{Math.max(...result.peers.map((p) => p.total))}</strong
+							>
+							<p>
+								{result.success
+									? `Lead of ${result.margin} · lose ${result.loss} stamina`
+									: `Tie or lower · lose ${result.loss} stamina`}
+							</p>
+							{#each result.peers as peer}<div>
+									<span>{peer.seat === -1 ? "Neutral dice" : s.players[peer.seat]!.name}</span><span>{peer.total}</span>
+								</div>{/each}
+						</div>
+						<button class="primary" onclick={() => store.dispatch({ action: "resolve" })}
+							>Continue journey <span>→</span></button
+						>
+					{:else}<p class="instruction">{s.players[s.activeResolution]!.name} is resolving their journey.</p>{/if}
+					{#if s.activeResolution !== null && hasSkill(me, "gatherer") && me.powerBars}<button
+							class="secondary"
+							onclick={() => store.dispatch({ action: "bar" })}
+							>Spend a power bar · +1 for {s.players[s.activeResolution]!.name}</button
+						>{/if}
+				{:else if s.phase === "eruption"}
+					<p class="instruction">Everyone has moved. The lava will spread one step to every adjacent location.</p>
+					<div class="eruption-count"><strong>{danger.length}</strong><span>locations threatened</span></div>
+					<button class="primary ember" disabled={seat !== 0} onclick={() => store.dispatch({ action: "erupt" })}
+						>{seat === 0 ? "Let the lava advance" : "Waiting for the expedition leader"} <span>→</span></button
+					>
+				{/if}
+				{#if me && s.phase !== "setup" && !s.outcome}
+					<section class="equipment-section">
+						<div class="section-title">
+							<h3>Your equipment</h3>
+							<span>{me.cards.length}</span>
+						</div>
+						{#if !me.cards.length}<p class="muted small">Find equipment along the trail.</p>{/if}
+						<div class="equipment-list">
+							{#each me.cards as c}{@const info = EQUIPMENT.find((e) => e.id === c.id)!}{@const available =
+									c.availableRound <= s.round &&
+									!me.injuries.includes("arm") &&
+									(info.phases as readonly number[]).includes(
+										s.phase === "planning" ? 2 : s.phase === "equipment" ? 4 : -1
+									) &&
+									!s.pending}
+								<button
+									class:usable={available}
+									class:open={tool === c.id}
+									onclick={() => chooseTool(c.id)}
+									aria-expanded={tool === c.id}
+									><img src={art("equipment", EQUIPMENT.indexOf(info) + 1)} alt="" /><span
+										><strong>{info.name}</strong><small
+											>{c.availableRound > s.round
+												? "Available next round"
+												: c.used
+													? "One use left"
+													: available
+														? "Available now"
+														: `Phase ${info.phases.join(" / ")}`}</small
+										></span
+									><span class="equipment-plus">{tool === c.id ? "−" : "+"}</span></button
+								>
+							{/each}
+						</div>
+						{#if tool}{@const c = me.cards.find((c) => c.id === tool)!}{@const info = EQUIPMENT.find(
+								(e) => e.id === tool
+							)!}
+							<div class="tool-form">
+								<p>{info.description}</p>
+								{#if tool === "knife"}<label class="field"
+										>Copy equipment<select bind:value={copied}
+											>{#each s.players.flatMap( (p, i) => (i === seat ? [] : p.cards.filter((c) => c.id !== "knife" && c.availableRound <= s.round)) ) as c}<option
+													value={c.id}>{EQUIPMENT.find((e) => e.id === c.id)?.name}</option
+												>{/each}</select
+										></label
+									>{/if}
+								{#if ["water", "lighter", "map"].includes(actionTool ?? "")}<label class="field"
+										>Recipient<select bind:value={target}
+											>{#each s.players as p, i}<option value={i}>{p.name}{i === seat ? " (you)" : ""}</option
+												>{/each}</select
+										></label
+									>{/if}
+								{#if ["shovel", "torch", "tape", "machete", "compass", "map"].includes(actionTool ?? "")}<p
+										class="muted small"
+									>
+										Select the dice below the map. {dice.length} selected.
+									</p>{/if}
+								{#if actionTool === "shovel"}<label class="field"
+										>New value<select bind:value={turnFace}
+											>{#each [1, 2, 3, 4, 5, 6] as n}<option value={n}>{n}</option>{/each}</select
+										></label
+									>{/if}
+								{#if ["binoculars", "rope"].includes(actionTool ?? "")}<p class="muted small">
+										Choose {actionTool === "rope" ? "one adjacent location" : "two empty land locations"} on the map. {tilePicks.length}
+										selected.
+									</p>{/if}
+								<button
+									class="secondary"
+									disabled={store.waiting ||
+										c.availableRound > s.round ||
+										me.injuries.includes("arm") ||
+										!["planning", "equipment"].includes(s.phase)}
+									onclick={confirmTool}>Use {info.name}</button
+								>
+								{#if hasSkill(me, "manager")}<label class="field"
+										>Give to<select bind:value={target}
+											>{#each s.players as p, i}{#if i !== seat}<option value={i}>{p.name}</option>{/if}{/each}</select
+										></label
+									><button class="text-button" onclick={() => store.dispatch({ action: "give", id: tool, target })}
+										>Give equipment</button
+									>{/if}
+							</div>
+						{/if}
+					</section>
+				{/if}
+				{#if focusTerrain && s.phase !== "setup"}<div class="location-detail">
+						<span class="eyebrow">INSPECTING THE TRAIL</span><strong>{focusTerrain.name}</strong><span
+							>{requirementLabel(focusTerrain.requirement)}{focusTerrain.reroll ? " · +1 reroll" : ""}</span
+						>
+					</div>{/if}
+			</aside>
+		</div>
+		{#if revealed || s.players.some((p, i) => i !== seat && p.dice.some((d) => d.face > 0))}<section
+				class="revealed-team"
+				aria-label="Revealed dice"
+			>
+				{#each s.players as p, i}{#if i !== seat && (revealed || p.dice.some((d) => d.face > 0))}<div>
+							<span class="eyebrow">{p.name}</span>
+							<div class="mini-dice">
+								{#each p.dice as d}<Die die={d} disabled relevant={!!rule && matches(face(d), rule)} />{/each}
+							</div>
+						</div>{/if}{/each}
+			</section>{/if}
+		{#if s.ghost.length}<details class="neutral-dice">
+				<summary>Neutral dice · two-player variant A</summary>
+				<div class="mini-dice">
+					{#each s.ghost as d}<Die die={d} disabled />{/each}
+				</div>
+			</details>{/if}
+		<footer class="journal">
+			<div class="section-title">
+				<h3>Expedition journal</h3>
+				<span>ROUND {s.round}</span>
+			</div>
+			<ol>
+				{#each s.log.slice(-5).reverse() as e, i}<li class:latest={i === 0}>
+						<span class="journal-round">{String(e.round).padStart(2, "0")}</span><span>{e.text}</span>
+					</li>{/each}
+			</ol>
+		</footer>
+		<div class="credits">FUJI · Wolfgang Warsch <span>Illustrations by Weberson Santiago · Feuerland Spiele</span></div>
+		{#if store.local}<div class="dev-toolbar">
+				<span>Local playtest</span><span class="dev-hint">Click a player above to switch seats.</span><button
+					onclick={() => store.teammateStep()}
+					disabled={!!s.outcome}>Play next teammate action</button
+				><button onclick={() => (newGame = true)}>New game</button>
+			</div>{/if}
+		{#if me && !s.outcome}<div class="mobile-dock">
+				<div>
+					<span class="eyebrow">{s.phase}</span><strong
+						>{s.phase === "planning"
+							? `${destination?.name ?? ""} · ${destination ? total(me, destination.id) : 0}`
+							: s.phase === "reroll"
+								? `${me.rerolls} rerolls remaining`
+								: me.name}</strong
+					>
+				</div>
+				<button
+					onclick={mobileAction}
+					disabled={store.waiting || (s.phase === "reroll" && me.ready) || (s.phase === "eruption" && seat !== 0)}
+					>{mobileLabel} →</button
+				>
+			</div>{/if}
+	</main>
+{:else}<div class="waiting">
+		<h1>FUJI</h1>
+		<p>Waiting for the expedition…</p>
+	</div>{/if}
+{#if help}<div class="modal-backdrop" role="presentation">
+		<div class="modal" use:modalFocus role="dialog" aria-modal="true" aria-labelledby="help-title" tabindex="-1">
+			<button class="close" onclick={() => (help = false)} aria-label="Close guide">×</button><span class="eyebrow"
+				>THE ESSENTIALS</span
+			>
+			<h2 id="help-title">Escape together.</h2>
+			<p>
+				Everyone must reach the village. If anyone is caught by lava or loses all stamina, the whole expedition loses.
+			</p>
+			<ol class="guide">
+				<li>
+					<strong>Plan a route.</strong> Move up to three adjacent locations. Longer journeys leave fewer rerolls. Your two
+					seated neighbors must choose different destinations from yours.
+				</li>
+				<li>
+					<strong>Talk, without numbers.</strong> Share intentions and vague impressions. Never reveal exact dice values,
+					counts or averages. During rerolls, stay silent.
+				</li>
+				<li>
+					<strong>Use your equipment.</strong> Its phase is shown beside each item. Dice remain private until everyone is
+					ready to reveal.
+				</li>
+				<li>
+					<strong>Compare on your destination.</strong> Add matching dice. Your total must beat both neighbors. A tie fails.
+					A smaller lead costs more stamina.
+				</li>
+				<li>
+					<strong>Watch the lava.</strong> It advances one step each round. Crossing an eruption marker triggers extra lava
+					immediately.
+				</li>
+			</ol>
+			<button class="primary" onclick={() => (help = false)}>Back to the expedition</button>
+		</div>
+	</div>{/if}
+{#if newGame}<div class="modal-backdrop" role="presentation">
+		<div class="modal" use:modalFocus role="dialog" aria-modal="true" aria-labelledby="new-title" tabindex="-1">
+			<button class="close" onclick={() => (newGame = false)} aria-label="Close">×</button><span class="eyebrow"
+				>A NEW BEGINNING</span
+			>
+			<h2 id="new-title">Gather your expedition.</h2>
+			<p>This replaces the current local playtest.</p>
+			<label class="field"
+				>Adventurers<select bind:value={newPlayers}
+					><option value={2}>2 players · neutral dice variant</option><option value={3}>3 players</option><option
+						value={4}>4 players</option
+					></select
+				></label
+			><label class="field"
+				>Difficulty<select bind:value={newDifficulty}
+					>{#each [1, 2, 3, 4] as n}<option value={n}>Level {n}</option>{/each}</select
+				></label
+			><label class="field">Expedition seed<input bind:value={newSeed} /></label><button
+				class="primary"
+				onclick={() => {
+					store.restart(newPlayers, newSeed, newDifficulty);
+					newGame = false;
+					inspected = "";
+				}}>Begin expedition <span>→</span></button
+			>
+		</div>
+	</div>{/if}

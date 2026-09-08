@@ -1,0 +1,23 @@
+{
+	"name": "fuji-viewer",
+	"version": "0.1.0",
+	"private": true,
+	"license": "AGPL-3.0-only",
+	"type": "module",
+	"scripts": {
+		"dev": "vite --host 127.0.0.1 --port 5187 --strictPort",
+		"build": "vite build",
+		"check": "svelte-check --tsconfig ./tsconfig.json"
+	},
+	"dependencies": {
+		"fuji-engine": "workspace:*"
+	},
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "7.2.0",
+		"@types/node": "24.10.1",
+		"svelte": "5.56.8",
+		"svelte-check": "4.7.4",
+		"typescript": "5.9.3",
+		"vite": "8.2.0"
+	}
+}

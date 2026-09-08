@@ -28,15 +28,25 @@
 	} = $props();
 	const danger = $derived(threatened(state));
 	const mapWidth = $derived(116 + Math.max(...state.board.map((c) => c.x)) * 100);
-	// Use empty map space without adding a footer where the layout allows it.
-	const guidePosition = $derived(
-		({ 1: [14, 519], 2: [14, 603], 3: [14, 519] } as Record<number, number[]>)[state.scenario ?? 1]
+	// Empty rectangles in the seven production layouts, including four-player tiles.
+	const layout = $derived(
+		(
+			{
+				1: { guide: [14, 519, 385], counter: [114, 16] },
+				2: { guide: [14, 603, 485], counter: [714, 16] },
+				3: { guide: [14, 519, 485], counter: [314, 16] },
+				4: { guide: [514, 435, 185], counter: [714, 16] },
+				5: { guide: [414, 519, 185], counter: [714, 16] },
+				6: { guide: [14, 351, 285], counter: [714, 16] },
+				7: { guide: [214, 267, 285], counter: [714, 16] },
+			} as Record<number, { guide: number[]; counter: number[] }>
+		)[state.scenario ?? 1]!
 	);
-	const guideX = $derived(guidePosition?.[0] ?? 14);
-	const guideY = $derived(guidePosition?.[1] ?? 100 + Math.max(...state.board.map((c) => c.y)) * 84);
-	const mapHeight = $derived(
-		Math.max(100 + Math.max(...state.board.map((c) => c.y)) * 84, guideY + (state.difficulty >= 3 ? 111 : 91))
-	);
+	const guideX = $derived(layout.guide[0]!);
+	const guideY = $derived(layout.guide[1]!);
+	const guideWidth = $derived(layout.guide[2]!);
+	const guideHeight = $derived(guideWidth < 200 ? 184 : guideWidth < 300 ? 148 : state.difficulty >= 3 ? 106 : 86);
+	const mapHeight = $derived(Math.max(100 + Math.max(...state.board.map((c) => c.y)) * 84, guideY + guideHeight + 5));
 	const x = (id: string) => 58 + cell(state, id).x * 100;
 	const y = (id: string) => 54 + cell(state, id).y * 84;
 	const edges = $derived(
@@ -53,35 +63,11 @@
 </script>
 
 <div class="landscape" style:--route-color={ownColor} style:--landscape-art={`url(${art("land", 21)})`}>
-	<div class="scene-caption">
-		<span class="eyebrow">THE FUJI TRAIL</span>
-		<div class="scene-meta">
-			<span
-				>Scenario {String(state.scenario ?? 1).padStart(2, "0")} <span class="dot">·</span> Level {state.difficulty}</span
-			><span
-				class="legend-end"
-				title="Everyone must reach any house-marked village location at the same time."
-				aria-label={`${state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} of ${state.players.length} players in the village`}
-			>
-				<svg
-					viewBox="0 0 24 24"
-					width="27"
-					height="27"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.7"
-					aria-hidden="true"><path d="m2 11 10-9 10 9M5 9v12h14V9M10 21v-7h4v7" /></svg
-				>
-				{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length}/{state.players
-					.length}</span
-			>
-		</div>
-	</div>
 	<div class="map-scroll">
 		<svg
 			viewBox={`0 0 ${mapWidth} ${mapHeight}`}
 			class="map"
-			aria-label="Expedition map. Choose a location to inspect or plan a journey."
+			aria-label={`Scenario ${state.scenario ?? 1}, difficulty ${state.difficulty}. Choose a location to inspect or plan a journey.`}
 		>
 			<defs>
 				<radialGradient id="feather"
@@ -259,13 +245,30 @@
 					{#if i === seat}<path d="M-4 -28H4L0 -22Z" fill="#f4d888" />{/if}
 				</g>
 			{/each}
-			<foreignObject x={guideX} y={guideY} width="385" height={state.difficulty >= 3 ? 106 : 86} class="map-guides">
+			<foreignObject x={layout.counter[0]} y={layout.counter[1]} width="88" height="42" class="village-counter">
+				<div
+					xmlns="http://www.w3.org/1999/xhtml"
+					class="legend-end"
+					title={`Scenario ${String(state.scenario ?? 1).padStart(2, "0")} · Level ${state.difficulty}. Everyone must reach a house-marked location.`}
+					aria-label={`${state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} of ${state.players.length} players in the village`}
+				>
+					<svg
+						viewBox="0 0 24 24"
+						width="27"
+						height="27"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.7"
+						aria-hidden="true"><path d="m2 11 10-9 10 9M5 9v12h14V9M10 21v-7h4v7" /></svg
+					>
+					{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length}/{state
+						.players.length}
+				</div>
+			</foreignObject>
+			<foreignObject x={guideX} y={guideY} width={guideWidth} height={guideHeight} class="map-guides">
 				<div xmlns="http://www.w3.org/1999/xhtml">
 					<div class="scene-legend">
-						<span
-							>{#if state.phase === "setup"}Map preview · choose your equipment first{:else}<i class="legend-line"
-								></i>Your route{/if}</span
-						><span><i class="legend-danger"></i>Next eruption</span>
+						<span><i class="legend-line"></i>Route</span><span><i class="legend-danger"></i>Next eruption</span>
 					</div>
 					<TravelGuide difficulty={state.difficulty} embedded />
 				</div>
@@ -292,29 +295,9 @@
 			var(--landscape-art) center/cover;
 		z-index: -1;
 	}
-	.scene-meta {
-		display: flex;
-		align-items: center;
-		gap: 20px;
-		margin-left: auto;
-	}
-	.scene-caption {
-		flex-wrap: wrap;
-		gap: 10px;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 23px 26px 0;
-		font-size: 12px;
-		color: #a1b5a4;
-	}
-	.dot {
-		margin: 0 5px;
-		color: #cfb873;
-	}
 	.map {
 		width: 100%;
-		height: clamp(500px, calc(100vh - 310px), 760px);
+		height: clamp(500px, calc(100vh - 265px), 760px);
 		display: block;
 	}
 
@@ -478,7 +461,7 @@
 		flex-wrap: wrap;
 		padding: 0 0 10px;
 		display: flex;
-		gap: 20px;
+		gap: 8px 16px;
 		color: #a7b9a8;
 		font-size: 12px;
 		align-items: center;
@@ -533,9 +516,6 @@
 		.map {
 			min-width: 610px;
 			height: auto;
-		}
-		.scene-caption {
-			padding: 16px 16px 0;
 		}
 		.scene-legend {
 			padding: 0 0 10px;

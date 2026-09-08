@@ -79,3 +79,5 @@ Sound effects combine a CC0 recording of real dice throws (see `audio-credits.md
 All seven layouts were transcribed from the supplied production scenario fronts. Layout tests cover every player count, unique terrain cards, five/six village tiles, seven equipment markers, two eruption markers, connected maps and both starting positions. All seven maps were rendered in the harness.
 
 Adaptation rule: a player with no other reachable, unclaimed destination may confirm staying despite a neighbor sharing that destination. This prevents isolated players from stalling planning before lava ends the expedition. Normal destination restrictions still apply when another route is available.
+
+Validation: 1,050 completed expeditions across all seven scenarios, 2–4 players and four difficulty levels; 68,793 moves, 122 victories, no deadlocks and exact replays. All 70 engine tests pass.

@@ -374,3 +374,62 @@ test("metadata and drops checkpoint live planning without losing replay", async 
 	assert.equal(wrapper.isLiveUpdate(s), false);
 	assert.deepEqual(replay(s), s);
 });
+
+test("movement resolves immediately when no Gatherer has usable bars", () => {
+	let s = withPhase("movement");
+	s = applyMove(s, { action: "beginMovement" }, 0);
+	assert.equal(s.players[0]!.resolved, true);
+	assert.equal(s.pendingHelpers, undefined);
+	assert(s.log.some((e) => e.text.startsWith("Dice comparison at")));
+	assert.equal(s.log.filter((e) => e.diceLabel?.includes("matching total")).length, 3);
+});
+
+test("only the Gatherer decides zero or multiple bars, then movement resolves", () => {
+	for (const count of [0, 1, 3]) {
+		let s = withPhase("movement");
+		s.players[1]!.powerBars = 3;
+		s = applyMove(s, { action: "beginMovement" }, 0);
+		assert.deepEqual(activePlayers(s), [1]);
+		assert.equal(s.players[0]!.resolved, false);
+		const before = structuredClone(s);
+		assert.throws(() => applyMove(s, { action: "resolve" }, 0));
+		assert.throws(() => applyMove(s, { action: "help", count: 4 }, 1));
+		assert.throws(() => applyMove(s, { action: "help", count: 1 }, 0));
+		assert.deepEqual(s, before);
+		s = applyMove(s, { action: "help", count }, 1);
+		assert.equal(s.players[1]!.powerBars, 3 - count);
+		assert.equal(s.players[0]!.bonus, count);
+		assert.equal(s.players[0]!.resolved, true);
+		assert.throws(() => applyMove(s, { action: "help", count }, 1));
+	}
+});
+
+test("Gatherer can help themselves; multiple Gatherers each decide once", () => {
+	let s = withPhase("movement");
+	s.players[0]!.skill = "gatherer";
+	s.players[0]!.powerBars = 1;
+	s.players[1]!.powerBars = 2;
+	s = applyMove(s, { action: "beginMovement" }, 0);
+	assert.deepEqual(activePlayers(s), [0, 1]);
+	s = applyMove(s, { action: "help", count: 1 }, 0);
+	assert.deepEqual(activePlayers(s), [1]);
+	assert.equal(s.players[0]!.resolved, false);
+	s = applyMove(s, { action: "help", count: 0 }, 1);
+	assert.equal(s.players[0]!.resolved, true);
+});
+
+test("revealed dice and matching dice are immutable public journal snapshots", () => {
+	let s = withPhase("equipment");
+	assert(!s.log.some((e) => e.dice));
+	for (let i = 0; i < 3; i++) s = applyMove(s, { action: "ready" }, i);
+	const reveal = s.log.find((e) => e.diceLabel?.includes("revealed"))!;
+	assert.deepEqual(reveal.dice, s.players[0]!.dice);
+	const snapshot = structuredClone(reveal.dice);
+	s.players[0]!.dice[0]!.aside = true;
+	s = applyMove(s, { action: "beginMovement" }, 0);
+	const matched = s.log.filter((e) => e.diceLabel?.includes("matching total"));
+	assert.equal(matched.length, 3);
+	assert(matched.every((e) => e.dice!.every((d) => !d.aside)));
+	assert.deepEqual(s.log.find((e) => e.diceLabel?.includes("revealed"))!.dice, snapshot);
+	assert.deepEqual(stripSecret(s).log, s.log);
+});

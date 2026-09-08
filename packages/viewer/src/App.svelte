@@ -64,7 +64,9 @@
 	const actionTool = $derived(tool === "knife" ? copied : tool);
 	const pendingMe = $derived(s?.pending && seat !== undefined && s.pending.players.includes(seat));
 	const revealed = $derived(s?.phase === "movement" || s?.phase === "eruption" || s?.phase === "ended");
-	const result = $derived(s && seat !== undefined && revealed ? comparison(s, seat) : null);
+	const resolvingSeat = $derived(s?.activeResolution ?? seat);
+	const resolvingPlayer = $derived(s && resolvingSeat !== undefined ? s.players[resolvingSeat] : undefined);
+	const result = $derived(s && resolvingSeat !== undefined && revealed ? comparison(s, resolvingSeat) : null);
 	const rule = $derived(focusTerrain?.requirement);
 	const localTotal = $derived(me && focusTerrain ? total(me, focusTerrain.id) : 0);
 	const danger = $derived(s ? threatened(s) : []);
@@ -147,7 +149,6 @@
 		}
 		if (s.phase === "movement") {
 			if (s.activeResolution === null && !me.resolved) store.dispatch({ action: "beginMovement" });
-			else if (s.activeResolution === seat) store.dispatch({ action: "resolve" });
 			else document.querySelector(".journey")?.scrollIntoView({ behavior: "smooth" });
 			return;
 		}
@@ -591,11 +592,11 @@
 						{#if !me.resolved}<button class="primary" onclick={() => store.dispatch({ action: "beginMovement" })}
 								>Resolve my journey <span>→</span></button
 							>{:else}<p class="confirmed">✓ Your journey is resolved.</p>{/if}
-					{:else if s.activeResolution === seat && result}{@const criterion = terrain(
-							cell(s, me.path.at(-1)!).terrain
+					{:else if resolvingPlayer && result}{@const criterion = terrain(
+							cell(s, resolvingPlayer.path.at(-1)!).terrain
 						).requirement}
 						<div class="comparison">
-							<span class="eyebrow">{result.success ? "YOU CAN MOVE" : "YOU MUST STAY"}</span><strong
+							<span class="eyebrow">{result.success ? "CAN MOVE" : "MUST STAY"}</span><strong
 								>{result.own}<small> vs </small>{Math.max(...result.peers.map((p) => p.total))}</strong
 							>
 							<p>
@@ -603,8 +604,10 @@
 									? `Lead of ${result.margin} · lose ${result.loss} stamina`
 									: `Tie or lower · lose ${result.loss} stamina`}
 							</p>
-							<span class="muted small">Dice matching {terrain(cell(s, me.path.at(-1)!).terrain).name}</span>
-							{#each [{ seat: seat!, total: result.own }, ...result.peers] as peer}
+							<span class="muted small"
+								>Dice matching {terrain(cell(s, resolvingPlayer.path.at(-1)!).terrain).name}</span
+							>
+							{#each [{ seat: resolvingSeat!, total: result.own }, ...result.peers] as peer}
 								{@const counted = (peer.seat === -1 ? s.ghost : s.players[peer.seat]!.dice).filter(
 									(d) => !d.aside && matches(face(d), criterion)
 								)}
@@ -623,22 +626,34 @@
 												>No matching dice</span
 											>{/each}
 									</div>
-									{#if peer.seat === seat && me.bonus}<span>+{me.bonus} bonus</span>{/if}
+									{#if peer.seat === resolvingSeat && resolvingPlayer.bonus}<span>+{resolvingPlayer.bonus} bonus</span
+										>{/if}
 								</div>
 							{/each}
 						</div>
-						{#if s.players.some((p) => hasSkill(p, "gatherer") && p.powerBars > 0)}<p class="muted small">
-								The Gatherer can still add +1 per power bar before you confirm.
+						{#if s.pendingHelpers?.includes(seat!)}
+							<p class="instruction">
+								Help {resolvingPlayer.name}? Each bar adds +1 to their total. Your decision resolves the journey
+								automatically.
+							</p>
+							<div class="powerbar-options">
+								{#each Array(me.powerBars) as _, i}<button
+										class="secondary"
+										disabled={store.waiting}
+										onclick={() => store.dispatch({ action: "help", count: i + 1 })}
+										>Use {i + 1} bar{i ? "s" : ""} · total {result.own + i + 1}</button
+									>{/each}
+							</div>
+							<button
+								class="primary"
+								disabled={store.waiting}
+								onclick={() => store.dispatch({ action: "help", count: 0 })}>Don't use bars</button
+							>
+						{:else}<p class="instruction">
+								Waiting for {s.pendingHelpers?.map((i) => s.players[i]!.name).join(", ") || "the Gatherer"} to decide whether
+								to use power bars.
 							</p>{/if}
-						<button class="primary" onclick={() => store.dispatch({ action: "resolve" })}
-							>Confirm result <span>→</span></button
-						>
-					{:else}<p class="instruction">{s.players[s.activeResolution]!.name} is resolving their journey.</p>{/if}
-					{#if s.activeResolution !== null && hasSkill(me, "gatherer") && me.powerBars}<button
-							class="secondary"
-							onclick={() => store.dispatch({ action: "bar" })}
-							>Spend a power bar · +1 for {s.players[s.activeResolution]!.name}</button
-						>{/if}
+					{/if}
 				{:else if s.phase === "eruption"}
 					<p class="instruction">Everyone has moved. The lava will spread one step to every adjacent location.</p>
 					<div class="eruption-count"><strong>{danger.length}</strong><span>locations threatened</span></div>
@@ -815,7 +830,14 @@
 			<h2 id="journal-title">Expedition journal</h2>
 			<ol>
 				{#each s.log.slice().reverse() as e, i}<li class:latest={i === 0}>
-						<span class="journal-round">{String(e.round).padStart(2, "0")}</span><span>{e.text}</span>
+						<span class="journal-round">{String(e.round).padStart(2, "0")}</span>
+						<div class="journal-entry">
+							<span>{e.diceLabel ?? e.text}</span>{#if e.dice}<div class="journal-dice">
+									{#each e.dice as d}<Die die={d} colorblind={store.colorblind} disabled />{:else}<span
+											>No matching dice</span
+										>{/each}
+								</div>{/if}
+						</div>
 					</li>{/each}
 			</ol>
 		</div>

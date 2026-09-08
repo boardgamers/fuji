@@ -86,11 +86,13 @@ import path from "node:path";
 	if (await machete.count()) throw Error("Discarded machete remains usable");
 	if (s.players[0].cards.some((c) => c.id === "machete")) throw Error("Machete was not consumed");
 	s.phase = "movement";
-	s.activeResolution = 0;
+	s.activeResolution = null;
 	s.players[1].powerBars = 2;
+	s = applyMove(s, { action: "beginMovement" }, 0);
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
-	await page.getByRole("button", { name: "Confirm result" }).waitFor();
-	if ((await page.locator(".teammate.can-act").count()) !== 2) throw Error("Resolver and Gatherer should be active");
+	await page.locator(".comparison").waitFor();
+	if (await page.getByRole("button", { name: "Confirm result" }).count()) throw Error("Resolver should not confirm");
+	if ((await page.locator(".teammate.can-act").count()) !== 1) throw Error("Only the Gatherer should be active");
 	if (!(await page.locator(".public-bars").innerText()).includes("2 power bars"))
 		throw Error("Public power bars missing");
 	if (!(await page.getByText("Can help", { exact: true }).isVisible()))
@@ -102,6 +104,22 @@ import path from "node:path";
 	if ((await page.locator(".comparison").innerText()) !== countedBeforeHover)
 		throw Error("Hover changed the resolution criterion");
 	await page.screenshot({ path: "work/browser/fuji-comparison.png", fullPage: true });
+	await page.evaluate(
+		(v) => {
+			window.bridge.emit("player", { index: 1 });
+			window.bridge.emit("state", v);
+		},
+		stripSecret(s, 1)
+	);
+	await page.getByRole("button", { name: /Use 2 bars/ }).click();
+	const helpMove = await page.evaluate(() => window.captured.findLast((e) => e.name === "move")?.payload);
+	s = applyMove(s, helpMove, 1);
+	if (!s.players[0].resolved || s.players[1].powerBars !== 0) throw Error("Help did not resolve movement");
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 1));
+	await page.getByRole("button", { name: "Journal", exact: true }).click();
+	await page.locator(".journal-dice .die").first().waitFor();
+	await page.screenshot({ path: "work/browser/fuji-dice-journal.png", fullPage: true });
+	await page.keyboard.press("Escape");
 	await page.evaluate((v) => {
 		window.bridge.emit("player", {});
 		window.bridge.emit("state", v);

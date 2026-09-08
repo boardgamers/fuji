@@ -51,6 +51,7 @@ function choose(s, seat) {
 		case "equipment":
 			return { action: "ready" };
 		case "movement":
+			if (s.pendingHelpers?.includes(seat)) return { action: "help", count: 0 };
 			return s.activeResolution === null
 				? { action: "beginMovement" }
 				: s.activeResolution === seat

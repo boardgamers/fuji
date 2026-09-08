@@ -40,3 +40,7 @@ Fuji has a shared win/loss. The wrapper gives all players the same ranking and r
 ## Viewer preferences
 
 `colorblind` is a boolean UI preference, false by default. The viewer reads the platform `preferences` event and emits `update:preference` with `{ name: "colorblind", value: boolean }` when changed in Help. It adds color names to dice and color initials to map requirement symbols without changing game state. The local harness persists the same setting in localStorage. The draft registration declares the checkbox for the platform sidebar.
+
+## Automatic movement resolution
+
+Starting a movement resolves it immediately when no Gatherer has usable bars. Otherwise only the Gatherer(s) are active: each submits one `help` action with `count` from zero to their remaining stock. The last decision applies movement, eruption triggers and stamina automatically. Injury choices still belong to the injured player. The journal snapshots revealed and matching dice with text fallbacks for the platform log. Start a new local game when testing this flow; historical development saves using manual resolution are not migrated.

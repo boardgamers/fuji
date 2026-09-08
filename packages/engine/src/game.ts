@@ -9,6 +9,7 @@ import {
 	SKILLS,
 	CHARACTERS,
 	terrain,
+	requirementLabel,
 	matches,
 	equipment,
 	type Skill,
@@ -106,6 +107,18 @@ export function comparison(s: State | View, seat: number) {
 function event(s: State, text: string, type: State["log"][number]["type"] = "move") {
 	s.log.push({ round: s.round, text, type });
 }
+
+function diceEvent(s: State, label: string, dice: Die[]) {
+	const values =
+		dice.map((d) => `${face(d).color} ${d.face}${d.aside ? " (set aside)" : ""}`).join(", ") || "no matching dice";
+	s.log.push({
+		round: s.round,
+		type: "move",
+		text: `${label}: ${values}.`,
+		diceLabel: label,
+		dice: structuredClone(dice),
+	});
+}
 function phase(s: State, next: State["phase"]) {
 	s.phase = next;
 	for (const p of s.players) {
@@ -125,8 +138,13 @@ function phase(s: State, next: State["phase"]) {
 		}[next],
 		"phase"
 	);
+	if (next === "movement") {
+		for (const p of s.players) diceEvent(s, `${p.name} revealed their dice`, p.dice);
+		if (s.ghost.length) diceEvent(s, "Neutral dice revealed", s.ghost);
+	}
 }
 function end(s: State, outcome: "won" | "lost", reason: string) {
+	delete s.pendingHelpers;
 	s.outcome = outcome;
 	s.reason = reason;
 	s.phase = "ended";
@@ -330,6 +348,7 @@ function resetReady(s: State) {
 	for (const p of s.players) p.ready = false;
 }
 function afterMovement(s: State) {
+	delete s.pendingHelpers;
 	if (s.outcome) return;
 	if (s.players.some((p) => p.pendingInjuries)) return;
 	s.activeResolution = null;
@@ -573,9 +592,31 @@ function execute(s: State, m: Move, seat: number) {
 				throw Error("Choose an unresolved player to move.");
 			s.activeResolution = seat;
 			event(s, `${p.name} is resolving their journey.`);
+			s.pendingHelpers = s.players.flatMap((helper, i) =>
+				hasSkill(helper, "gatherer") && helper.powerBars > 0 ? [i] : []
+			);
+			if (!s.pendingHelpers.length) execute(s, { action: "resolve" }, seat);
+			break;
+		}
+		case "help": {
+			if (s.phase !== "movement" || s.activeResolution === null || !s.pendingHelpers?.includes(seat))
+				throw Error("No power bar decision is expected from you.");
+			const count = integer(m.count, 0, p.powerBars);
+			const actor = s.activeResolution;
+			p.powerBars -= count;
+			s.players[actor]!.bonus += count;
+			s.pendingHelpers = s.pendingHelpers.filter((i) => i !== seat);
+			event(
+				s,
+				count
+					? `${p.name} used ${count} power bar(s) to help ${s.players[actor]!.name}.`
+					: `${p.name} kept their power bars.`
+			);
+			if (!s.pendingHelpers.length) execute(s, { action: "resolve" }, actor);
 			break;
 		}
 		case "bar": {
+			if (s.pendingHelpers) throw Error("Choose how many power bars to use in one decision.");
 			if (s.phase !== "movement" || s.activeResolution === null || !hasSkill(p, "gatherer") || p.powerBars < 1)
 				throw Error("No power bar is available now.");
 			p.powerBars--;
@@ -584,6 +625,7 @@ function execute(s: State, m: Move, seat: number) {
 			break;
 		}
 		case "resolve": {
+			if (s.pendingHelpers?.length) throw Error("Waiting for the Gatherer’s decision.");
 			if (s.phase !== "movement" || s.activeResolution !== seat || p.resolved)
 				throw Error("It is not your movement turn.");
 			const dest = p.path.at(-1)!;
@@ -594,6 +636,18 @@ function execute(s: State, m: Move, seat: number) {
 				if (route.at(-1) !== dest) throw Error("Your destination cannot change.");
 			}
 			const result = comparison(s, seat);
+			const criterion = terrain(cell(s, dest).terrain);
+			event(s, `Dice comparison at ${criterion.name}: ${requirementLabel(criterion.requirement)}.`);
+			for (const participant of [{ seat, total: result.own }, ...result.peers]) {
+				const owner = participant.seat === -1 ? null : s.players[participant.seat]!;
+				const counted = (owner ? activeDice(owner) : s.ghost).filter((d) => matches(face(d), criterion.requirement));
+				const bonus = participant.seat === seat ? p.bonus : 0;
+				diceEvent(
+					s,
+					`${owner?.name ?? "Neutral dice"} · matching total ${participant.total}${bonus ? ` (including +${bonus} bonus)` : ""}`,
+					counted
+				);
+			}
 			let canMove = result.success && route.length > 0;
 			if (route.slice(1).some((id) => !walkable(cell(s, id)))) canMove = false;
 			if (canMove) {
@@ -670,7 +724,21 @@ export function applyMove(data: State, input: unknown, seat: number): State {
 	if (!input || typeof input !== "object" || Array.isArray(input)) throw Error("Invalid move.");
 	const raw = input as Record<string, unknown>;
 	if (typeof raw.action !== "string") throw Error("Invalid action.");
-	const allowed = ["action", "keep", "drop", "path", "ids", "id", "target", "tiles", "face", "copy", "injury", "die"];
+	const allowed = [
+		"action",
+		"keep",
+		"drop",
+		"path",
+		"ids",
+		"id",
+		"target",
+		"tiles",
+		"face",
+		"copy",
+		"injury",
+		"die",
+		"count",
+	];
 	const move = Object.fromEntries(allowed.filter((k) => Object.hasOwn(raw, k)).map((k) => [k, raw[k]])) as Move;
 	if (JSON.stringify(move).length > 3000) throw Error("Move is too large.");
 	const s = structuredClone(data);
@@ -717,6 +785,7 @@ export function activePlayers(s: State | View): number[] {
 	if (s.pending) return s.pending.players;
 	const injured = s.players.flatMap((p, i) => (p.pendingInjuries ? [i] : []));
 	if (injured.length) return injured;
+	if (s.phase === "movement" && s.pendingHelpers?.length) return s.pendingHelpers;
 	if (s.phase === "movement")
 		return s.activeResolution === null
 			? s.players.flatMap((p, i) => (p.resolved ? [] : [i]))

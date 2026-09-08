@@ -96,6 +96,7 @@ function chooseMove(seat: number): Move {
 	}
 	if (game.phase === "equipment") return { action: "ready" };
 	if (game.phase === "movement") {
+		if (game.pendingHelpers?.includes(seat)) return { action: "help", count: 0 };
 		if (game.activeResolution === null) return { action: "beginMovement" };
 		if (game.activeResolution === seat) return { action: "resolve" };
 		return { action: "bar" };

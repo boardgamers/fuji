@@ -44,6 +44,8 @@ export interface Cell {
 	eruption: number;
 }
 export interface Event {
+	dice?: Die[];
+	diceLabel?: string;
 	round: number;
 	text: string;
 	type: "phase" | "move" | "equipment" | "eruption" | "injury" | "end";
@@ -77,6 +79,7 @@ export interface State {
 	outcome: null | "won" | "lost";
 	reason: string;
 	activeResolution: number | null;
+	pendingHelpers?: number[];
 	pending: Pending | null;
 	ghost: Die[];
 	ghostVisible: string[];

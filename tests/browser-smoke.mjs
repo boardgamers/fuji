@@ -36,16 +36,22 @@ fs.mkdirSync("work/browser", { recursive: true });
 	if (s.players[0].path.length < 2 || s.players[0].ready) throw Error("Click must share route without confirming");
 	if (await page.getByRole("button", { name: "Set this route" }).count()) throw Error("Redundant route confirmation");
 	await page.getByRole("button", { name: "Ready to travel", exact: false }).first().waitFor();
+	await page.locator(".personal-title").hover();
+	const selectedTotal = await page.locator(".personal .dice-total").innerText();
+	await page.locator(".location").last().hover();
+	await page.locator(".personal-title").hover();
+	if ((await page.locator(".personal .dice-total").innerText()) !== selectedTotal)
+		throw Error("Leaving a tile must restore the selected destination total");
 	await page.getByText("Playtest tools", { exact: true }).click();
 	await page.screenshot({ path: "work/browser/fuji-planning.png", fullPage: true });
 	await page.getByRole("button", { name: "Open playing guide" }).click();
 	await page.keyboard.press("Escape");
 	if (await page.getByRole("dialog").count()) throw Error("Escape did not close guide");
 	await page.getByRole("button", { name: "Journal", exact: true }).click();
-	if (!(await page.getByRole("dialog", { name: "Expedition journal" }).isVisible()))
+	if (!(await page.getByRole("region", { name: "Expedition journal" }).isVisible()))
 		throw Error("Journal did not open");
-	await page.keyboard.press("Escape");
-	if (await page.getByRole("dialog").count()) throw Error("Escape did not close journal");
+	await page.getByRole("button", { name: "Collapse journal" }).click();
+	if (await page.locator("#journal-entries").count()) throw Error("Journal did not collapse");
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.screenshot({ path: "work/browser/fuji-mobile.png", fullPage: true });
 	const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);

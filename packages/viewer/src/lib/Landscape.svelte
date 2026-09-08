@@ -98,6 +98,8 @@
 					onfocus={() => {
 						if (state.phase !== "setup") oninspect(c.id);
 					}}
+					onmouseleave={() => oninspect("")}
+					onblur={() => oninspect("")}
 				>
 					<title
 						>{data.name}{reserved[c.id]

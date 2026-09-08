@@ -1176,14 +1176,7 @@ h3 {
 	background: #244437;
 	border-radius: 3px;
 }
-.modal.journal {
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-	border: 1px solid #c9d4b625;
-}
+
 .modal .game-credits {
 	font-size: 12px;
 	color: var(--muted);
@@ -1404,16 +1397,35 @@ h3 {
 	color: #e5c77e;
 }
 
-.journal-header {
-	position: relative;
-	flex: none;
-	padding: 24px 48px 0 24px;
+.inline-journal {
+	max-width: none;
+	margin: 18px 0 0;
+	padding: 0;
+	border: 1px solid #c9d4b625;
+	border-radius: 4px;
+	background: #19332988;
 }
-.modal.journal ol {
-	overflow-y: auto;
-	min-height: 0;
+.journal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 18px;
+}
+.journal-header h2 {
 	margin: 0;
-	padding: 0 24px 24px;
+	font-size: 19px;
+}
+.journal-header button {
+	font-size: 24px;
+	min-width: 36px;
+	min-height: 36px;
+}
+.inline-journal ol {
+	overflow-y: auto;
+	max-height: 300px;
+	margin: 0;
+	padding: 0 18px 18px;
+	overscroll-behavior: contain;
 }
 
 .auto-teammates {

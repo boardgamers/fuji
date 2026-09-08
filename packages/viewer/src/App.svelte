@@ -53,7 +53,7 @@
 	let keep = $state<string[]>([]);
 	let drop = $state("");
 	let help = $state(false);
-	let journal = $state(false);
+	let journal = $state(true);
 	const journalEntries = $derived(s?.log.slice().reverse() ?? []);
 	let newGame = $state(false);
 	let newPlayers = $state(3);
@@ -200,7 +200,6 @@
 		function key(e: KeyboardEvent) {
 			if (e.key === "Escape") {
 				help = false;
-				journal = false;
 				newGame = false;
 			}
 			if (e.key === "Tab") {
@@ -246,7 +245,15 @@
 				>
 			</div>
 			<button class="text-button" onclick={() => (help = true)} aria-label="Open playing guide">Help</button>
-			<button class="text-button" onclick={() => (journal = true)}>Journal</button>
+			<button
+				class="text-button"
+				onclick={() => {
+					journal = true;
+					requestAnimationFrame(() =>
+						document.querySelector(".inline-journal")?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+					);
+				}}>Journal</button
+			>
 			{#if store.local}<details class="playtest-menu">
 					<summary>Playtest tools</summary>
 					<div class="dev-toolbar">
@@ -427,6 +434,36 @@
 								{#each me.injuries as injury}<span>{injury}</span>{/each}
 							</div>{/if}
 					{/if}
+				</section>
+				<section class="journal inline-journal" aria-label="Expedition journal">
+					<header class="journal-header">
+						<h2>Expedition journal</h2>
+						<button
+							class="text-button"
+							aria-label={journal ? "Collapse journal" : "Expand journal"}
+							aria-expanded={journal}
+							aria-controls="journal-entries"
+							onclick={() => (journal = !journal)}>{journal ? "−" : "+"}</button
+						>
+					</header>
+					{#if journal}
+						<ol id="journal-entries" tabindex="0" aria-label="Journal entries">
+							{#each journalEntries as e, i}
+								{#if i === 0 || journalEntries[i - 1]!.round !== e.round}
+									<li class="journal-divider">
+										<h3>{e.round === 0 ? "Preparation" : `Round ${String(e.round).padStart(2, "0")}`}</h3>
+									</li>
+								{/if}
+								<li class:latest={i === 0}>
+									<div class="journal-entry">
+										<span>{e.diceLabel ?? e.text}</span>{#if e.dice}<div class="journal-dice">
+												{#each e.dice as d}<Die die={d} colorblind={store.colorblind} disabled />{:else}<span
+														>No matching dice</span
+													>{/each}
+											</div>{/if}
+									</div>
+								</li>{/each}
+						</ol>{/if}
 				</section>
 			</div>
 			<aside class="journey">
@@ -866,39 +903,6 @@
 {:else}<div class="waiting">
 		<h1>FUJI</h1>
 		<p>Waiting for the expedition…</p>
-	</div>{/if}
-{#if journal && s}<div class="modal-backdrop" role="presentation">
-		<div
-			class="modal journal"
-			use:modalFocus
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="journal-title"
-			tabindex="-1"
-		>
-			<header class="journal-header">
-				<button class="close" onclick={() => (journal = false)} aria-label="Close journal">×</button>
-				<span class="eyebrow">ROUND {s.round}</span>
-				<h2 id="journal-title">Expedition journal</h2>
-			</header>
-			<ol>
-				{#each journalEntries as e, i}
-					{#if i === 0 || journalEntries[i - 1]!.round !== e.round}
-						<li class="journal-divider">
-							<h3>{e.round === 0 ? "Preparation" : `Round ${String(e.round).padStart(2, "0")}`}</h3>
-						</li>
-					{/if}
-					<li class:latest={i === 0}>
-						<div class="journal-entry">
-							<span>{e.diceLabel ?? e.text}</span>{#if e.dice}<div class="journal-dice">
-									{#each e.dice as d}<Die die={d} colorblind={store.colorblind} disabled />{:else}<span
-											>No matching dice</span
-										>{/each}
-								</div>{/if}
-						</div>
-					</li>{/each}
-			</ol>
-		</div>
 	</div>{/if}
 {#if help}<div class="modal-backdrop" role="presentation">
 		<div class="modal" use:modalFocus role="dialog" aria-modal="true" aria-labelledby="help-title" tabindex="-1">

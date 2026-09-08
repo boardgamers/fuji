@@ -69,6 +69,13 @@ import path from "node:path";
 	if (routeStyles[0].color === routeStyles[1].color) throw Error("Routes must retain player colors");
 	if (routeStyles[0].animation !== "none" || !routeStyles[1].animation.includes("route-flow"))
 		throw Error("Only provisional routes should animate");
+	await page.waitForSelector(".reserved-marker");
+	const movesBeforeReserved = await page.evaluate(() => window.captured.filter((e) => e.name === "move").length);
+	await page.getByRole("button", { name: /reserved by .*choose another destination/ }).click();
+	if ((await page.evaluate(() => window.captured.filter((e) => e.name === "move").length)) !== movesBeforeReserved)
+		throw Error("Reserved destination must be inspected without submitting an invalid move");
+	if (!(await page.getByText(/Choose another destination; you may still pass through/).isVisible()))
+		throw Error("Reserved destination must explain the restriction");
 	await page.screenshot({ path: "work/browser/fuji-overlapping-routes.png", fullPage: true });
 	await page.evaluate(
 		(v) => {

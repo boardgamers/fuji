@@ -3,6 +3,7 @@
 		terrain,
 		cell,
 		paths,
+		neighbors,
 		rerollAllowance,
 		requirementLabel,
 		matches,
@@ -55,6 +56,16 @@
 	let newDifficulty = $state(1);
 	let newSeed = $state("first-light");
 	const reachable = $derived(s && seat !== undefined ? paths(s, seat) : {});
+	const reserved = $derived.by(() => {
+		const locations: Record<string, string> = {};
+		if (s?.phase === "planning" && seat !== undefined) {
+			for (const i of neighbors(s, seat)) {
+				const player = s.players[i]!;
+				if (player.ready) locations[player.path.at(-1)!] = player.name;
+			}
+		}
+		return locations;
+	});
 	const focusId = $derived(inspected || me?.path.at(-1) || s?.board.find((c) => c.terrain > 3)?.id || "");
 	const focus = $derived(s && focusId ? cell(s, focusId) : undefined);
 	const focusTerrain = $derived(focus ? terrain(focus.terrain) : undefined);
@@ -127,7 +138,8 @@
 				route = [...route, id];
 			}
 		} else if (reachable[id]) route = reachable[id]!;
-		if (route.join(";") !== me.path.join(";")) store.dispatch({ action: "plan", path: route });
+		if (!reserved[route.at(-1)!] && route.join(";") !== me.path.join(";"))
+			store.dispatch({ action: "plan", path: route });
 	}
 
 	function mobileAction() {
@@ -314,6 +326,7 @@
 					colorblind={store.colorblind}
 					state={s}
 					{seat}
+					{reserved}
 					selected={s.phase === "setup" ? "" : tool ? (tilePicks.at(-1) ?? "") : (currentRoute.at(-1) ?? "")}
 					reachable={s.phase === "planning" && !me?.ready ? Object.keys(reachable) : []}
 					onclick={chooseLocation}
@@ -553,9 +566,12 @@
 					{#if danger.includes(currentRoute.at(-1) ?? "")}<p class="warning">
 							This destination is threatened by the next eruption.
 						</p>{/if}
+					{#if reserved[currentRoute.at(-1)!]}<p class="instruction">
+							{reserved[currentRoute.at(-1)!]} has reserved this destination. Choose another location.
+						</p>{/if}
 					{#if !me.ready}<button
 							class="primary"
-							disabled={store.waiting}
+							disabled={store.waiting || !!reserved[currentRoute.at(-1)!]}
 							onclick={() => store.dispatch({ action: "ready" })}>Ready to travel <span>→</span></button
 						>{:else}<p class="confirmed">✓ Your route is set. Waiting for the team.</p>
 						<button class="text-button" onclick={() => store.dispatch({ action: "plan", path: me.path })}
@@ -750,6 +766,9 @@
 						<span class="eyebrow">INSPECTING THE TRAIL</span><strong>{focusTerrain.name}</strong><span
 							>{requirementLabel(focusTerrain.requirement)}</span
 						>
+						{#if reserved[focusId]}<span
+								>Reserved by {reserved[focusId]}. Choose another destination; you may still pass through.</span
+							>{/if}
 						{#if focus?.lava}<span>Lava: cannot enter or cross.</span>
 						{:else}
 							{#if focusTerrain.reroll}<span>↻ +1 reroll when chosen as your destination.</span>{/if}
@@ -803,8 +822,10 @@
 				</div>
 				<button
 					onclick={mobileAction}
-					disabled={store.waiting || (s.phase === "reroll" && me.ready) || (s.phase === "eruption" && seat !== 0)}
-					>{mobileLabel} →</button
+					disabled={store.waiting ||
+						(s.phase === "planning" && !me.ready && !!reserved[currentRoute.at(-1)!]) ||
+						(s.phase === "reroll" && me.ready) ||
+						(s.phase === "eruption" && seat !== 0)}>{mobileLabel} →</button
 				>
 			</div>{/if}
 	</main>

@@ -6,6 +6,7 @@
 		state,
 		colorblind = false,
 		seat,
+		reserved = {},
 		selected = "",
 		reachable = [],
 		onclick,
@@ -14,6 +15,7 @@
 		state: View;
 		colorblind?: boolean;
 		seat?: number;
+		reserved?: Record<string, string>;
 		selected?: string;
 		reachable?: string[];
 		onclick: (id: string) => void;
@@ -81,7 +83,7 @@
 					role="button"
 					aria-disabled={state.phase === "setup"}
 					tabindex={state.phase === "setup" ? -1 : 0}
-					aria-label={`${data.name}${reachable.length ? (reachable.includes(c.id) ? ", within movement range" : ", outside movement range") : ""}${data.kind === "village" ? ", village destination" : ""}, ${requirementLabel(data.requirement)}${c.lava ? ", covered in lava" : ""}${c.equipment && !c.lava ? ", equipment: finish here to draw a card usable next round" : ""}${c.eruption && !c.lava ? `, crossing or entering triggers ${c.eruption} extra eruption(s)` : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
+					aria-label={`${data.name}${reserved[c.id] ? `, reserved by ${reserved[c.id]}: choose another destination` : ""}${reachable.length ? (reachable.includes(c.id) ? ", within movement range" : ", outside movement range") : ""}${data.kind === "village" ? ", village destination" : ""}, ${requirementLabel(data.requirement)}${c.lava ? ", covered in lava" : ""}${c.equipment && !c.lava ? ", equipment: finish here to draw a card usable next round" : ""}${c.eruption && !c.lava ? `, crossing or entering triggers ${c.eruption} extra eruption(s)` : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
 					onclick={() => onclick(c.id)}
 					onkeydown={(e) => {
 						if (e.key === "Enter" || e.key === " ") {
@@ -97,7 +99,9 @@
 					}}
 				>
 					<title
-						>{data.name}{c.lava
+						>{data.name}{reserved[c.id]
+							? ` · Reserved by ${reserved[c.id]}: choose another destination; you may pass through`
+							: ""}{c.lava
 							? " · Lava: cannot enter or cross"
 							: `${data.reroll ? " · +1 reroll at this destination" : ""}${c.equipment ? " · Equipment: finish here to draw a card usable next round" : ""}${c.eruption ? ` · Entering or crossing triggers ${c.eruption} extra eruption(s)` : ""}${danger.includes(c.id) ? " · Covered by the next eruption" : ""}`}</title
 					>
@@ -160,6 +164,14 @@
 							rx="4"
 							fill="#112820e6"
 						/><RequirementSymbols requirement={data.requirement} x={x(c.id)} y={y(c.id) + 26} {colorblind} />{/if}
+					{#if reserved[c.id]}<g
+							class="reserved-marker"
+							aria-hidden="true"
+							transform={`translate(${x(c.id)},${y(c.id) - 16})`}
+						>
+							<rect x="-29" y="-9" width="58" height="18" rx="4" fill="#102b25" stroke="#bac5b1" stroke-width="0.8" />
+							<text text-anchor="middle" y="3" fill="#e5e9dd" font-size="9" font-weight="600">Reserved</text>
+						</g>{/if}
 					{#if data.reroll && !c.lava}<text x={x(c.id) - 34} y={y(c.id) - 16} class="reroll-mark">↻</text>{/if}
 				</g>
 			{/each}

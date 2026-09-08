@@ -3,6 +3,7 @@ import App from "./App.svelte";
 import { Store } from "./lib/store.svelte";
 import { initGame, applyMove, moveAI, stripSecret, activePlayers, type State } from "fuji-engine";
 import "./lib/theme.css";
+import enginePackage from "../../engine/package.json";
 const store = new Store();
 store.local = true;
 store.setSound(localStorage.getItem("fuji-sound") !== "false");
@@ -70,6 +71,20 @@ store.restart = (players, seed, difficulty, scenario = 1) => {
 	store.seat = 0;
 	publish();
 };
+store.exportDebug = () =>
+	JSON.stringify(
+		{
+			format: "fuji-playtest-v1",
+			engineVersion: enginePackage.version,
+			exportedAt: new Date().toISOString(),
+			seat: store.seat,
+			autoTeammates: store.autoTeammates,
+			playback: { round: store.scene?.round, phase: store.scene?.phase, logLength: store.journal.length },
+			game,
+		},
+		null,
+		2
+	);
 store.teammateStep = () => {
 	if (store.animating) return;
 	try {

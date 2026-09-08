@@ -378,13 +378,22 @@ export function chooseMove(game: View, seat: number, policy: AiPolicy = DEFAULT_
 				// Fewer alternatives and shorter approaches make this entrance more valuable.
 				return cost + (18 * urgency(game, arrival.seat)) / arrival.options.length / Math.max(1, route.length - 1);
 			}, 0);
+		// Measure progress along the trail, including detours around gaps and lava.
+		const villageDistances = new Map<string, number>();
+		const frontier = game.board.filter((c) => walkable(c) && terrain(c.terrain).kind === "village");
+		frontier.forEach((c) => villageDistances.set(c.id, 0));
+		for (let i = 0; i < frontier.length; i++) {
+			const current = frontier[i]!;
+			for (const next of game.board) {
+				if (!walkable(next) || villageDistances.has(next.id)) continue;
+				if (Math.abs(current.x - next.x) + Math.abs(current.y - next.y) !== 1) continue;
+				villageDistances.set(next.id, villageDistances.get(current.id)! + 1);
+				frontier.push(next);
+			}
+		}
 		const score = (path: string[]) => {
 			const c = cell(game, path.at(-1)!);
-			const closestVillage = Math.min(
-				...game.board
-					.filter((c) => terrain(c.terrain).kind === "village")
-					.map((v) => Math.abs(c.x - v.x) + Math.abs(c.y - v.y))
-			);
+			const closestVillage = villageDistances.get(c.id) ?? game.board.length;
 			const lavaDistance = Math.min(
 				...game.board.filter((tile) => tile.lava).map((tile) => Math.abs(c.x - tile.x) + Math.abs(c.y - tile.y))
 			);

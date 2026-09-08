@@ -69,6 +69,26 @@
 			.slice()
 			.reverse() ?? []
 	);
+	let debugStatus = $state("");
+	async function copyDebug() {
+		const snapshot = store.exportDebug();
+		try {
+			await navigator.clipboard.writeText(snapshot);
+			debugStatus = "Copied. Paste it into the conversation.";
+		} catch {
+			debugStatus = "Clipboard unavailable. Download the debug file instead.";
+		}
+	}
+	function downloadDebug() {
+		const snapshot = store.exportDebug();
+		const url = URL.createObjectURL(new Blob([snapshot], { type: "application/json" }));
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = `fuji-debug-${new Date().toISOString().replaceAll(":", "-")}.json`;
+		link.click();
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
+		debugStatus = "Downloaded. Attach the JSON file to the conversation.";
+	}
 	let newGame = $state(false);
 	let newPlayers = $state(3);
 	let newDifficulty = $state(1);
@@ -409,6 +429,15 @@
 								<button disabled={!store.sound} onclick={() => store.testSound("lava")}>Lava</button>
 								<button disabled={!store.sound} onclick={() => store.testSound("gear")}>Equipment</button>
 							</div>
+						</fieldset>
+						<fieldset class="visible-choices">
+							<legend>Share this playtest</legend>
+							<div class="choice-row">
+								<button onclick={copyDebug}>Copy debug snapshot</button>
+								<button onclick={downloadDebug}>Download debug file</button>
+							</div>
+							<p class="muted small">Includes the seed, settings, move history and all players’ dice.</p>
+							{#if debugStatus}<p class="small" role="status">{debugStatus}</p>{/if}
 						</fieldset>
 						<button onclick={() => (newGame = true)}>New game</button>
 						<button

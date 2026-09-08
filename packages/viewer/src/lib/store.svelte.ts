@@ -53,6 +53,7 @@ export class Store {
 	error = $state("");
 	waiting = $state(false);
 	local = $state(false);
+	exportDebug: () => string = () => "";
 	autoTeammates = $state(false);
 	setAutoTeammates: (enabled: boolean) => void = () => {};
 	colorblind = $state(false);

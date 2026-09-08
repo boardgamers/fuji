@@ -1156,3 +1156,28 @@ test("village bots leave the only reachable entrance for an approaching neighbor
 	});
 	assert.deepEqual(chooseMove(stripSecret(s, 0), 0), move, "Hidden teammate dice must not affect entrance sharing");
 });
+
+test("AI follows the connected trail around scenario 7's gap instead of camping near the village", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = initGame(3, { scenario: 7 }, "detour-regression");
+	s.phase = "planning";
+	for (const [i, p] of s.players.entries()) {
+		p.position = ["5,5", "5,4", "5,3"][i]!;
+		p.path = [p.position];
+		p.ready = false;
+		p.cards = [];
+		p.dice.forEach((d) => (d.face = 1));
+	}
+	// Equal requirements isolate route geometry from lucky dice or equipment.
+	for (const c of s.board) if (terrain(c.terrain).kind === "land") c.terrain = 16;
+	for (const seat of [1, 2]) {
+		const choice = chooseMove(stripSecret(s, seat), seat);
+		assert.equal(choice.action, "plan");
+		const route = choice.path as string[];
+		assert(route.length > 1);
+		assert(cell(s, route.at(-1)!).y <= 2, "advance toward the bridge around the gap");
+		const previous = structuredClone(choice);
+		s.players[0]!.dice.forEach((d) => (d.face = 6));
+		assert.deepEqual(chooseMove(stripSecret(s, seat), seat), previous);
+	}
+});

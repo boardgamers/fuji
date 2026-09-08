@@ -422,7 +422,11 @@ function useEquipment(s: State, seat: number, m: Move) {
 			const c = cell(s, ids[0]!);
 			if (!walkable(c) || terrain(c.terrain).kind !== "land" || distance(cell(s, p.position), c) !== 1)
 				throw Error("Choose an adjacent land location.");
-			event(s, `${p.name} moved to ${terrain(c.terrain).name} using Rope.`);
+			event(
+				s,
+				`${p.name} moved to ${terrain(c.terrain).name} using ${card.id === "knife" ? "Pocketknife as Rope" : "Rope"}.`,
+				"equipment"
+			);
 			s.log.at(-1)!.animation = { kind: "move", seat, path: [p.position, c.id] };
 			p.position = c.id;
 			collect(s, p);
@@ -505,11 +509,12 @@ function useEquipment(s: State, seat: number, m: Move) {
 		s.discard.push(card.id);
 	}
 	resetReady(s);
-	event(
-		s,
-		`${p.name} used ${equipment(card.id).name}${id !== card.id ? ` as ${info.name}` : ""}${effectText ? ` · ${effectText}` : ""}.`,
-		"equipment"
-	);
+	if (id !== "rope")
+		event(
+			s,
+			`${p.name} used ${equipment(card.id).name}${id !== card.id ? ` as ${info.name}` : ""}${effectText ? ` · ${effectText}` : ""}.`,
+			"equipment"
+		);
 	if (id === "torch") s.log.at(-1)!.sound = "dice";
 	if (setAside) s.log.at(-1)!.setAside = structuredClone(setAside);
 }

@@ -1048,3 +1048,20 @@ test("Water flask journal describes the recipient and each reroll without exposi
 	s = applyMove(s, { action: "decline" }, 0);
 	assert.match(s.log.at(-1)!.text, /skipped the remaining Water flask reroll/);
 });
+
+test("Rope and copied Rope log one movement entry and retain the animation", () => {
+	for (const id of ["rope", "knife"] as const) {
+		const s = withPhase("planning");
+		s.players[0]!.cards = [{ id, used: 0, availableRound: 0 }];
+		s.players[1]!.cards = [{ id: "rope", used: 0, availableRound: 0 }];
+		Object.assign(cell(s, "1,3"), { terrain: 5, lava: false, eruption: 0, equipment: false });
+		const next = applyMove(s, { action: "equipment", id, copy: "rope", tiles: ["1,3"] }, 0);
+		const entries = next.log.slice(s.log.length);
+		assert.equal(entries.length, 1);
+		assert.equal(
+			entries[0]!.text,
+			`${s.players[0]!.name} moved to Sunlit shrine using ${id === "knife" ? "Pocketknife as Rope" : "Rope"}.`
+		);
+		assert.deepEqual(entries[0]!.animation, { kind: "move", seat: 0, path: [s.players[0]!.position, "1,3"] });
+	}
+});

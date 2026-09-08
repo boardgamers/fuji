@@ -8,6 +8,8 @@
 		seat,
 		reserved = {},
 		selected = "",
+		selectedLocations = [],
+		selectionReasons,
 		reachable = [],
 		onclick,
 		oninspect,
@@ -17,6 +19,8 @@
 		seat?: number;
 		reserved?: Record<string, string>;
 		selected?: string;
+		selectedLocations?: string[];
+		selectionReasons?: Record<string, string>;
 		reachable?: string[];
 		onclick: (id: string) => void;
 		oninspect: (id: string) => void;
@@ -77,14 +81,16 @@
 					class:inactive={state.phase === "setup"}
 					class:reserved={!!reserved[c.id]}
 					class:reachable={reachable.includes(c.id)}
-					class:out-of-range={reachable.length > 0 && !reachable.includes(c.id) && !c.lava}
-					class:selected={selected === c.id}
+					class:out-of-range={selectionReasons
+						? !!selectionReasons[c.id]
+						: reachable.length > 0 && !reachable.includes(c.id) && !c.lava}
+					class:selected={selected === c.id || selectedLocations.includes(c.id)}
 					class:lava={c.lava}
 					class:village={data.kind === "village"}
 					role="button"
 					aria-disabled={state.phase === "setup"}
 					tabindex={state.phase === "setup" ? -1 : 0}
-					aria-label={`${data.name}${reserved[c.id] ? `, reserved by ${reserved[c.id]}: choose another destination` : ""}${reachable.length ? (reachable.includes(c.id) ? ", within movement range" : ", outside movement range") : ""}${data.kind === "village" ? ", village destination" : ""}, ${requirementLabel(data.requirement)}${c.lava ? ", covered in lava" : ""}${c.equipment && !c.lava ? ", equipment: finish here to draw a card usable next round" : ""}${c.eruption && !c.lava ? `, crossing or entering triggers ${c.eruption} extra eruption(s)` : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
+					aria-label={`${data.name}${!selectionReasons && reserved[c.id] ? `, reserved by ${reserved[c.id]}: choose another destination` : ""}${selectionReasons ? `, ${selectionReasons[c.id] || "available to swap, any distance"}` : reachable.length ? (reachable.includes(c.id) ? ", within movement range" : ", outside movement range") : ""}${data.kind === "village" ? ", village destination" : ""}, ${requirementLabel(data.requirement)}${c.lava ? ", covered in lava" : ""}${c.equipment && !c.lava ? ", equipment: finish here to draw a card usable next round" : ""}${c.eruption && !c.lava ? `, crossing or entering triggers ${c.eruption} extra eruption(s)` : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
 					onclick={() => onclick(c.id)}
 					onkeydown={(e) => {
 						if (e.key === "Enter" || e.key === " ") {

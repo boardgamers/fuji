@@ -51,6 +51,7 @@
 	let acceptedLavaRisk = $state("");
 	let dice = $state<string[]>([]);
 	let tilePicks = $state<string[]>([]);
+	let tileHint = $state("");
 	let tool = $state<EquipmentId | null>(null);
 	let copied = $state<EquipmentId>("torch");
 	let target = $state(0);
@@ -98,6 +99,21 @@
 		if (tool === "knife" && !copyOptions.some((c) => c.id === copied) && copyOptions[0]) copied = copyOptions[0].id;
 	});
 	const actionTool = $derived(tool === "knife" ? (copyOptions.some((c) => c.id === copied) ? copied : null) : tool);
+	const binocularReasons = $derived.by(() => {
+		if (actionTool !== "binoculars" || !s) return undefined;
+		return Object.fromEntries(
+			s.board.map((c) => {
+				const reasons: string[] = [];
+				if (c.lava) reasons.push("covered by lava");
+				else if (terrain(c.terrain).kind !== "land") reasons.push("not a land tile");
+				if (s.players.some((p) => p.position === c.id)) reasons.push("a player is here");
+				if (s.players.some((p) => p.path.at(-1) === c.id)) reasons.push("a destination marker is here");
+				if (c.equipment) reasons.push("an equipment token is here");
+				if (c.eruption) reasons.push("an eruption marker is here");
+				return [c.id, reasons.length ? `Cannot swap: ${reasons.join("; ")}.` : ""];
+			})
+		);
+	});
 	const pendingMe = $derived(s?.pending && seat !== undefined && s.pending.players.includes(seat));
 	const revealed = $derived(s?.phase === "movement" || s?.phase === "eruption" || s?.phase === "ended");
 	const resolvingSeat = $derived(s?.activeResolution ?? seat);
@@ -191,6 +207,8 @@
 		if (s?.phase === "setup") return;
 		inspected = id;
 		if (tool && ["binoculars", "rope"].includes(actionTool ?? "")) {
+			tileHint = binocularReasons?.[id] ?? "";
+			if (tileHint) return;
 			tilePicks = tilePicks.includes(id)
 				? tilePicks.filter((x) => x !== id)
 				: [...tilePicks, id].slice(actionTool === "rope" ? -1 : -2);
@@ -281,6 +299,7 @@
 		});
 	}
 	function chooseTool(id: EquipmentId) {
+		tileHint = "";
 		tool = tool === id ? null : id;
 		target = ["map", "lighter"].includes(id) ? (seat === 0 ? 1 : 0) : (seat ?? 0);
 		tilePicks = [];
@@ -492,8 +511,14 @@
 					state={store.scene ?? s}
 					{seat}
 					{reserved}
+					selectedLocations={tool ? tilePicks : []}
+					selectionReasons={binocularReasons}
 					selected={s.phase === "setup" ? "" : tool ? (tilePicks.at(-1) ?? "") : (currentRoute.at(-1) ?? "")}
-					reachable={s.phase === "planning" && !me?.ready ? Object.keys(reachable) : []}
+					reachable={binocularReasons
+						? Object.keys(binocularReasons).filter((id) => !binocularReasons[id])
+						: s.phase === "planning" && !me?.ready
+							? Object.keys(reachable)
+							: []}
 					onclick={chooseLocation}
 					oninspect={(id) => {
 						if (s.phase !== "setup") inspected = id;
@@ -985,8 +1010,15 @@
 										</div>
 									</fieldset>{/if}
 								{#if ["binoculars", "rope"].includes(actionTool ?? "")}<p class="muted small">
-										Choose {actionTool === "rope" ? "one adjacent location" : "two empty land locations"} on the map. {tilePicks.length}
-										selected.
+										{#if actionTool === "binoculars"}Choose two empty land tiles anywhere on the map—no range limit. No
+											players, destination markers, equipment or eruption tokens; no village or lava tiles.
+										{:else}Choose one adjacent land location on the map.{/if}
+										<span
+											>{tilePicks.length} selected{tilePicks.length
+												? `: ${tilePicks.map((id) => terrain(cell(s, id).terrain).name).join(" + ")}`
+												: ""}.</span
+										>
+										{#if actionTool === "binoculars" && tileHint}<span role="status">{tileHint}</span>{/if}
 									</p>{/if}
 								<button
 									class="secondary"
@@ -1001,6 +1033,9 @@
 										(actionTool === "machete" && (dice.length < 1 || dice.length > 2)) ||
 										(actionTool === "torch" && dice.length === 0) ||
 										(actionTool === "shovel" && dice.length !== 1) ||
+										(actionTool === "binoculars" &&
+											(tilePicks.length !== 2 || tilePicks.some((id) => binocularReasons?.[id]))) ||
+										(actionTool === "rope" && tilePicks.length !== 1) ||
 										(actionTool === "map" && (dice.length !== 1 || target === seat))}
 									onclick={confirmTool}>Use {info.name}</button
 								>

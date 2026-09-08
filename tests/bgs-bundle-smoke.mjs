@@ -67,6 +67,38 @@ import path from "node:path";
 	await page.waitForSelector('.teammate-route[data-player="1"] .shared-route-line', { state: "attached" });
 	if (s.players[1].ready) throw Error("Shared route fixture must be unconfirmed");
 	await page.screenshot({ path: "work/browser/fuji-shared-routes.png", fullPage: true });
+	const binocularState = structuredClone(s);
+	binocularState.players.forEach((p) => (p.path = [p.position]));
+	binocularState.players[0].cards = [{ id: "binoculars", used: 0, availableRound: 0 }];
+	for (const id of ["1,3", "6,6"])
+		Object.assign(
+			binocularState.board.find((c) => c.id === id),
+			{ terrain: 16, equipment: false, eruption: 0, lava: false }
+		);
+	if (paths(binocularState, 0)["6,6"]) throw Error("Binocular fixture must include a distant tile");
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(binocularState, 0));
+	await page.locator(".equipment-list button").filter({ hasText: "Binoculars" }).click();
+	const useBinoculars = page.getByRole("button", { name: "Use Binoculars", exact: true });
+	if (!(await useBinoculars.isDisabled())) throw Error("Binoculars needs two tiles");
+	await page
+		.locator(".location")
+		.nth(binocularState.board.findIndex((c) => c.id === "0,3"))
+		.click();
+	await page.getByRole("status").filter({ hasText: "a player is here" }).waitFor();
+	for (const id of ["1,3", "6,6"]) {
+		const tile = page.locator(".location").nth(binocularState.board.findIndex((c) => c.id === id));
+		if ((await tile.getAttribute("class")).includes("out-of-range"))
+			throw Error("Distance must not dim a valid Binocular target");
+		await tile.click();
+	}
+	if ((await page.locator(".location.selected").count()) !== 2)
+		throw Error("Both swap targets must remain highlighted");
+	if (!(await useBinoculars.isEnabled())) throw Error("Near/far swap must be available");
+	await useBinoculars.click();
+	const swapMove = await page.evaluate(() => window.captured.findLast((e) => e.name === "move").payload);
+	if (JSON.stringify(swapMove.tiles) !== JSON.stringify(["1,3", "6,6"])) throw Error("Wrong swap selection");
+	applyMove(binocularState, swapMove, 0);
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
 	const overlap = structuredClone(s);
 	overlap.players[0].path = [...teammatePath];
 	overlap.players[0].ready = true;

@@ -10,6 +10,7 @@ import {
 	total,
 	activeDice,
 	face,
+	threatened,
 } from "./game.js";
 import { terrain, SKILLS, matches } from "./data.js";
 import type { State, View, Move } from "./types.js";
@@ -41,6 +42,7 @@ export function chooseMove(game: View, seat: number): Move {
 			(path) =>
 				!neighbors(game, seat).some((i) => game.players[i]!.ready && game.players[i]!.path.at(-1) === path.at(-1))
 		);
+		const danger = new Set(threatened(game));
 		const score = (path: string[]) => {
 			const c = cell(game, path.at(-1)!);
 			const closestVillage = Math.min(
@@ -48,12 +50,17 @@ export function chooseMove(game: View, seat: number): Move {
 					.filter((c) => terrain(c.terrain).kind === "village")
 					.map((v) => Math.abs(c.x - v.x) + Math.abs(c.y - v.y))
 			);
+			const lavaDistance = Math.min(
+				...game.board.filter((tile) => tile.lava).map((tile) => Math.abs(c.x - tile.x) + Math.abs(c.y - tile.y))
+			);
 			return (
+				(danger.has(c.id) ? -1000 : 0) -
+				12 / Math.max(1, lavaDistance) +
 				total(p, c.terrain) * 0.65 -
-				closestVillage * 2 +
+				closestVillage * 4 +
 				(terrain(c.terrain).kind === "village" ? 8 : 0) +
 				(c.equipment ? 1 : 0) -
-				(c.eruption ? 2 : 0)
+				path.slice(1).reduce((cost, id) => cost + cell(game, id).eruption * 4, 0)
 			);
 		};
 		choices.sort((a, b) => score(b) - score(a));

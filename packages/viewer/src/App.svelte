@@ -55,6 +55,7 @@
 	let trace = $state(false);
 	let help = $state(false);
 	let journal = $state(false);
+	const journalEntries = $derived(s?.log.slice().reverse() ?? []);
 	let newGame = $state(false);
 	let newPlayers = $state(3);
 	let newDifficulty = $state(1);
@@ -881,12 +882,19 @@
 			aria-labelledby="journal-title"
 			tabindex="-1"
 		>
-			<button class="close" onclick={() => (journal = false)} aria-label="Close journal">×</button>
-			<span class="eyebrow">ROUND {s.round}</span>
-			<h2 id="journal-title">Expedition journal</h2>
+			<header class="journal-header">
+				<button class="close" onclick={() => (journal = false)} aria-label="Close journal">×</button>
+				<span class="eyebrow">ROUND {s.round}</span>
+				<h2 id="journal-title">Expedition journal</h2>
+			</header>
 			<ol>
-				{#each s.log.slice().reverse() as e, i}<li class:latest={i === 0}>
-						<span class="journal-round">{String(e.round).padStart(2, "0")}</span>
+				{#each journalEntries as e, i}
+					{#if i === 0 || journalEntries[i - 1]!.round !== e.round}
+						<li class="journal-divider">
+							<h3>{e.round === 0 ? "Preparation" : `Round ${String(e.round).padStart(2, "0")}`}</h3>
+						</li>
+					{/if}
+					<li class:latest={i === 0}>
 						<div class="journal-entry">
 							<span>{e.diceLabel ?? e.text}</span>{#if e.dice}<div class="journal-dice">
 									{#each e.dice as d}<Die die={d} colorblind={store.colorblind} disabled />{:else}<span

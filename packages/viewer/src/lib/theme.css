@@ -719,11 +719,20 @@ h3 {
 .journal li.latest {
 	color: #d0d8b9;
 }
-.journal-round {
-	color: #788f79;
-	font-size: 10px;
-	min-width: 20px;
-	padding-top: 2px;
+.journal li.journal-divider {
+	margin-top: 20px;
+	padding-top: 14px;
+	border-top: 1px solid #d5c48655;
+}
+.journal li.journal-divider:first-child {
+	margin-top: 0;
+}
+.journal-divider h3 {
+	margin: 0;
+	font: 600 12px var(--font-ui);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: #e5cc8f;
 }
 .error {
 	padding: 12px;
@@ -1146,7 +1155,10 @@ h3 {
 }
 .modal.journal {
 	margin: 0;
-	padding: 32px;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 	border: 1px solid #c9d4b625;
 }
 .modal .game-credits {
@@ -1365,4 +1377,16 @@ h3 {
 .equipment-transfer summary {
 	cursor: pointer;
 	color: #e5c77e;
+}
+
+.journal-header {
+	position: relative;
+	flex: none;
+	padding: 24px 48px 0 24px;
+}
+.modal.journal ol {
+	overflow-y: auto;
+	min-height: 0;
+	margin: 0;
+	padding: 0 24px 24px;
 }

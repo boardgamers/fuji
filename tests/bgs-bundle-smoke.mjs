@@ -208,6 +208,12 @@ import path from "node:path";
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 1));
 	await page.getByRole("button", { name: "Journal", exact: true }).click();
 	await page.locator(".journal-dice .die").first().waitFor();
+	await page.getByRole("heading", { name: "Round 01", exact: true }).waitFor();
+	await page.getByRole("heading", { name: "Preparation", exact: true }).waitFor();
+	const closeBeforeScroll = await page.getByRole("button", { name: "Close journal" }).boundingBox();
+	await page.locator(".modal.journal ol").evaluate((list) => (list.scrollTop = list.scrollHeight));
+	const closeAfterScroll = await page.getByRole("button", { name: "Close journal" }).boundingBox();
+	if (closeAfterScroll.y !== closeBeforeScroll.y) throw Error("Journal close button scrolled away");
 	await page.screenshot({ path: "work/browser/fuji-dice-journal.png", fullPage: true });
 	await page.keyboard.press("Escape");
 	await page.evaluate((v) => {

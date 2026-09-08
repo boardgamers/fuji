@@ -696,3 +696,17 @@ test("moveAI uses the public view, preserves its input and records a replayable 
 	assert.throws(() => wrapper.moveAI(ready, 0), /No AI action/);
 	assert.deepEqual(wrapper.currentPlayer(ready), [1, 2]);
 });
+
+test("AI leaves a threatened location even when staying has the best dice total", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = prepared();
+	cell(s, "0,2").lava = true;
+	cell(s, "0,3").terrain = 16;
+	s.players[1]!.dice.forEach((d) => (d.face = 6));
+	const move = chooseMove(stripSecret(s, 1), 1);
+	assert.equal(move.action, "plan");
+	const route = move.path as string[];
+	assert.notEqual(route.at(-1), s.players[1]!.position);
+	assert(!threatened(s).includes(route.at(-1)!));
+	assert.doesNotThrow(() => applyMove(s, move, 1));
+});

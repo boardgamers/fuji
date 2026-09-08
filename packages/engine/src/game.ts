@@ -938,6 +938,22 @@ function advanceForcedActions(s: State) {
 		return;
 	}
 	while (!s.outcome) {
+		// A resolved explorer outside the village cannot move again this round.
+		// If lava will reach them, no injury choice or remaining journey can save
+		// the expedition. Show the eruption instead of asking a pointless choice.
+		if (s.phase === "movement" && s.players.some((p) => p.pendingInjuries)) {
+			const nextLava = new Set(threatened(s));
+			const doomed = s.players.some(
+				(p) => p.resolved && nextLava.has(p.position) && terrain(cell(s, p.position).terrain).kind !== "village"
+			);
+			if (doomed) {
+				for (const p of s.players) p.pendingInjuries = 0;
+				s.activeResolution = null;
+				phase(s, "eruption");
+				erupt(s);
+				continue;
+			}
+		}
 		const forcedInjury = s.players.findIndex(
 			(p) =>
 				p.pendingInjuries > 0 &&
@@ -966,7 +982,7 @@ function advanceForcedActions(s: State) {
 		}
 		if (s.phase === "movement") {
 			advanceMovement(s);
-			if (s.phase !== "movement") continue;
+			if (s.phase !== "movement" || s.players.some((p) => p.pendingInjuries)) continue;
 			break;
 		}
 		if (s.phase === "eruption") {

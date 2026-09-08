@@ -1244,3 +1244,32 @@ test("AI rerolls for a prospective Binoculars destination before spending the sw
 	s.players[0]!.dice.forEach((d) => (d.face = 6));
 	assert.deepEqual(chooseMove(stripSecret(s, 2), 2), expectedRoll);
 });
+
+test("skip injury choices when a resolved explorer is certain to die in the eruption", () => {
+	for (const doomed of [true, false]) {
+		let s = withPhase("movement");
+		s.initOptions.autoProgress = true;
+		s.activeResolution = 0;
+		s.players.forEach((p) => {
+			p.dice.forEach((d) => (d.face = 2));
+			p.path = [p.position];
+			p.powerBars = 0;
+		});
+		cell(s, s.players[0]!.position).terrain = 16;
+		s.players[0]!.stamina = 4;
+		for (const c of s.board) c.lava = false;
+		cell(s, "0,2").lava = doomed;
+		s = applyMove(s, { action: "resolve" }, 0);
+		if (doomed) {
+			assert.equal(s.outcome, "lost");
+			assert.match(s.reason!, /lava/);
+			assert(s.players.every((p) => p.pendingInjuries === 0));
+			assert(s.log.some((e) => e.animation?.kind === "eruption"));
+			assert.deepEqual(activePlayers(s), []);
+		} else {
+			assert.equal(s.outcome, null);
+			assert.equal(s.players[0]!.pendingInjuries, 1);
+			assert.deepEqual(activePlayers(s), [0]);
+		}
+	}
+});

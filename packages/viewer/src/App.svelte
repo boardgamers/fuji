@@ -155,7 +155,7 @@
 	const diceTerrain = $derived(s?.phase === "planning" ? focusTerrain : destination);
 	const rule = $derived(diceTerrain?.requirement);
 	const diceConflicts = $derived.by(() => {
-		if (!s || !me || seat === undefined || s.phase !== "reroll") return {};
+		if (!s || !me || seat === undefined || !["reroll", "equipment"].includes(s.phase)) return {};
 		// Only our visible dice and the public destinations of comparison neighbors.
 		return Object.fromEntries(
 			me.dice.map((d) => [
@@ -614,7 +614,7 @@
 									<strong>{localTotal}</strong><span>Matching dice total<br />{diceTerrain.name}</span>
 								</div>{/if}
 						</div>
-						{#if s.phase === "reroll"}<p class="dice-conflict-guide">
+						{#if ["reroll", "equipment"].includes(s.phase)}<p class="dice-conflict-guide">
 								Player numbers mark dice that also count against that teammate’s destination.
 							</p>{/if}
 						{#if s.phase === "reroll"}<section class="reroll-actions" aria-label="Dice actions">

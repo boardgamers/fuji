@@ -10,6 +10,7 @@
 		face,
 		total,
 		comparison,
+		powerBarChoices,
 		threatened,
 		walkable,
 		distance,
@@ -29,6 +30,7 @@
 	import Landscape from "./lib/Landscape.svelte";
 	import Die from "./lib/Die.svelte";
 	import PlayerChoices from "./lib/PlayerChoices.svelte";
+	import StaminaGuide from "./lib/StaminaGuide.svelte";
 	let { store }: { store: Store } = $props();
 	const s = $derived(store.state);
 	const actingSeats = $derived(
@@ -620,6 +622,7 @@
 									? `Lead of ${result.margin} · lose ${result.loss} stamina`
 									: `Tie or lower · lose ${result.loss} stamina`}
 							</p>
+							<StaminaGuide difficulty={s.difficulty} margin={result.margin} aid={resolvingPlayer.aid} />
 							<span class="muted small"
 								>Dice matching {terrain(cell(s, resolvingPlayer.path.at(-1)!).terrain).name}</span
 							>
@@ -653,11 +656,11 @@
 								automatically.
 							</p>
 							<div class="powerbar-options">
-								{#each Array(me.powerBars) as _, i}<button
+								{#each powerBarChoices(s, seat!) as count}<button
 										class="secondary"
 										disabled={store.waiting}
-										onclick={() => store.dispatch({ action: "help", count: i + 1 })}
-										>Use {i + 1} bar{i ? "s" : ""} · total {result.own + i + 1}</button
+										onclick={() => store.dispatch({ action: "help", count })}
+										>Use {count} bar{count > 1 ? "s" : ""} · total {result.own + count}</button
 									>{/each}
 							</div>
 							<button
@@ -940,6 +943,7 @@
 					immediately.
 				</li>
 			</ol>
+			{#if s}<StaminaGuide difficulty={s.difficulty} />{/if}
 			<button class="primary" onclick={() => (help = false)}>Back to the expedition</button>
 		</div>
 	</div>{/if}

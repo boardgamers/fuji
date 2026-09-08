@@ -2,8 +2,10 @@ import { chromium } from "playwright";
 import path from "node:path";
 (async () => {
 	const root = process.cwd();
-	const { initGame, applyMove, stripSecret, SKILLS, paths } = await import(root + "/packages/engine/dist/index.js");
-	const game = initGame(3, { autoMovement: false }, "bridge-test");
+	const { initGame, applyMove, stripSecret, SKILLS, paths, comparison } = await import(
+		root + "/packages/engine/dist/index.js"
+	);
+	const game = initGame(3, { autoMovement: false, autoProgress: false }, "bridge-test");
 	const view = stripSecret(game, 2);
 	const browser = await chromium.launch({ headless: true, executablePath: process.env.FUJI_CHROMIUM_EXECUTABLE });
 	const page = await browser.newPage();
@@ -168,6 +170,7 @@ import path from "node:path";
 	s.phase = "movement";
 	s.activeResolution = null;
 	s.players[1].powerBars = 2;
+	s.players[0].bonus += 3 - comparison(s, 0).margin;
 	s = applyMove(s, { action: "beginMovement" }, 0);
 	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
 	await page.locator(".comparison").waitFor();
@@ -179,6 +182,11 @@ import path from "node:path";
 		throw Error("Gatherer help availability missing");
 	if ((await page.locator(".comparison-player").count()) !== 3) throw Error("Comparison must show every participant");
 	if (await page.locator(".comparison-dice .die.aside").count()) throw Error("Set-aside dice must not count");
+	await page.locator(".comparison").getByText("ⓘ Stamina cost", { exact: true }).click();
+	const staminaGuide = page.locator(".comparison .stamina-guide");
+	if (!(await staminaGuide.locator("tr.current").innerText()).includes("3–4"))
+		throw Error("Wrong highlighted stamina range");
+	await page.screenshot({ path: "work/browser/fuji-stamina-guide.png", fullPage: true });
 	const countedBeforeHover = await page.locator(".comparison").innerText();
 	await page.locator(".location").last().hover();
 	if ((await page.locator(".comparison").innerText()) !== countedBeforeHover)
@@ -191,6 +199,8 @@ import path from "node:path";
 		},
 		stripSecret(s, 1)
 	);
+	if (await page.getByRole("button", { name: /Use 1 bar/ }).count())
+		throw Error("Ineffective bar amount should be hidden");
 	await page.getByRole("button", { name: /Use 2 bars/ }).click();
 	const helpMove = await page.evaluate(() => window.captured.findLast((e) => e.name === "move")?.payload);
 	s = applyMove(s, helpMove, 1);

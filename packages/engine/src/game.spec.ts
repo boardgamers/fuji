@@ -5,6 +5,7 @@ import {
 	applyMove,
 	stripSecret,
 	comparison,
+	powerBarChoices,
 	cell,
 	terrain,
 	paths,
@@ -17,7 +18,7 @@ import {
 } from "../index.js";
 import type { State, Move } from "./types.js";
 function prepared(players = 3) {
-	let s = initGame(players, { autoMovement: false }, "test-seed");
+	let s = initGame(players, { autoMovement: false, autoProgress: false }, "test-seed");
 	for (let i = 0; i < players; i++) {
 		const p = s.players[i]!;
 		if (p.setupDone) continue;
@@ -549,4 +550,114 @@ test("giving equipment clears readiness and is a definitive action", async () =>
 		assert.equal(next.history.at(-1)!.move.action, "give");
 		assert(activePlayers(next).includes(0));
 	}
+});
+
+test("reroll phase skips exhausted players but preserves the Buddy choice", () => {
+	let s = withPhase("reroll");
+	s.players[0]!.rerolls = 0;
+	s.players[1]!.rerolls = 1;
+	s.players[2]!.rerolls = 0;
+	s = applyMove(s, { action: "reroll", ids: [s.players[1]!.dice[0]!.id] }, 1);
+	assert.equal(s.phase, "reroll");
+	assert.deepEqual(activePlayers(s), [0]);
+	assert.equal(s.players[1]!.ready, true);
+	assert.equal(s.players[2]!.ready, true);
+	s = applyMove(s, { action: "buddy", ids: [s.players[0]!.dice[0]!.id] }, 0);
+	assert.equal(s.phase, "equipment");
+});
+
+test("Gatherer keeps the choice to use or forfeit remaining rerolls", () => {
+	let s = withPhase("reroll");
+	s.players[1]!.rerolls = 2;
+	s = applyMove(s, { action: "finishRerolls" }, 0);
+	assert.deepEqual(activePlayers(s), [1]);
+	assert.equal(s.players[1]!.powerBars, 0);
+	s = applyMove(s, { action: "finishRerolls" }, 1);
+	assert.equal(s.players[1]!.powerBars, 2);
+	assert.equal(s.phase, "equipment");
+});
+
+test("equipment skips empty hands but keeps choices and concealed dice private", () => {
+	let s = withPhase("reroll");
+	s.initOptions.autoProgress = true;
+	s.players[0]!.cards = [];
+	s.players[1]!.cards = [{ id: "torch", used: 0, availableRound: 0 }];
+	s.players[2]!.cards = [{ id: "tape", used: 0, availableRound: 0 }];
+	s.players[2]!.skill = "buddy";
+	s.players[2]!.buddyUsed = true;
+	s.players[2]!.dice.forEach((d) => (d.face = 6));
+	s = applyMove(s, { action: "finishRerolls" }, 0);
+	assert.equal(s.phase, "equipment");
+	assert.deepEqual(
+		s.players.map((p) => p.ready),
+		[true, true, false]
+	);
+});
+
+test("equipment transfer reopens an automatically passed recipient", () => {
+	let s = withPhase("equipment");
+	s.initOptions.autoProgress = true;
+	s.players[0]!.cards = [];
+	s.players[0]!.ready = true;
+	s.players[2]!.cards = [{ id: "machete", used: 0, availableRound: 0 }];
+	s = applyMove(s, { action: "give", id: "machete", target: 0 }, 2);
+	assert.equal(s.phase, "equipment");
+	assert.equal(s.players[0]!.ready, false);
+});
+
+test("no-choice equipment, movement and eruption progress without extra actions", () => {
+	let s = withPhase("reroll");
+	s.initOptions.autoProgress = true;
+	s.initOptions.autoMovement = true;
+	s.players.forEach((p) => {
+		p.cards = [];
+		p.bonus = 100;
+	});
+	s = applyMove(s, { action: "finishRerolls" }, 0);
+	assert.equal(s.phase, "planning");
+	assert.equal(s.round, 2);
+	assert.equal(s.history.at(-1)!.move.action, "finishRerolls");
+	assert(s.log.some((e) => e.type === "eruption"));
+});
+
+test("power bars only wait when they can improve success or stamina loss", () => {
+	for (const bonus of [100, 1, -100]) {
+		let s = withPhase("movement");
+		s.initOptions.autoProgress = true;
+		cell(s, "0,3").terrain = 16;
+		s.players.forEach((p) => p.dice.forEach((d) => (d.face = 2)));
+		s.players[0]!.bonus = bonus;
+		s.players[1]!.powerBars = 2;
+		s = applyMove(s, { action: "beginMovement" }, 0);
+		assert.equal(s.players[1]!.powerBars, 2);
+		if (bonus === 1) {
+			assert.deepEqual(s.pendingHelpers, [1]);
+			assert.equal(s.players[0]!.resolved, false);
+		} else {
+			assert.equal(s.players[0]!.resolved, true);
+			assert.equal(s.pendingHelpers, undefined);
+		}
+	}
+});
+
+test("power bar choices keep only amounts that improve an outcome", () => {
+	const s = withPhase("movement");
+	cell(s, "0,3").terrain = 16;
+	s.players.forEach((p) => p.dice.forEach((d) => (d.face = 2)));
+	s.activeResolution = 0;
+	s.pendingHelpers = [1];
+	s.players[1]!.powerBars = 3;
+	s.players[0]!.bonus = 4;
+	assert.deepEqual(powerBarChoices(s, 1), [1]);
+	s.players[0]!.bonus = 1;
+	assert.deepEqual(powerBarChoices(s, 1), [2]);
+	s.players[0]!.bonus = -2;
+	assert.deepEqual(powerBarChoices(s, 1), [3]);
+	s.players[0]!.bonus = 100;
+	assert.deepEqual(powerBarChoices(s, 1), []);
+	// Partial contributions remain meaningful when another Gatherer can complete them.
+	s.players[0]!.bonus = -2;
+	s.players[2]!.powerBars = 2;
+	s.pendingHelpers = [1, 2];
+	assert.deepEqual(powerBarChoices(s, 1), [1, 2, 3]);
 });

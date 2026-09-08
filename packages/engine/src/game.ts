@@ -231,7 +231,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 		ghost: [],
 		ghostVisible: [],
 		history: [],
-		initOptions: { autoMovement: true, ...options },
+		initOptions: { autoMovement: true, autoProgress: true, ...options },
 	};
 	const lands = shuffle(
 		s,
@@ -596,7 +596,7 @@ function execute(s: State, m: Move, seat: number) {
 			s.pendingHelpers = s.players.flatMap((helper, i) =>
 				hasSkill(helper, "gatherer") && helper.powerBars > 0 ? [i] : []
 			);
-			if (!s.pendingHelpers.length) execute(s, { action: "resolve" }, seat);
+			finishAssistance(s, seat);
 			break;
 		}
 		case "help": {
@@ -613,7 +613,7 @@ function execute(s: State, m: Move, seat: number) {
 					? `${p.name} used ${count} power bar(s) to help ${s.players[actor]!.name}.`
 					: `${p.name} kept their power bars.`
 			);
-			if (!s.pendingHelpers.length) execute(s, { action: "resolve" }, actor);
+			finishAssistance(s, actor);
 			break;
 		}
 		case "bar": {
@@ -748,6 +748,46 @@ function movementOrder(s: State): number[] {
 	visit(s, remaining, []);
 	return best;
 }
+export function powerBarChoices(s: State | View, helper: number): number[] {
+	if (s.phase !== "movement" || s.activeResolution === null || !s.pendingHelpers?.includes(helper)) return [];
+	const actor = s.players[s.activeResolution]!;
+	const base = comparison(s, s.activeResolution);
+	const others = s.pendingHelpers.filter((i) => i !== helper).reduce((n, i) => n + s.players[i]!.powerBars, 0);
+	const outcome = (bars: number) => {
+		const margin = base.margin + bars;
+		const success = margin > 0;
+		const loss = actor.aid ? 0 : !success ? s.difficulty + 2 : Math.max(0, s.difficulty + 2 - Math.ceil(margin / 2));
+		return `${success}:${loss}`;
+	};
+	return Array.from({ length: s.players[helper]!.powerBars }, (_, i) => i + 1).filter((count) =>
+		Array.from({ length: others + 1 }, (_, i) => i).some(
+			(other) => outcome(count + other) !== outcome(count - 1 + other)
+		)
+	);
+}
+function finishAssistance(s: State, seat: number) {
+	if (s.initOptions.autoProgress === true && s.pendingHelpers?.length) {
+		const before = comparison(s, seat);
+		const preview = structuredClone(s);
+		preview.players[seat]!.bonus += s.pendingHelpers.reduce((sum, i) => sum + s.players[i]!.powerBars, 0);
+		const after = comparison(preview, seat);
+		if (before.success === after.success && before.loss === after.loss) s.pendingHelpers = [];
+	}
+	if (!s.pendingHelpers?.length) execute(s, { action: "resolve" }, seat);
+}
+function advanceRerolls(s: State) {
+	if (s.phase !== "reroll") return;
+	for (const p of s.players) {
+		if (p.ready) continue;
+		const diceAvailable = activeDice(p).length > 0;
+		const canSetAside = diceAvailable && hasSkill(p, "buddy") && !p.buddyUsed;
+		if (canSetAside || (diceAvailable && p.rerolls > 0)) continue;
+		if (hasSkill(p, "gatherer")) p.powerBars = Math.min(3, p.powerBars + p.rerolls);
+		p.rerolls = 0;
+		p.ready = true;
+	}
+	if (s.players.every((p) => p.ready)) phase(s, "equipment");
+}
 function advanceMovement(s: State) {
 	if (s.initOptions.autoMovement !== true) return;
 	while (
@@ -759,6 +799,53 @@ function advanceMovement(s: State) {
 		const seat = movementOrder(s)[0];
 		if (seat === undefined) break;
 		execute(s, { action: "beginMovement" }, seat);
+	}
+}
+// Only public facts may determine automatic passes. Testing Tape/Compass against
+// private faces here would reveal hidden dice through readiness changes.
+function advanceForcedActions(s: State) {
+	advanceRerolls(s);
+	if (s.initOptions.autoProgress !== true) {
+		advanceMovement(s);
+		return;
+	}
+	while (!s.outcome) {
+		const forcedInjury = s.players.findIndex(
+			(p) =>
+				p.pendingInjuries > 0 &&
+				INJURIES.filter((injury) => !p.injuries.includes(injury)).length === 1 &&
+				p.injuries.includes("leg")
+		);
+		if (forcedInjury >= 0) {
+			const injury = INJURIES.find((injury) => !s.players[forcedInjury]!.injuries.includes(injury))!;
+			execute(s, { action: "injury", injury }, forcedInjury);
+			continue;
+		}
+		if (s.pending || s.players.some((p) => p.pendingInjuries)) break;
+		if (s.phase === "equipment") {
+			for (const p of s.players) {
+				const canGive = hasSkill(p, "manager") && p.cards.length > 0;
+				const canUse =
+					!p.injuries.includes("arm") &&
+					p.cards.some(
+						(card) => card.availableRound <= s.round && (equipment(card.id).phases as readonly number[]).includes(4)
+					);
+				if (!canGive && !canUse) p.ready = true;
+			}
+			if (!s.players.every((p) => p.ready)) break;
+			phase(s, "movement");
+			continue;
+		}
+		if (s.phase === "movement") {
+			advanceMovement(s);
+			if (s.phase !== "movement") continue;
+			break;
+		}
+		if (s.phase === "eruption") {
+			execute(s, { action: "erupt" }, 0);
+			continue;
+		}
+		break;
 	}
 }
 // Provisional planning overwrites one bounded snapshot. Only a definitive
@@ -803,7 +890,7 @@ export function applyMove(data: State, input: unknown, seat: number): State {
 	if (JSON.stringify(move).length > 3000) throw Error("Move is too large.");
 	const s = structuredClone(data);
 	execute(s, move, seat);
-	advanceMovement(s);
+	advanceForcedActions(s);
 	s.revision++;
 	const live =
 		data.phase === "planning" && s.phase === "planning" && (move.action === "plan" || move.action === "ready");
@@ -857,7 +944,7 @@ export function activePlayers(s: State | View): number[] {
 					),
 				];
 	if (s.phase === "eruption") return [0];
-	if (s.phase === "planning" || s.phase === "equipment") return s.players.map((_, i) => i);
+	if (s.phase === "planning") return s.players.map((_, i) => i);
 	return s.players.flatMap((p, i) => ((s.phase === "setup" ? p.setupDone : p.ready) ? [] : [i]));
 }
 export function dropGamePlayer(s: State, seat: number): State {

@@ -152,8 +152,9 @@ h3 {
 }
 .role-name {
 	display: block;
-	font-size: 10px;
-	color: #91a88f;
+	font-size: 14px;
+	line-height: 1.4;
+	color: #b3c6ad;
 	margin-top: 5px;
 }
 .stamina-track {
@@ -202,11 +203,12 @@ h3 {
 	color: #dbe3c4;
 }
 .teammate-status small {
-	font-size: 10px;
+	font-size: 13px;
 	color: #7f9988;
 }
 .ready-label {
-	font-size: 9px;
+	font-size: 13px;
+	line-height: 1.4;
 	color: #9bb295;
 	white-space: nowrap;
 }
@@ -437,9 +439,9 @@ h3 {
 	display: flex;
 	align-items: center;
 	gap: 12px;
-	font-size: 11px;
+	font-size: 15px;
 	line-height: 1.5;
-	color: #9fb697;
+	color: #b3c6ad;
 	border-top: 1px solid #b4c8a41a;
 	padding-top: 14px;
 }
@@ -974,7 +976,7 @@ h3 {
 		height: 42px;
 	}
 	.role-name {
-		font-size: 9px;
+		font-size: 13px;
 	}
 	.teammate-status {
 		display: none;

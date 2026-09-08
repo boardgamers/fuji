@@ -231,7 +231,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 		ghost: [],
 		ghostVisible: [],
 		history: [],
-		initOptions: { ...options },
+		initOptions: { autoMovement: true, ...options },
 	};
 	const lands = shuffle(
 		s,
@@ -702,6 +702,65 @@ function execute(s: State, m: Move, seat: number) {
 			throw Error("Unknown action.");
 	}
 }
+// Evaluate the at-most-24 remaining orders using the actual resolution rules.
+// These previews assume no additional bars or injury effects: those remain player
+// choices, and the order is recalculated after each decision. Preview mutations,
+// equipment draws and journal entries are confined to clones.
+function movementOrder(s: State): number[] {
+	const remaining = s.players.flatMap((p, i) => (p.resolved ? [] : [i]));
+	let best: number[] = [];
+	let bestScore: number[] | undefined;
+	function visit(preview: State, rest: number[], order: number[]) {
+		if (!rest.length || preview.outcome) {
+			const score = [
+				preview.outcome === "won" ? 2 : preview.outcome === "lost" ? 0 : 1,
+				preview.players.filter((p) => terrain(cell(preview, p.position).terrain).kind === "village").length,
+				preview.players.filter((p, i) => p.position !== s.players[i]!.position).length,
+				-preview.players.reduce((sum, p) => sum + p.stamina, 0),
+				-preview.players.filter((p) => threatened(preview).includes(p.position)).length,
+			];
+			const different = bestScore ? score.findIndex((value, i) => value !== bestScore![i]) : -1;
+			if (!bestScore || (different >= 0 && score[different]! > bestScore[different]!)) {
+				best = [...order, ...rest];
+				bestScore = score;
+			}
+			return;
+		}
+		for (const seat of rest) {
+			const next = structuredClone(preview);
+			next.activeResolution = seat;
+			delete next.pendingHelpers;
+			execute(next, { action: "resolve" }, seat);
+			// Injury effects are not guessed. Stop for the real choice during play.
+			for (const p of next.players) p.pendingInjuries = 0;
+			visit(
+				next,
+				rest.filter((i) => i !== seat),
+				[...order, seat]
+			);
+		}
+	}
+	// A stable tie-break favours routes without eruption triggers, then seat order.
+	remaining.sort((a, b) => {
+		const triggers = (i: number) => s.players[i]!.path.slice(1).reduce((n, id) => n + cell(s, id).eruption, 0);
+		return triggers(a) - triggers(b) || a - b;
+	});
+	visit(s, remaining, []);
+	return best;
+}
+function advanceMovement(s: State) {
+	if (s.initOptions.autoMovement !== true) return;
+	while (
+		s.phase === "movement" &&
+		!s.outcome &&
+		s.activeResolution === null &&
+		!s.players.some((p) => p.pendingInjuries)
+	) {
+		const seat = movementOrder(s)[0];
+		if (seat === undefined) break;
+		execute(s, { action: "beginMovement" }, seat);
+	}
+}
 // Provisional planning overwrites one bounded snapshot. Only a definitive
 // action checkpoints it into replay history; it never truncates the public log.
 function checkpointPlanning(s: State) {
@@ -744,6 +803,7 @@ export function applyMove(data: State, input: unknown, seat: number): State {
 	if (JSON.stringify(move).length > 3000) throw Error("Move is too large.");
 	const s = structuredClone(data);
 	execute(s, move, seat);
+	advanceMovement(s);
 	s.revision++;
 	const live =
 		data.phase === "planning" && s.phase === "planning" && (move.action === "plan" || move.action === "ready");

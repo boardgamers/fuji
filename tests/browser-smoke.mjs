@@ -56,6 +56,8 @@ fs.mkdirSync("work/browser", { recursive: true });
 	const phases = new Set();
 	while (!(s = await state()).outcome && count < 450) {
 		phases.add(s.phase);
+		if (await page.getByRole("button", { name: "Resolve my journey" }).count())
+			throw Error("New expeditions must not ask players to choose movement order");
 		await step.click();
 		count++;
 		if (await page.locator(".error").count()) throw Error(await page.locator(".error").innerText());

@@ -17,7 +17,7 @@ import {
 } from "../index.js";
 import type { State, Move } from "./types.js";
 function prepared(players = 3) {
-	let s = initGame(players, {}, "test-seed");
+	let s = initGame(players, { autoMovement: false }, "test-seed");
 	for (let i = 0; i < players; i++) {
 		const p = s.players[i]!;
 		if (p.setupDone) continue;
@@ -454,4 +454,80 @@ test("revealed dice and matching dice are immutable public journal snapshots", (
 	assert(matched.every((e) => e.dice!.every((d) => !d.aside)));
 	assert.deepEqual(s.log.find((e) => e.diceLabel?.includes("revealed"))!.dice, snapshot);
 	assert.deepEqual(stripSecret(s).log, s.log);
+});
+
+test("automatic movement moves an exposed teammate before triggering lava", () => {
+	const s = withPhase("equipment");
+	s.initOptions.autoMovement = true;
+	s.board = Array.from({ length: 5 }, (_, x) => ({
+		id: `${x},0`,
+		x,
+		y: 0,
+		terrain: x === 0 ? 1 : 16,
+		lava: x === 0,
+		equipment: false,
+		eruption: x === 2 ? 1 : 0,
+	}));
+	for (const [i, p] of s.players.entries()) {
+		p.position = `${[3, 1, 4][i]},0`;
+		p.path = i === 2 ? [p.position] : [p.position, "2,0"];
+		p.bonus = 100;
+		p.ready = i !== 2;
+	}
+	// Both arrivals trigger the same marker. Moving player 0 first kills player 1.
+	const manual = structuredClone(s);
+	manual.initOptions.autoMovement = false;
+	let bad = applyMove(manual, { action: "ready" }, 2);
+	bad = applyMove(bad, { action: "beginMovement" }, 0);
+	assert.equal(bad.outcome, "lost");
+	const before = structuredClone(s);
+	const safe = applyMove(s, { action: "ready" }, 2);
+	assert.deepEqual(s, before);
+	assert.equal(safe.outcome, null);
+	assert.equal(safe.phase, "eruption");
+	assert.equal(safe.players[1]!.position, "2,0");
+	const order = safe.log.filter((e) => e.text.includes("is resolving their journey"));
+	assert.equal(order.length, 3);
+	assert(
+		order.findIndex((e) => e.text.startsWith(s.players[1]!.name)) <
+			order.findIndex((e) => e.text.startsWith(s.players[0]!.name))
+	);
+	assert.equal(safe.counter, s.counter);
+});
+
+test("automatic movement pauses for bars, without spending them or adding synthetic moves", () => {
+	let s = withPhase("equipment");
+	s.initOptions.autoMovement = true;
+	s.players.forEach((p, i) => {
+		p.ready = i !== 2;
+		p.bonus = 100;
+	});
+	s.players[1]!.powerBars = 2;
+	const historyLength = s.history.length;
+	s = applyMove(s, { action: "ready" }, 2);
+	assert.deepEqual(activePlayers(s), [1]);
+	assert.equal(s.players[1]!.powerBars, 2);
+	assert.equal(s.history.length, historyLength + 1);
+	assert.equal(s.players.filter((p) => p.resolved).length, 0);
+	for (let i = 0; i < 3; i++) s = applyMove(s, { action: "help", count: 0 }, 1);
+	assert.equal(s.phase, "eruption");
+	assert.equal(s.players[1]!.powerBars, 2);
+	assert.equal(s.history.length, historyLength + 4);
+});
+
+test("automatic movement resumes after a player's injury choice", () => {
+	let s = withPhase("equipment");
+	s.initOptions.autoMovement = true;
+	cell(s, "0,3").terrain = 16;
+	s.players.forEach((p, i) => {
+		p.ready = i !== 2;
+		p.dice.forEach((d) => (d.face = 2));
+	});
+	s.players[0]!.stamina = 4;
+	s = applyMove(s, { action: "ready" }, 2);
+	assert.deepEqual(activePlayers(s), [0]);
+	assert.equal(s.players[0]!.pendingInjuries, 1);
+	s = applyMove(s, { action: "injury", injury: "eye" }, 0);
+	assert.equal(s.phase, "eruption");
+	assert(s.players.every((p) => p.resolved));
 });

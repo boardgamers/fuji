@@ -667,7 +667,10 @@
 							</p>{/if}
 					{/if}
 				{:else if s.phase === "eruption"}
-					<p class="instruction">Everyone has moved. The lava will spread one step to every adjacent location.</p>
+					<p class="instruction">
+						Journeys resolved. Dice comparisons are in the journal. The lava will spread one step to every adjacent
+						location.
+					</p>
 					<div class="eruption-count"><strong>{danger.length}</strong><span>locations threatened</span></div>
 					<button class="primary ember" disabled={seat !== 0} onclick={() => store.dispatch({ action: "erupt" })}
 						>{seat === 0 ? "Let the lava advance" : "Waiting for the expedition leader"} <span>→</span></button
@@ -897,7 +900,7 @@
 				</li>
 				<li>
 					<strong>Compare on your destination.</strong> Add matching dice. Your total must beat both neighbors. A tie fails.
-					A smaller lead costs more stamina.
+					A smaller lead costs more stamina. Movement order is automatic; you still choose power bars and injuries.
 				</li>
 				<li>
 					<strong>Watch the lava.</strong> It advances one step each round. Crossing an eruption marker triggers extra lava

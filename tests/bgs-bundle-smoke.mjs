@@ -3,7 +3,7 @@ import path from "node:path";
 (async () => {
 	const root = process.cwd();
 	const { initGame, applyMove, stripSecret, SKILLS, paths } = await import(root + "/packages/engine/dist/index.js");
-	const game = initGame(3, {}, "bridge-test");
+	const game = initGame(3, { autoMovement: false }, "bridge-test");
 	const view = stripSecret(game, 2);
 	const browser = await chromium.launch({ headless: true, executablePath: process.env.FUJI_CHROMIUM_EXECUTABLE });
 	const page = await browser.newPage();

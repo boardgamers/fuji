@@ -47,3 +47,11 @@ Each full set contains two of each type. This remains observation-derived rather
 ## Next acceptance checks
 
 Play full expeditions with people familiar with the physical game. Verify the provisional interpretations, five-die selection and every equipment/skill combination against the physical reference. Extend scenario data from the already-supplied seven cards. Validate BGS multiplayer, clocks, reconnection and cooperative outcomes before publication.
+
+### Automatic movement order
+
+New expeditions default to `autoMovement: true` in their saved initialization options. Existing saves retain their previous manual order. `autoMovement: false` remains available for manual play and isolated resolution tests.
+
+After the equipment reveal, the engine evaluates all remaining movement permutations (at most 24), using cloned states and the existing resolution rules. It prioritizes winning, then avoiding immediate defeat, reaching village locations, completing moves, conserving stamina, and reducing exposure to the next eruption. Equal scores prefer routes with fewer eruption triggers, then seat order. The search does not consume RNG or append speculative logs or synthetic moves to the saved game.
+
+This is an automated choice of the freely chosen tabletop order, not a guarantee of an optimal strategy. Previews assume no further Gatherer spending and do not guess injury choices. Actual play pauses for those decisions and recalculates afterward; revealed dice, comparisons and movement outcomes remain in the journal. It does not use deck contents to choose an order. Resolution proceeds within the action that reveals dice or completes the pending decision, without a new platform protocol or clock pause.

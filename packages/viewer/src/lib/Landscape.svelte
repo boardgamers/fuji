@@ -159,12 +159,12 @@
 						/>{/if}
 					{#if !c.lava && ["land", "village"].includes(data.kind)}<rect
 							x={x(c.id) - 40}
-							y={y(c.id) + 17}
+							y={y(c.id) + 13}
 							width="80"
 							height="18"
 							rx="4"
 							fill="#112820e6"
-						/><RequirementSymbols requirement={data.requirement} x={x(c.id)} y={y(c.id) + 26} {colorblind} />{/if}
+						/><RequirementSymbols requirement={data.requirement} x={x(c.id)} y={y(c.id) + 22} {colorblind} />{/if}
 					{#if data.reroll && !c.lava}<text x={x(c.id) - 34} y={y(c.id) - 16} class="reroll-mark">↻</text>{/if}
 				</g>
 			{/each}

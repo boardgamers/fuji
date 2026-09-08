@@ -6,7 +6,6 @@
 		state,
 		colorblind = false,
 		seat,
-		route = [],
 		selected = "",
 		reachable = [],
 		onclick,
@@ -15,7 +14,6 @@
 		state: View;
 		colorblind?: boolean;
 		seat?: number;
-		route?: string[];
 		selected?: string;
 		reachable?: string[];
 		onclick: (id: string) => void;
@@ -29,10 +27,15 @@
 			state.board.filter((b) => distance(a, b) === 1 && (b.x > a.x || b.y > a.y)).map((b) => ({ a, b }))
 		)
 	);
-	const routeLine = $derived(route.map((id) => `${x(id)},${y(id)}`).join(" "));
+	const ownColor = $derived(seat === undefined ? "#f1d584" : CHARACTER_COLORS[state.players[seat]!.character]);
+	// Stable parallel lanes keep shared segments visible, including opposite directions.
+	const routePoints = (path: string[], player: number) => {
+		const offset = (player - (state.players.length - 1) / 2) * 8;
+		return path.map((id) => `${x(id) + offset},${y(id) + offset}`).join(" ");
+	};
 </script>
 
-<div class="landscape" style:--landscape-art={`url(${art("land", 21)})`}>
+<div class="landscape" style:--route-color={ownColor} style:--landscape-art={`url(${art("land", 21)})`}>
 	<div class="scene-caption">
 		<span class="eyebrow">THE FUJI TRAIL</span><span
 			>Scenario 01 <span class="dot">·</span> Level {state.difficulty}</span
@@ -162,7 +165,7 @@
 			{/each}
 			{#if ["planning", "reroll", "equipment", "movement"].includes(state.phase)}
 				{#each state.players as p, i}
-					{#if i !== seat && !p.resolved && (p.path.length > 1 || p.ready)}
+					{#if !p.resolved && (p.path.length > 1 || p.ready)}
 						{@const destination = p.path.at(-1)!}
 						<g
 							class="teammate-route"
@@ -170,15 +173,15 @@
 							aria-label={`${p.name}: ${terrain(cell(state, destination).terrain).name}${p.ready ? ", ready" : ", planned"}`}
 						>
 							{#if p.path.length > 1}
-								<polyline points={p.path.map((id) => `${x(id)},${y(id)}`).join(" ")} class="route-shadow" />
+								<polyline points={routePoints(p.path, i)} class="route-shadow" />
 								<polyline
-									points={p.path.map((id) => `${x(id)},${y(id)}`).join(" ")}
+									points={routePoints(p.path, i)}
 									class="shared-route-line"
+									class:provisional={state.phase === "planning" && !p.ready}
 									stroke={CHARACTER_COLORS[p.character]}
-									stroke-dashoffset={i * 4}
 								/>
 							{/if}
-							<g transform={`translate(${x(destination) + 27},${y(destination) - 20 + i * 12})`}>
+							<g transform={`translate(${x(destination) + 27},${y(destination) - 27 + i * 20})`}>
 								<circle r="10" fill="#102b25" stroke={CHARACTER_COLORS[p.character]} stroke-width="2" />
 								<text y="4" text-anchor="middle" fill={CHARACTER_COLORS[p.character]} font-size="12" font-weight="700"
 									>{i + 1}</text
@@ -188,10 +191,6 @@
 					{/if}
 				{/each}
 			{/if}
-			{#if route.length > 1}<polyline points={routeLine} class="route-shadow" /><polyline
-					points={routeLine}
-					class="route-line"
-				/>{/if}
 			{#each state.players as p, i (i)}
 				{#if i === seat && p.ready && state.phase === "planning" && p.path.length}
 					<circle
@@ -311,7 +310,7 @@
 		stroke: #dbc47d25;
 	}
 	.location.selected .location-ring {
-		stroke: #f9df99;
+		stroke: var(--route-color);
 		stroke-width: 2.5;
 	}
 	.location.selected .tile-art {
@@ -327,7 +326,7 @@
 		stroke-opacity: 0.35;
 	}
 	.location.reachable.selected .location-ring {
-		stroke: #ffe19a;
+		stroke: var(--route-color);
 		stroke-width: 3.5;
 		stroke-dasharray: none;
 	}
@@ -382,17 +381,8 @@
 	.route-shadow {
 		fill: none;
 		stroke: #293d28;
-		stroke-width: 7;
+		stroke-width: 5;
 		stroke-linejoin: round;
-		pointer-events: none;
-	}
-	.route-line {
-		fill: none;
-		stroke: #f1d584;
-		stroke-width: 3;
-		stroke-linejoin: round;
-		stroke-dasharray: 6 6;
-		animation: route-flow 3s linear infinite;
 		pointer-events: none;
 	}
 	.teammate-route {
@@ -402,7 +392,11 @@
 		fill: none;
 		stroke-width: 2.5;
 		stroke-linejoin: round;
-		stroke-dasharray: 5 7;
+		stroke-linecap: round;
+	}
+	.shared-route-line.provisional {
+		stroke-dasharray: 6 6;
+		animation: route-flow 3s linear infinite;
 	}
 	.traveler {
 		transition: transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -427,7 +421,7 @@
 	}
 	.legend-line {
 		width: 20px;
-		border-top: 2px dashed #f1d584;
+		border-top: 2px dashed var(--route-color);
 	}
 	.legend-danger {
 		width: 9px;
@@ -450,19 +444,10 @@
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.route-line,
+		.shared-route-line.provisional,
 		.danger-ring,
 		.lava-crack {
 			animation: none;
-		}
-		.teammate-route {
-			pointer-events: none;
-		}
-		.shared-route-line {
-			fill: none;
-			stroke-width: 2.5;
-			stroke-linejoin: round;
-			stroke-dasharray: 5 7;
 		}
 		.traveler {
 			transition: none;

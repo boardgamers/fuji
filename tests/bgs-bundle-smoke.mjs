@@ -51,6 +51,32 @@ import path from "node:path";
 	await page.waitForSelector('.teammate-route[data-player="1"] .shared-route-line', { state: "attached" });
 	if (s.players[1].ready) throw Error("Shared route fixture must be unconfirmed");
 	await page.screenshot({ path: "work/browser/fuji-shared-routes.png", fullPage: true });
+	const overlap = structuredClone(s);
+	overlap.players[0].path = [...teammatePath];
+	overlap.players[0].ready = true;
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(overlap, 1));
+	await page.evaluate(() => window.bridge.emit("player", { index: 1 }));
+	await page.waitForSelector('.teammate-route[data-player="0"] .shared-route-line', { state: "attached" });
+	const routeStyles = await page.locator(".shared-route-line").evaluateAll((lines) =>
+		lines.map((line) => ({
+			points: line.getAttribute("points"),
+			color: getComputedStyle(line).stroke,
+			animation: getComputedStyle(line).animationName,
+		}))
+	);
+	if (routeStyles.length !== 2 || routeStyles[0].points === routeStyles[1].points)
+		throw Error("Overlapping routes must use distinct lanes");
+	if (routeStyles[0].color === routeStyles[1].color) throw Error("Routes must retain player colors");
+	if (routeStyles[0].animation !== "none" || !routeStyles[1].animation.includes("route-flow"))
+		throw Error("Only provisional routes should animate");
+	await page.screenshot({ path: "work/browser/fuji-overlapping-routes.png", fullPage: true });
+	await page.evaluate(
+		(v) => {
+			window.bridge.emit("player", { index: 0 });
+			window.bridge.emit("state", v);
+		},
+		stripSecret(s, 0)
+	);
 	if ((await page.locator(".revealed-team .die:not(.hidden)").count()) !== 6) throw Error("Radio not rendered");
 	if (await page.locator(".die-caption").count()) throw Error("Color labels should be off by default");
 	await page.evaluate(() => window.bridge.emit("preferences", { colorblind: true }));

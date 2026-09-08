@@ -314,7 +314,6 @@
 					colorblind={store.colorblind}
 					state={s}
 					{seat}
-					route={currentRoute}
 					selected={s.phase === "setup" ? "" : tool ? (tilePicks.at(-1) ?? "") : (currentRoute.at(-1) ?? "")}
 					reachable={s.phase === "planning" && !me?.ready ? Object.keys(reachable) : []}
 					onclick={chooseLocation}

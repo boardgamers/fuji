@@ -77,6 +77,14 @@ import path from "node:path";
 	if (!(await machete.isDisabled())) throw Error("Machete needs selected dice");
 	await page.locator(".personal .die").first().click();
 	if (!(await machete.isEnabled())) throw Error("Machete should accept one selected die");
+	await machete.click();
+	const equipmentMove = await page.evaluate(() => window.captured.findLast((e) => e.name === "move")?.payload);
+	s = applyMove(s, equipmentMove, 0);
+	await page.evaluate((v) => window.bridge.emit("state", v), stripSecret(s, 0));
+	await page.getByText("Find equipment along the trail.", { exact: true }).waitFor();
+	if (await page.locator(".tool-form").count()) throw Error("Discarded equipment left a stale action panel");
+	if (await machete.count()) throw Error("Discarded machete remains usable");
+	if (s.players[0].cards.some((c) => c.id === "machete")) throw Error("Machete was not consumed");
 	await page.evaluate((v) => {
 		window.bridge.emit("player", {});
 		window.bridge.emit("state", v);

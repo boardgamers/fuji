@@ -631,9 +631,9 @@
 								>
 							{/each}
 						</div>
-						{#if tool}{@const c = me.cards.find((c) => c.id === tool)!}{@const info = EQUIPMENT.find(
-								(e) => e.id === tool
-							)!}
+						{#if tool && me.cards.some((c) => c.id === tool)}{@const c = me.cards.find(
+								(c) => c.id === tool
+							)!}{@const info = EQUIPMENT.find((e) => e.id === tool)!}
 							<div class="tool-form">
 								<p>{info.description}</p>
 								{#if tool === "knife"}<label class="field"

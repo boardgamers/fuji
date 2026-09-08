@@ -2,7 +2,7 @@
 
 ## Evidence
 
-The publisher-supplied English production rulebook is `EN_Fuji_Regel_PRINT_3_130918.pdf` (13 September 2018). Terrain faces are transcribed from `fuji_land_front_Print3.pdf`; setup from scenario card 1; skills and equipment from the English fronts and rulebook appendix. The stamina track has exhaustion at step 25, with injury thresholds at steps 5, 10, 15 and 20.
+The publisher-supplied English production rulebook is `EN_Fuji_Regel_PRINT_3_130918.pdf` (13 September 2018). Terrain faces are transcribed from `fuji_land_front_Print3.pdf`; setup from all seven scenario cards; skills and equipment from the English fronts and rulebook appendix. The stamina track has exhaustion at step 25, with injury thresholds at steps 5, 10, 15 and 20.
 
 The terrain names used in the UI are descriptive navigation labels, not printed card titles. Terrain IDs are the one-based production PDF page numbers.
 
@@ -21,20 +21,20 @@ Each full set contains two of each type. This remains observation-derived rather
 
 ## Implemented first slice
 
-- Scenario 1, including the additional village and split starting positions at four players.
+- All seven scenarios, including the additional village and split starting positions at four players.
 - All 24 landscape and 6 village card criteria, including AND/OR conditions and reroll symbols; scenario setup shuffles the appropriate decks.
 - Two-player variant A: six neutral dice, three visible during planning and three hidden until reveal. No neutral pawn.
 - Four difficulty levels; strict comparisons against seated neighbors; ties fail; stamina and immediate team defeat/victory.
 - Equipment preparation choices and one-die removal for five-die skills.
 - Six skills, fifteen equipment effects, donor consent for the lighter, per-player mandatory Carabiner rerolls, staged Water rerolls and Tinkerer reuse.
 - Set-aside dice visible to everyone and excluded from comparisons; temporary loans return after the round; leg-injury removal occurs after all comparisons.
-- Phase-five movement order is chosen by the players. Power bars are offered by their owner, rather than automatically spent by the recipient.
+- Phase-five movement order is chosen automatically, prioritizing survival and accounting for eruptions. Power bars are offered by their owner, rather than automatically spent by the recipient.
 - Additional eruptions are applied when traversing eruption markers; ordinary eruptions propagate one wave, never recursively through the entire map.
 - Win triggers as soon as everyone reaches the village, before further stamina deductions or eruptions.
 
 ## Deliberate alpha boundaries and interpretations
 
-1. Only scenario 1 is enabled. Scenarios 2–7, the advanced two-player variant B and the extra-thrill double-eruption variant are not yet implemented.
+1. The advanced two-player variant B and the extra-thrill double-eruption variant are not yet implemented.
 2. For a five-die skill, the player chooses which die to leave behind before any dice are rolled. The supplied material has not established the official selection procedure. This is an explicit provisional rule.
 3. The two-player simple variant splits one of each inferred type into the visible and hidden halves. The text specifies three visible and three hidden dice but does not mandate this split.
 4. A planned path is explicit. If an earlier extra eruption blocks that path, resolution treats it as a failed move unless an alternative legal path to the same locked destination is supplied. Check this interpretation against the publisher before beta release.
@@ -46,7 +46,7 @@ Each full set contains two of each type. This remains observation-derived rather
 
 ## Next acceptance checks
 
-Play full expeditions with people familiar with the physical game. Verify the provisional interpretations, five-die selection and every equipment/skill combination against the physical reference. Extend scenario data from the already-supplied seven cards. Validate BGS multiplayer, clocks, reconnection and cooperative outcomes before publication.
+Play full expeditions with people familiar with the physical game. Verify the provisional interpretations, five-die selection and every equipment/skill combination against the physical reference. Validate BGS multiplayer, clocks, reconnection and cooperative outcomes before publication.
 
 ### Automatic movement order
 
@@ -73,3 +73,9 @@ The wrapper's `currentPlayer` excludes players with confirmed planning intention
 Public movement paths and eruption cell lists in journal events allow the viewer to sequence automatic resolution without extra engine moves or saved intermediate states. The map and journal play events in order, with a skip control; the authoritative received state and platform clocks are unchanged. Initial loads and seat changes show the current state immediately. Reduced motion skips intermediate path positions. The local bot driver waits for playback and uses a 2.2-second action cadence. Confirmed-route journal records preserve the original terrain, equipment and eruption markers and reroll allowance. Equipment is public (rulebook page 8, face-up cards) and appears as pictograms with hover previews on player panels.
 
 Sound effects combine a CC0 recording of real dice throws (see `audio-credits.md`) with synthesized Web Audio foley synchronized with presented events (steps, lava, dice, equipment), governed by the platform's reserved `preferences.sound` boolean (absent means enabled, per platform PR #503). No game-specific preference overrides the platform mute. The harness offers a local sound toggle, individual cue previews, and a random-seed restart. Copy equipment, shovel values, preparation dice and local game configuration expose their choices directly without select controls.
+
+## Seven-scenario validation
+
+All seven layouts were transcribed from the supplied production scenario fronts. Layout tests cover every player count, unique terrain cards, five/six village tiles, seven equipment markers, two eruption markers, connected maps and both starting positions. All seven maps were rendered in the harness.
+
+Adaptation rule: a player with no other reachable, unclaimed destination may confirm staying despite a neighbor sharing that destination. This prevents isolated players from stalling planning before lava ends the expedition. Normal destination restrictions still apply when another route is available.

@@ -296,7 +296,7 @@ import path from "node:path";
 	await page.locator(".comparison").waitFor();
 	if (await page.getByRole("button", { name: "Confirm result" }).count()) throw Error("Resolver should not confirm");
 	if ((await page.locator(".teammate.can-act").count()) !== 1) throw Error("Only the Gatherer should be active");
-	if (!(await page.locator(".public-bars").innerText()).includes("2 power bars"))
+	if (!(await page.locator(".public-bars").getAttribute("aria-label"))?.includes("2 power bars"))
 		throw Error("Public power bars missing");
 	if (!(await page.getByText("Can help", { exact: true }).isVisible()))
 		throw Error("Gatherer help availability missing");

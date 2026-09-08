@@ -184,3 +184,65 @@ export const SCENARIO_ONE = [
 	[" ", "E", " ", " ", "L", " ", "L", " "],
 	[" ", " ", " ", " ", "E", "L", "E", " "],
 ];
+
+// Production scenario cards 2–7. S/S4: white/grey starts; vX: village eruption.
+// Grey starts remain ordinary land at every player count; only V4 is omitted.
+export const SCENARIOS = [
+	SCENARIO_ONE,
+	[
+		". . . . L E L .",
+		". . . . E . L .",
+		". L L L L X E .",
+		"E S4 L . . L . V4",
+		". S . . E L . v",
+		"R R . . . L . v",
+		"V . . E L L vX v",
+		". . . . . E . v",
+	],
+	[
+		"L L E . E L E L",
+		"S . L . L . . E",
+		"S4 L L L X L L X",
+		"R . L E . L . vE",
+		"R . . . . E . v",
+		"V . . . . . . v",
+		". . . . . V4 v v",
+	],
+	[
+		". . . . E . . .",
+		". . E L L L vX vE",
+		"V . . . L . . v",
+		"R . E L L E . v",
+		"R . . . X . . v",
+		"S S4 L L L . . V4",
+		". L E . E . . .",
+	],
+	[
+		". . L E L . V .",
+		". . E . L . R .",
+		". . L E L S R .",
+		"V4 . L . . L S4 .",
+		"v . E . . L . .",
+		"v . X L L L L E",
+		"v . L . . . E .",
+		"vX v L E . . . .",
+	],
+	[
+		". . . E . . . .",
+		"R S S4 L . E L E",
+		"R . L L . L . L",
+		"V . . L X L L E",
+		". . . E . E L .",
+		". . . . . . L E",
+		". V4 v v v v vX .",
+	],
+	[
+		". . E . . . E .",
+		". L L . . E L .",
+		"E L L L X L L E",
+		". vX . . . L E .",
+		"v v . . . L . .",
+		"v . . V . S4 E .",
+		"v V4 . R R S . .",
+	],
+].map((rows) => rows.map((row) => (typeof row === "string" ? row.split(" ").map((c) => (c === "." ? " " : c)) : row)));

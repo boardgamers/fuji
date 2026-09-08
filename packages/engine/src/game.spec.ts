@@ -1065,3 +1065,60 @@ test("Rope and copied Rope log one movement entry and retain the animation", () 
 		assert.deepEqual(entries[0]!.animation, { kind: "move", seat: 0, path: [s.players[0]!.position, "1,3"] });
 	}
 });
+
+test("all seven official layouts preserve terrain decks, markers, starts and connected paths", () => {
+	const starts = [
+		["0,3", "1,2"],
+		["1,4", "1,3"],
+		["0,1", "0,2"],
+		["0,5", "1,5"],
+		["5,2", "6,3"],
+		["1,1", "2,1"],
+		["5,6", "5,5"],
+	];
+	for (let scenario = 1; scenario <= 7; scenario++)
+		for (const players of [2, 3, 4]) {
+			const s = initGame(players, { scenario }, "scenario-layout");
+			assert.equal(s.scenario, scenario);
+			assert.equal(s.board.filter((c) => terrain(c.terrain).kind === "village").length, players === 4 ? 6 : 5);
+			assert.equal(s.board.filter((c) => c.lava).length, 1);
+			assert.equal(s.board.filter((c) => c.eruption).length, 2);
+			assert.equal(s.board.filter((c) => c.equipment).length, 7);
+			assert.equal(new Set(s.board.map((c) => c.terrain)).size, s.board.length);
+			assert(s.board.every((c) => terrain(c.terrain)));
+			assert.equal(s.players[0]!.position, starts[scenario - 1]![0]);
+			if (players === 4) assert.equal(s.players[2]!.position, starts[scenario - 1]![1]);
+			const seen = new Set([s.board[0]!.id]);
+			for (let i = 0; i < s.board.length; i++)
+				for (const c of s.board) {
+					if (s.board.some((b) => seen.has(b.id) && Math.abs(b.x - c.x) + Math.abs(b.y - c.y) === 1)) seen.add(c.id);
+				}
+			assert.equal(seen.size, s.board.length, `Connected scenario ${scenario}`);
+			assert.deepEqual(replay(s), s);
+		}
+	for (const scenario of [0, 8, 1.5, "invalid"]) assert.throws(() => initGame(3, { scenario }));
+});
+
+test("trapped neighbors can all confirm staying and still lose to the eruption", () => {
+	let s = prepared();
+	const position = s.players[0]!.position;
+	s.board.forEach((c) => {
+		c.lava = c.id !== position;
+	});
+	s.players.forEach((p) => {
+		p.position = position;
+		p.path = [position];
+		p.ready = false;
+	});
+	for (let seat = 0; seat < 3; seat++) s = applyMove(s, { action: "ready" }, seat);
+	assert.equal(s.phase, "reroll");
+	s.phase = "eruption";
+	s = applyMove(s, { action: "erupt" }, 0);
+	assert.equal(s.outcome, "lost");
+});
+
+test("a shared destination remains forbidden when another route is available", () => {
+	let s = prepared();
+	s.players[0]!.ready = true;
+	assert.throws(() => applyMove(s, { action: "ready" }, 1), /different destinations/);
+});

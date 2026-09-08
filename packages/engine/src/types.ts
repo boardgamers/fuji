@@ -97,6 +97,7 @@ export interface State {
 	deck: EquipmentId[];
 	discard: EquipmentId[];
 	difficulty: number;
+	scenario?: number;
 	log: Event[];
 	revision: number;
 	outcome: null | "won" | "lost";

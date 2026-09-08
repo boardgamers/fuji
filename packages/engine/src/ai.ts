@@ -6,6 +6,7 @@ import {
 	activePlayers,
 	neighbors,
 	paths,
+	mustStay,
 	cell,
 	rerollAllowance,
 	activeDice,
@@ -324,6 +325,7 @@ export function chooseMove(game: View, seat: number, policy: AiPolicy = DEFAULT_
 		if (equipment) return equipment;
 	}
 	if (game.phase === "planning") {
+		if (mustStay(game, seat)) return p.path.length === 1 ? { action: "ready" } : { action: "plan", path: [p.position] };
 		const choices = Object.values(paths(game, seat)).filter(
 			(path) =>
 				!neighbors(game, seat).some((i) => game.players[i]!.ready && game.players[i]!.path.at(-1) === path.at(-1))

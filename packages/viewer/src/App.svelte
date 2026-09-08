@@ -4,6 +4,7 @@
 		terrain,
 		cell,
 		paths,
+		mustStay,
 		neighbors,
 		rerollAllowance,
 		matches,
@@ -34,6 +35,7 @@
 	import PhaseIcon from "./lib/PhaseIcon.svelte";
 	import RequirementDisplay from "./lib/RequirementDisplay.svelte";
 	import PlayerChoices from "./lib/PlayerChoices.svelte";
+	import TravelGuide from "./lib/TravelGuide.svelte";
 	import StaminaGuide from "./lib/StaminaGuide.svelte";
 	let { store }: { store: Store } = $props();
 	const s = $derived(store.state);
@@ -70,6 +72,7 @@
 	let newGame = $state(false);
 	let newPlayers = $state(3);
 	let newDifficulty = $state(1);
+	let newScenario = $state(1);
 	let newSeed = $state("first-light");
 	const reachable = $derived(s && seat !== undefined ? paths(s, seat) : {});
 	const reserved = $derived.by(() => {
@@ -79,6 +82,7 @@
 				const player = s.players[i]!;
 				if (player.ready) locations[player.path.at(-1)!] = player.name;
 			}
+			if (mustStay(s, seat)) delete locations[s.players[seat]!.position];
 		}
 		return locations;
 	});
@@ -410,7 +414,7 @@
 						<button
 							onclick={() => {
 								newSeed = crypto.randomUUID().slice(0, 8);
-								store.restart(s.players.length, newSeed, s.difficulty);
+								store.restart(s.players.length, newSeed, s.difficulty, s.scenario ?? 1);
 							}}>New random game</button
 						>
 					</div>
@@ -1221,12 +1225,25 @@
 				{#if newPlayers === 2}<p class="muted small">Includes neutral dice.</p>{/if}
 			</fieldset>
 			<fieldset class="visible-choices">
+				<legend>Scenario</legend>
+				<div class="choice-row">
+					{#each [1, 2, 3, 4, 5, 6, 7] as n}<button aria-pressed={newScenario === n} onclick={() => (newScenario = n)}
+							>{n}</button
+						>{/each}
+				</div>
+				<p class="muted small">
+					Seven official map layouts. The seed shuffles terrain and equipment within the chosen layout.
+				</p>
+			</fieldset>
+			<fieldset class="visible-choices">
 				<legend>Difficulty</legend>
 				<div class="choice-row">
 					{#each [1, 2, 3, 4] as n}<button aria-pressed={newDifficulty === n} onclick={() => (newDifficulty = n)}
 							>Level {n}</button
 						>{/each}
 				</div>
+				<p class="muted small">Higher levels increase stamina loss. Routes, rerolls and lava speed stay the same.</p>
+				<TravelGuide difficulty={newDifficulty} />
 			</fieldset>
 			<label class="field">Expedition seed<input bind:value={newSeed} /></label><button
 				class="text-button"
@@ -1234,7 +1251,7 @@
 			><button
 				class="primary"
 				onclick={() => {
-					store.restart(newPlayers, newSeed, newDifficulty);
+					store.restart(newPlayers, newSeed, newDifficulty, newScenario);
 					newGame = false;
 					inspected = "";
 				}}>Begin expedition <span>→</span></button

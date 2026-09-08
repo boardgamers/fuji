@@ -28,6 +28,15 @@
 	} = $props();
 	const danger = $derived(threatened(state));
 	const mapWidth = $derived(116 + Math.max(...state.board.map((c) => c.x)) * 100);
+	// Use empty map space without adding a footer where the layout allows it.
+	const guidePosition = $derived(
+		({ 1: [14, 519], 2: [14, 603], 3: [14, 519] } as Record<number, number[]>)[state.scenario ?? 1]
+	);
+	const guideX = $derived(guidePosition?.[0] ?? 14);
+	const guideY = $derived(guidePosition?.[1] ?? 100 + Math.max(...state.board.map((c) => c.y)) * 84);
+	const mapHeight = $derived(
+		Math.max(100 + Math.max(...state.board.map((c) => c.y)) * 84, guideY + (state.difficulty >= 3 ? 111 : 91))
+	);
 	const x = (id: string) => 58 + cell(state, id).x * 100;
 	const y = (id: string) => 54 + cell(state, id).y * 84;
 	const edges = $derived(
@@ -47,7 +56,9 @@
 	<div class="scene-caption">
 		<span class="eyebrow">THE FUJI TRAIL</span>
 		<div class="scene-meta">
-			<span>Scenario 01 <span class="dot">·</span> Level {state.difficulty}</span><span
+			<span
+				>Scenario {String(state.scenario ?? 1).padStart(2, "0")} <span class="dot">·</span> Level {state.difficulty}</span
+			><span
 				class="legend-end"
 				title="Everyone must reach any house-marked village location at the same time."
 				aria-label={`${state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} of ${state.players.length} players in the village`}
@@ -68,7 +79,7 @@
 	</div>
 	<div class="map-scroll">
 		<svg
-			viewBox={`0 0 ${mapWidth} ${state.difficulty >= 3 ? 630 : 610}`}
+			viewBox={`0 0 ${mapWidth} ${mapHeight}`}
 			class="map"
 			aria-label="Expedition map. Choose a location to inspect or plan a journey."
 		>
@@ -248,7 +259,7 @@
 					{#if i === seat}<path d="M-4 -28H4L0 -22Z" fill="#f4d888" />{/if}
 				</g>
 			{/each}
-			<foreignObject x="14" y="519" width="385" height={state.difficulty >= 3 ? 106 : 86} class="map-guides">
+			<foreignObject x={guideX} y={guideY} width="385" height={state.difficulty >= 3 ? 106 : 86} class="map-guides">
 				<div xmlns="http://www.w3.org/1999/xhtml">
 					<div class="scene-legend">
 						<span

@@ -63,7 +63,7 @@ export class Store {
 	}
 	send: (move: Move) => void = () => {};
 	selectSeat: (seat: number) => void = () => {};
-	restart: (players: number, seed: string, difficulty: number) => void = () => {};
+	restart: (players: number, seed: string, difficulty: number, scenario?: number) => void = () => {};
 	teammateStep: () => void = () => {};
 	dispatch(move: Move) {
 		if (this.animating && this.blocksInput) return;

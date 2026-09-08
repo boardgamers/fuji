@@ -5,7 +5,7 @@ import {
 	EXHAUSTION,
 	INJURIES,
 	INJURY_AT,
-	SCENARIO_ONE,
+	SCENARIOS,
 	SKILLS,
 	CHARACTERS,
 	terrain,
@@ -85,6 +85,20 @@ export function paths(s: State | View, seat: number, max?: number): Record<strin
 		}
 	}
 	return found;
+}
+// Staying is always confirmable when no distinct, unclaimed destination exists.
+// Do not let a shared start trap the expedition in planning before inevitable lava.
+export function mustStay(s: State | View, seat: number): boolean {
+	const p = s.players[seat]!;
+	const claimed = new Set(
+		neighbors(s, seat)
+			.filter((i) => s.players[i]!.ready)
+			.map((i) => s.players[i]!.path.at(-1))
+	);
+	return !Object.keys(paths(s, seat)).some((id) => id !== p.position && !claimed.has(id));
+}
+function forcedStay(s: State | View, seat: number, route: string[]): boolean {
+	return route.length === 1 && route[0] === s.players[seat]!.position && mustStay(s, seat);
 }
 export function rerollAllowance(s: State | View, seat: number, path?: string[]): number {
 	const p = s.players[seat]!;
@@ -221,8 +235,8 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 	if (!Number.isInteger(players) || players < 2 || players > 4) throw Error("Fuji supports 2–4 players.");
 	const difficulty = Number(options.difficulty ?? 1);
 	if (!Number.isInteger(difficulty) || difficulty < 1 || difficulty > 4) throw Error("Choose difficulty 1–4.");
-	if (options.scenario !== undefined && Number(options.scenario) !== 1)
-		throw Error("This edition currently implements scenario 1.");
+	const scenario = Number(options.scenario ?? 1);
+	if (!Number.isInteger(scenario) || scenario < 1 || scenario > 7) throw Error("Choose scenario 1–7.");
 	const s: State = {
 		schemaVersion: 1,
 		seed,
@@ -234,6 +248,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 		deck: [],
 		discard: [],
 		difficulty,
+		scenario,
 		log: [],
 		revision: 0,
 		outcome: null,
@@ -251,7 +266,8 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 	);
 	const villages = shuffle(s, [28, 29, 30, 31, 32, 33]);
 	let rubble = 2;
-	SCENARIO_ONE.forEach((row, y) =>
+	const layout = SCENARIOS[scenario - 1]!;
+	layout.forEach((row, y) =>
 		row.forEach((code, x) => {
 			if (code === " " || (code === "V4" && players !== 4)) return;
 			const village = code.startsWith("v") || code === "V4";
@@ -263,7 +279,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 				terrain: id,
 				lava: code === "V",
 				equipment: code.includes("E"),
-				eruption: code === "X" ? 1 : 0,
+				eruption: code.includes("X") ? 1 : 0,
 			});
 		})
 	);
@@ -277,7 +293,9 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 	if (skillList.length < players || skillList.some((x) => !(x in SKILLS))) throw Error("Invalid skill selection.");
 	for (let i = 0; i < players; i++) {
 		const skill = skillList[i]!;
-		const pos = players === 4 && i >= 2 ? "1,2" : "0,3";
+		const start = players === 4 && i >= 2 ? "S4" : "S";
+		const startY = layout.findIndex((row) => row.includes(start));
+		const pos = `${layout[startY]!.indexOf(start)},${startY}`;
 		const p: Player = {
 			name: CHARACTERS[i]!,
 			character: i,
@@ -320,7 +338,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 		}));
 		s.ghostVisible = s.ghost.filter((_, j) => j % 2 === 0).map((d) => d.id);
 	}
-	event(s, "Scenario 1 · the path to the village", "phase");
+	event(s, `Scenario ${scenario} · the path to the village`, "phase");
 	if (s.players.every((p) => p.setupDone)) startRound(s);
 	return s;
 }
@@ -577,7 +595,10 @@ function execute(s: State, m: Move, seat: number) {
 		case "plan": {
 			if (s.phase !== "planning") throw Error("Routes are locked for this round.");
 			const route = validatePath(s, p, m.path, hasSkill(p, "scout") ? 4 : 3);
-			if (neighbors(s, seat).some((i) => s.players[i]!.path.at(-1) === route.at(-1) && s.players[i]!.ready))
+			if (
+				!forcedStay(s, seat, route) &&
+				neighbors(s, seat).some((i) => s.players[i]!.path.at(-1) === route.at(-1) && s.players[i]!.ready)
+			)
 				throw Error("A neighbor has already selected that destination.");
 			p.path = route;
 			p.ready = false;
@@ -588,7 +609,10 @@ function execute(s: State, m: Move, seat: number) {
 			if (p.ready) throw Error("Already ready.");
 			if (s.phase === "planning") {
 				validatePath(s, p, p.path, hasSkill(p, "scout") ? 4 : 3);
-				if (neighbors(s, seat).some((i) => s.players[i]!.ready && s.players[i]!.path.at(-1) === p.path.at(-1)))
+				if (
+					!forcedStay(s, seat, p.path) &&
+					neighbors(s, seat).some((i) => s.players[i]!.ready && s.players[i]!.path.at(-1) === p.path.at(-1))
+				)
 					throw Error("Neighbors need different destinations.");
 			}
 			p.ready = true;

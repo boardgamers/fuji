@@ -272,6 +272,14 @@
 					);
 				}}>Journal</button
 			>
+			<button
+				class="text-button playback-skip"
+				class:idle={!store.animating}
+				disabled={!store.animating}
+				aria-label="Skip to latest"
+				title="Skip to latest"
+				onclick={() => store.skipPresentation()}>»</button
+			>
 			{#if store.local}<details class="playtest-menu">
 					<summary>Playtest tools</summary>
 					<div class="dev-toolbar">
@@ -403,11 +411,6 @@
 		</section>
 		<div class="game-layout">
 			<div class="world-column">
-				{#if store.animating}<div class="presentation-status" role="status">
-						<span>Playing expedition events…</span><button class="text-button" onclick={() => store.skipPresentation()}
-							>Skip to latest</button
-						>
-					</div>{/if}
 				<Landscape
 					colorblind={store.colorblind}
 					state={store.scene ?? s}

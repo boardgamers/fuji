@@ -1524,14 +1524,12 @@ h3 {
 	color: #ecd99e;
 }
 
-.presentation-status {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 16px;
-	padding: 8px 14px;
-	font-size: 12px;
-	color: #bdcaaa;
+.playback-skip {
+	width: 26px;
+	flex: 0 0 26px;
+}
+.playback-skip.idle {
+	visibility: hidden;
 }
 
 .visible-choices {

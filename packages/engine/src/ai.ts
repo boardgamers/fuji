@@ -53,15 +53,15 @@ function villageHelper(game: View, seat: number): boolean {
 	);
 }
 
-function distancesToVillage(game: View): Map<string, number> {
+function distancesToVillage(game: View, blocked = new Set<string>()): Map<string, number> {
 	// Measure progress along the trail, including detours around gaps and lava.
 	const villageDistances = new Map<string, number>();
-	const frontier = game.board.filter((c) => walkable(c) && terrain(c.terrain).kind === "village");
+	const frontier = game.board.filter((c) => walkable(c) && !blocked.has(c.id) && terrain(c.terrain).kind === "village");
 	frontier.forEach((c) => villageDistances.set(c.id, 0));
 	for (let i = 0; i < frontier.length; i++) {
 		const current = frontier[i]!;
 		for (const next of game.board) {
-			if (!walkable(next) || villageDistances.has(next.id)) continue;
+			if (!walkable(next) || blocked.has(next.id) || villageDistances.has(next.id)) continue;
 			if (Math.abs(current.x - next.x) + Math.abs(current.y - next.y) !== 1) continue;
 			villageDistances.set(next.id, villageDistances.get(current.id)! + 1);
 			frontier.push(next);
@@ -418,39 +418,78 @@ export function chooseMove(game: View, seat: number, policy: AiPolicy = DEFAULT_
 		// Only public routes matter; never inspect their hidden rolls.
 		const arrivals =
 			terrain(cell(game, p.position).terrain).kind === "village"
-				? neighbors(game, seat)
-						.filter(
-							(i) =>
-								!game.players[i]!.ready && terrain(cell(game, game.players[i]!.position).terrain).kind !== "village"
-						)
-						.map((i) => {
-							const claimed = new Set(
-								neighbors(game, i)
-									.filter((j) => j !== seat && game.players[j]!.ready)
-									.map((j) => game.players[j]!.path.at(-1))
-							);
-							const options = Object.values(paths(game, i)).filter((route) => {
-								const target = cell(game, route.at(-1)!);
-								return (
-									terrain(target.terrain).kind === "village" &&
-									!danger.has(target.id) &&
-									!claimed.has(target.id) &&
-									!route.slice(1).some((id) => cell(game, id).eruption)
-								);
-							});
-							return { seat: i, options };
-						})
+				? neighbors(game, seat).flatMap((i) => {
+						const other = game.players[i]!;
+						const origin = other.ready ? other.path.at(-1)! : other.position;
+						if (terrain(cell(game, origin).terrain).kind === "village") return [];
+						const limit = hasSkill(other, "scout") ? 4 : 3;
+						const claimed = new Set(
+							neighbors(game, i)
+								.filter((j) => j !== seat && game.players[j]!.ready)
+								.map((j) => game.players[j]!.path.at(-1))
+						);
+						// Look one move beyond current reach, so residents clear entrances
+						// before a teammate arrives. Compare public geometry, not secret dice.
+						const distances = new Map([[origin, 0]]);
+						const queue = [origin];
+						for (let index = 0; index < queue.length; index++) {
+							const id = queue[index]!,
+								from = cell(game, id),
+								steps = distances.get(id)!;
+							if (steps >= limit * 2) continue;
+							for (const next of game.board) {
+								if (
+									distances.has(next.id) ||
+									!walkable(next) ||
+									next.eruption ||
+									Math.abs(next.x - from.x) + Math.abs(next.y - from.y) !== 1
+								)
+									continue;
+								distances.set(next.id, steps + 1);
+								queue.push(next.id);
+							}
+						}
+						const reachable = game.board.filter(
+							(c) =>
+								terrain(c.terrain).kind === "village" && !danger.has(c.id) && !claimed.has(c.id) && distances.has(c.id)
+						);
+						const immediate = other.ready ? [] : reachable.filter((c) => distances.get(c.id)! <= limit);
+						const options = immediate.length ? immediate : reachable;
+						return [{ seat: i, options, distances, weight: immediate.length ? 1 : 0.5 }];
+					})
 				: [];
 		const entranceCost = (destination: string) =>
 			arrivals.reduce((cost, arrival) => {
-				const route = arrival.options.find((route) => route.at(-1) === destination);
-				if (!route) return cost;
-				// Fewer alternatives and shorter approaches make this entrance more valuable.
-				return cost + (18 * urgency(game, arrival.seat)) / arrival.options.length / Math.max(1, route.length - 1);
+				if (!arrival.options.some((c) => c.id === destination)) return cost;
+				return (
+					cost +
+					(36 * arrival.weight * urgency(game, arrival.seat)) /
+						arrival.options.length /
+						Math.max(1, arrival.distances.get(destination)!)
+				);
 			}, 0);
 		const villageDistances = distancesToVillage(game);
+		const forecasts = new Map<number, { lava: Set<string>; distances: Map<string, number> }>();
+		const forecast = (waves: number) => {
+			const cached = forecasts.get(waves);
+			if (cached) return cached;
+			const lava = new Set(game.board.filter((c) => c.lava).map((c) => c.id));
+			for (let wave = 0; wave < waves; wave++) {
+				const spread = game.board.filter(
+					(c) =>
+						!lava.has(c.id) && game.board.some((l) => lava.has(l.id) && Math.abs(c.x - l.x) + Math.abs(c.y - l.y) === 1)
+				);
+				spread.forEach((c) => lava.add(c.id));
+			}
+			const result = { lava, distances: distancesToVillage(game, lava) };
+			forecasts.set(waves, result);
+			return result;
+		};
 		const score = (path: string[]) => {
 			const c = cell(game, path.at(-1)!);
+			const waves = 1 + path.slice(1).reduce((sum, id) => sum + cell(game, id).eruption, 0);
+			const future = forecast(waves);
+			const cutOff = terrain(c.terrain).kind !== "village" && !future.distances.has(c.id);
 			const closestVillage = villageDistances.get(c.id) ?? game.board.length;
 			const lavaDistance = Math.min(
 				...game.board.filter((tile) => tile.lava).map((tile) => Math.abs(c.x - tile.x) + Math.abs(c.y - tile.y))
@@ -479,7 +518,7 @@ export function chooseMove(game: View, seat: number, policy: AiPolicy = DEFAULT_
 				);
 			const expectedLead = expected - Math.max(...opposition);
 			return (
-				(danger.has(c.id) ? -1000 : 0) -
+				(future.lava.has(c.id) ? -1000 : cutOff ? -150 : 0) -
 				12 / Math.max(1, lavaDistance) +
 				expectedLead * policy.lead -
 				closestVillage * policy.progress +

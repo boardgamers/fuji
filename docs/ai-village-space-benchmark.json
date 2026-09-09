@@ -1,0 +1,629 @@
+{
+	"baselineCommit": "6aa8dc7",
+	"scope": "All seven scenarios, 2\u20134 players, difficulties 1\u20134, seeded random skills. Equal seeds across versions. Every game checked for termination and exact replay.",
+	"finalComparison": {
+		"before": [
+			{
+				"name": "old",
+				"family": "village-space-heldout",
+				"policy": {
+					"equipment": true,
+					"lead": 1,
+					"progress": 4,
+					"success": 18,
+					"stamina": 1,
+					"teamwork": 0.4,
+					"cost": 0.8
+				},
+				"games": 252,
+				"wins": 71,
+				"moves": 14971,
+				"byScenario": {
+					"1": {
+						"games": 36,
+						"wins": 18
+					},
+					"2": {
+						"games": 36,
+						"wins": 8
+					},
+					"3": {
+						"games": 36,
+						"wins": 3
+					},
+					"4": {
+						"games": 36,
+						"wins": 11
+					},
+					"5": {
+						"games": 36,
+						"wins": 13
+					},
+					"6": {
+						"games": 36,
+						"wins": 10
+					},
+					"7": {
+						"games": 36,
+						"wins": 8
+					}
+				},
+				"equipment": {
+					"tape": 30,
+					"flare": 53,
+					"machete": 49,
+					"torch": 75,
+					"rope": 66,
+					"water": 83,
+					"shovel": 113,
+					"binoculars": 105,
+					"aid": 87,
+					"compass": 17,
+					"map": 58,
+					"radio": 78
+				},
+				"stalled": []
+			},
+			{
+				"name": "old",
+				"family": "cutoff-heldout",
+				"policy": {
+					"equipment": true,
+					"lead": 1,
+					"progress": 4,
+					"success": 18,
+					"stamina": 1,
+					"teamwork": 0.4,
+					"cost": 0.8
+				},
+				"games": 252,
+				"wins": 59,
+				"moves": 14249,
+				"byScenario": {
+					"1": {
+						"games": 36,
+						"wins": 20
+					},
+					"2": {
+						"games": 36,
+						"wins": 3
+					},
+					"3": {
+						"games": 36,
+						"wins": 10
+					},
+					"4": {
+						"games": 36,
+						"wins": 3
+					},
+					"5": {
+						"games": 36,
+						"wins": 8
+					},
+					"6": {
+						"games": 36,
+						"wins": 9
+					},
+					"7": {
+						"games": 36,
+						"wins": 6
+					}
+				},
+				"equipment": {
+					"water": 130,
+					"flare": 88,
+					"aid": 151,
+					"torch": 28,
+					"compass": 50,
+					"tape": 11,
+					"radio": 68,
+					"shovel": 48,
+					"map": 42,
+					"machete": 45,
+					"rope": 10,
+					"binoculars": 13
+				},
+				"stalled": []
+			}
+		],
+		"after": [
+			{
+				"name": "current",
+				"family": "village-space-heldout",
+				"policy": {
+					"equipment": true,
+					"lead": 1,
+					"progress": 4,
+					"success": 18,
+					"stamina": 1,
+					"teamwork": 0.4,
+					"cost": 0.8
+				},
+				"games": 252,
+				"wins": 73,
+				"moves": 14962,
+				"byScenario": {
+					"1": {
+						"games": 36,
+						"wins": 19
+					},
+					"2": {
+						"games": 36,
+						"wins": 8
+					},
+					"3": {
+						"games": 36,
+						"wins": 4
+					},
+					"4": {
+						"games": 36,
+						"wins": 11
+					},
+					"5": {
+						"games": 36,
+						"wins": 14
+					},
+					"6": {
+						"games": 36,
+						"wins": 9
+					},
+					"7": {
+						"games": 36,
+						"wins": 8
+					}
+				},
+				"equipment": {
+					"tape": 29,
+					"flare": 52,
+					"machete": 48,
+					"torch": 77,
+					"rope": 66,
+					"water": 84,
+					"shovel": 113,
+					"binoculars": 105,
+					"aid": 87,
+					"compass": 17,
+					"map": 58,
+					"radio": 77
+				},
+				"stalled": []
+			},
+			{
+				"name": "current",
+				"family": "cutoff-heldout",
+				"policy": {
+					"equipment": true,
+					"lead": 1,
+					"progress": 4,
+					"success": 18,
+					"stamina": 1,
+					"teamwork": 0.4,
+					"cost": 0.8
+				},
+				"games": 252,
+				"wins": 57,
+				"moves": 14156,
+				"byScenario": {
+					"1": {
+						"games": 36,
+						"wins": 20
+					},
+					"2": {
+						"games": 36,
+						"wins": 3
+					},
+					"3": {
+						"games": 36,
+						"wins": 10
+					},
+					"4": {
+						"games": 36,
+						"wins": 3
+					},
+					"5": {
+						"games": 36,
+						"wins": 7
+					},
+					"6": {
+						"games": 36,
+						"wins": 9
+					},
+					"7": {
+						"games": 36,
+						"wins": 5
+					}
+				},
+				"equipment": {
+					"water": 130,
+					"flare": 88,
+					"aid": 151,
+					"torch": 28,
+					"compass": 50,
+					"tape": 11,
+					"radio": 68,
+					"shovel": 48,
+					"map": 42,
+					"machete": 45,
+					"rope": 10,
+					"binoculars": 13
+				},
+				"stalled": []
+			}
+		]
+	},
+	"training": [
+		{
+			"name": "old",
+			"family": "village-space-training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 168,
+			"wins": 52,
+			"moves": 10350,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 12
+				},
+				"2": {
+					"games": 24,
+					"wins": 8
+				},
+				"3": {
+					"games": 24,
+					"wins": 4
+				},
+				"4": {
+					"games": 24,
+					"wins": 5
+				},
+				"5": {
+					"games": 24,
+					"wins": 6
+				},
+				"6": {
+					"games": 24,
+					"wins": 6
+				},
+				"7": {
+					"games": 24,
+					"wins": 11
+				}
+			},
+			"equipment": {
+				"radio": 97,
+				"torch": 42,
+				"water": 72,
+				"aid": 166,
+				"machete": 18,
+				"map": 58,
+				"rope": 27,
+				"flare": 34,
+				"compass": 4,
+				"shovel": 44,
+				"tape": 7
+			},
+			"stalled": []
+		},
+		{
+			"name": "route",
+			"family": "village-space-training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 168,
+			"wins": 50,
+			"moves": 10335,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 12
+				},
+				"2": {
+					"games": 24,
+					"wins": 6
+				},
+				"3": {
+					"games": 24,
+					"wins": 4
+				},
+				"4": {
+					"games": 24,
+					"wins": 5
+				},
+				"5": {
+					"games": 24,
+					"wins": 6
+				},
+				"6": {
+					"games": 24,
+					"wins": 6
+				},
+				"7": {
+					"games": 24,
+					"wins": 11
+				}
+			},
+			"equipment": {
+				"radio": 97,
+				"torch": 42,
+				"water": 71,
+				"aid": 166,
+				"machete": 18,
+				"map": 58,
+				"rope": 27,
+				"flare": 34,
+				"compass": 4,
+				"shovel": 44,
+				"tape": 7
+			},
+			"stalled": []
+		},
+		{
+			"name": "current",
+			"family": "village-space-training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 168,
+			"wins": 53,
+			"moves": 10377,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 13
+				},
+				"2": {
+					"games": 24,
+					"wins": 7
+				},
+				"3": {
+					"games": 24,
+					"wins": 4
+				},
+				"4": {
+					"games": 24,
+					"wins": 6
+				},
+				"5": {
+					"games": 24,
+					"wins": 6
+				},
+				"6": {
+					"games": 24,
+					"wins": 6
+				},
+				"7": {
+					"games": 24,
+					"wins": 11
+				}
+			},
+			"equipment": {
+				"radio": 97,
+				"torch": 42,
+				"water": 71,
+				"flare": 35,
+				"aid": 166,
+				"machete": 18,
+				"map": 58,
+				"rope": 27,
+				"compass": 4,
+				"shovel": 44,
+				"tape": 7
+			},
+			"stalled": []
+		}
+	],
+	"cutoffTraining": [
+		{
+			"name": "route",
+			"family": "cutoff-training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 168,
+			"wins": 51,
+			"moves": 10097,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 13
+				},
+				"2": {
+					"games": 24,
+					"wins": 6
+				},
+				"3": {
+					"games": 24,
+					"wins": 2
+				},
+				"4": {
+					"games": 24,
+					"wins": 8
+				},
+				"5": {
+					"games": 24,
+					"wins": 10
+				},
+				"6": {
+					"games": 24,
+					"wins": 7
+				},
+				"7": {
+					"games": 24,
+					"wins": 5
+				}
+			},
+			"equipment": {
+				"machete": 71,
+				"map": 59,
+				"flare": 79,
+				"aid": 84,
+				"water": 79,
+				"shovel": 40,
+				"rope": 60,
+				"torch": 17,
+				"compass": 10,
+				"radio": 24,
+				"binoculars": 22,
+				"tape": 7
+			},
+			"stalled": []
+		},
+		{
+			"name": "current",
+			"family": "cutoff-training",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 168,
+			"wins": 51,
+			"moves": 10097,
+			"byScenario": {
+				"1": {
+					"games": 24,
+					"wins": 13
+				},
+				"2": {
+					"games": 24,
+					"wins": 6
+				},
+				"3": {
+					"games": 24,
+					"wins": 2
+				},
+				"4": {
+					"games": 24,
+					"wins": 8
+				},
+				"5": {
+					"games": 24,
+					"wins": 10
+				},
+				"6": {
+					"games": 24,
+					"wins": 7
+				},
+				"7": {
+					"games": 24,
+					"wins": 5
+				}
+			},
+			"equipment": {
+				"machete": 71,
+				"map": 59,
+				"flare": 79,
+				"aid": 84,
+				"water": 79,
+				"shovel": 40,
+				"rope": 60,
+				"torch": 17,
+				"compass": 10,
+				"radio": 24,
+				"binoculars": 22,
+				"tape": 7
+			},
+			"stalled": []
+		}
+	],
+	"entranceOnlyValidation": {
+		"firstBatch": {
+			"games": 252,
+			"beforeWins": 71,
+			"afterWins": 73
+		},
+		"secondBatch": {
+			"name": "route",
+			"family": "cutoff-heldout",
+			"policy": {
+				"equipment": true,
+				"lead": 1,
+				"progress": 4,
+				"success": 18,
+				"stamina": 1,
+				"teamwork": 0.4,
+				"cost": 0.8
+			},
+			"games": 252,
+			"wins": 57,
+			"moves": 14156,
+			"byScenario": {
+				"1": {
+					"games": 36,
+					"wins": 20
+				},
+				"2": {
+					"games": 36,
+					"wins": 3
+				},
+				"3": {
+					"games": 36,
+					"wins": 10
+				},
+				"4": {
+					"games": 36,
+					"wins": 3
+				},
+				"5": {
+					"games": 36,
+					"wins": 7
+				},
+				"6": {
+					"games": 36,
+					"wins": 9
+				},
+				"7": {
+					"games": 36,
+					"wins": 5
+				}
+			},
+			"equipment": {
+				"water": 130,
+				"flare": 88,
+				"aid": 151,
+				"torch": 28,
+				"compass": 50,
+				"tape": 11,
+				"radio": 68,
+				"shovel": 48,
+				"map": 42,
+				"machete": 45,
+				"rope": 10,
+				"binoculars": 13
+			},
+			"stalled": []
+		}
+	},
+	"conclusion": "130/504 wins before and after (25.8%). Retained for concrete tactical behavior, not a demonstrated win-rate improvement."
+}

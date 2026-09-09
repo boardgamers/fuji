@@ -1357,3 +1357,65 @@ test("players choose distinct skills before equipment is dealt, with exact repla
 	assert.deepEqual(activePlayers(s), [0, 1]);
 	assert.deepEqual(replay(s), s);
 });
+
+test("village residents clear entrances before a neighbor is within one move", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = initGame(3, {}, "future-entrance");
+	s.phase = "planning";
+	s.board.forEach((c) => {
+		c.lava = false;
+		c.eruption = 0;
+		if (terrain(c.terrain).kind === "village") c.terrain = 28;
+	});
+	s.players.forEach((p, i) => {
+		p.cards = [];
+		p.ready = false;
+		p.position = ["4,2", "1,5", "6,0"][i]!;
+		p.path = [p.position];
+		p.dice.forEach((d) => (d.face = 1));
+	});
+	assert(!Object.keys(paths(s, 1)).some((id) => terrain(cell(s, id).terrain).kind === "village"));
+	for (const ready of [false, true]) {
+		s.players[1]!.ready = ready;
+		const move = chooseMove(stripSecret(s, 0), 0);
+		assert.equal(move.action, "plan");
+		assert.notEqual((move.path as string[]).at(-1), "4,2");
+		assert.equal(terrain(cell(s, (move.path as string[]).at(-1)!).terrain).kind, "village");
+		s.players[1]!.dice.forEach((d) => (d.face = 6));
+		assert.deepEqual(chooseMove(stripSecret(s, 0), 0), move);
+	}
+});
+
+test("AI crosses a choke point before lava disconnects the otherwise safe side", async () => {
+	const { chooseMove } = await import("../index.js");
+	const s = initGame(3, {}, "cutoff-regression");
+	s.phase = "planning";
+	s.board = Array.from({ length: 6 }, (_, x) => ({
+		id: `${x},0`,
+		x,
+		y: 0,
+		terrain: x === 5 ? 33 : x === 3 ? 15 : 16,
+		lava: false,
+		equipment: false,
+		eruption: 0,
+	}));
+	s.board.push({ id: "2,1", x: 2, y: 1, terrain: 1, lava: true, equipment: false, eruption: 0 });
+	s.players.forEach((p, i) => {
+		p.cards = [];
+		p.ready = false;
+		p.position = i === 0 ? "0,0" : "5,0";
+		p.path = [p.position];
+		p.dice.forEach((d) => (d.face = 6));
+	});
+	assert(!threatened(s).includes("1,0"), "the tempting tile itself is not threatened");
+	assert(threatened(s).includes("2,0"), "the connecting bridge will burn");
+	const move = chooseMove(stripSecret(s, 0), 0);
+	assert.deepEqual(move, { action: "plan", path: ["0,0", "1,0", "2,0", "3,0"] });
+	cell(s, "3,0").eruption = 1;
+	const extraWave = chooseMove(stripSecret(s, 0), 0);
+	assert.notEqual(
+		(extraWave.path as string[] | undefined)?.at(-1),
+		"3,0",
+		"the extra wave would consume that destination"
+	);
+});

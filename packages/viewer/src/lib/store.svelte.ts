@@ -1,6 +1,8 @@
+import { Chat } from "./chat.svelte";
 import { SoundDesign, type SoundCue } from "./sound";
 import type { View, Move } from "fuji-engine";
 export class Store {
+	chat = new Chat();
 	state: View | null = $state(null);
 	avatars: string[] = $state([]);
 	clickPlayer: (index: number) => void = () => {};
@@ -15,6 +17,7 @@ export class Store {
 	}
 	destroy() {
 		this.dispose();
+		this.chat.destroy();
 		this.audio.destroy();
 	}
 	scene: View | null = $state(null);

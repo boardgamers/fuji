@@ -49,7 +49,7 @@ await request(version, "PUT", {
 	...current,
 	alias: current.alias ?? null,
 	public: false,
-	viewer: { ...draft.viewer, url: js.url, dependencies: { scripts: [], stylesheets: [css.url] } },
+	viewer: { ...draft.viewer, chat: true, url: js.url, dependencies: { scripts: [], stylesheets: [css.url] } },
 });
 await request("/admin/page/fuji:rules/en", "PUT", {
 	title: "Fuji: how to play",

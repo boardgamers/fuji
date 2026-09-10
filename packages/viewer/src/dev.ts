@@ -6,6 +6,28 @@ import "./lib/theme.css";
 import enginePackage from "../../engine/package.json";
 const store = new Store();
 store.local = true;
+store.chat.enabled = true;
+store.chat.canSend = true;
+try {
+	store.chat.replace(JSON.parse(localStorage.getItem("fuji-dev-chat") ?? "[]"));
+} catch {
+	store.chat.replace([]);
+}
+store.chat.send = ({ text, requestId }) => {
+	const playerIndex = store.seat ?? 0;
+	store.chat.append([
+		{
+			_id: crypto.randomUUID(),
+			author: store.state?.players[playerIndex]?.name ?? `Player ${playerIndex + 1}`,
+			playerIndex,
+			text,
+			type: "text",
+			createdAt: new Date().toISOString(),
+		},
+	]);
+	localStorage.setItem("fuji-dev-chat", JSON.stringify(store.chat.messages));
+	store.chat.result({ requestId, ok: true });
+};
 store.setSound(localStorage.getItem("fuji-sound") !== "false");
 store.colorblind = localStorage.getItem("fuji-colorblind") === "true";
 store.savePreference = (_name, value) => localStorage.setItem("fuji-colorblind", String(value));
@@ -69,6 +91,9 @@ store.selectSeat = (seat) => {
 store.restart = (players, seed, difficulty, scenario = 1, skillAssignment = "random") => {
 	game = initGame(players, { difficulty, scenario, skillAssignment }, seed);
 	store.seat = 0;
+	store.chat.replace([]);
+	store.chat.draft = "";
+	localStorage.removeItem("fuji-dev-chat");
 	publish();
 };
 store.exportDebug = () =>

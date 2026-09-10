@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ChatPanel from "./lib/ChatPanel.svelte";
 	import { untrack } from "svelte";
 	import {
 		terrain,
@@ -389,6 +390,15 @@
 								: s.phase}</span
 				>
 			</div>
+			{#if store.chat.enabled}<button
+					class="text-button"
+					onclick={() => {
+						store.chat.open = true;
+						requestAnimationFrame(() =>
+							document.querySelector(".expedition-chat")?.scrollIntoView({ behavior: "smooth", block: "center" })
+						);
+					}}>Chat</button
+				>{/if}
 			<button class="text-button" onclick={() => (help = true)} aria-label="Open playing guide">Help</button>
 			<button
 				class="text-button"
@@ -696,6 +706,7 @@
 							</div>{/if}
 					{/if}
 				</section>
+				<ChatPanel {store} />
 				<section class="journal inline-journal" aria-label="Expedition journal">
 					<header class="journal-header">
 						<h2>Expedition journal</h2>

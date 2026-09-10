@@ -2,6 +2,7 @@ import { mount, tick } from "svelte";
 import App from "./App.svelte";
 import { Store } from "./lib/store.svelte";
 import { Emitter } from "./lib/emitter";
+import type { ChatMessage } from "./lib/chat.svelte";
 import type { View } from "fuji-engine";
 import "./lib/theme.css";
 export function launch(selector: string) {
@@ -10,6 +11,27 @@ export function launch(selector: string) {
 	const events = new Emitter();
 	const store = new Store();
 	let ready = false;
+	const chat = store.chat;
+	chat.send = (data) => events.emit("chat:send", data);
+	chat.read = (messageId) => events.emit("chat:read", { messageId });
+	events.on<ChatMessage[]>("chat:messages", (messages) => chat.replace(messages));
+	events.on<ChatMessage[]>("chat:appended", (messages) => chat.append(messages));
+	events.on<ChatMessage[]>("chat:updated", (messages) => {
+		chat.messages = chat.messages.map((m) => messages.find((update) => update._id === m._id) ?? m);
+	});
+	events.on<string[]>("chat:deleted", (ids) => {
+		chat.messages = chat.messages.filter((m) => !m._id || !ids.includes(m._id));
+	});
+	events.on<boolean>("chat:disabled", (disabled) => {
+		chat.disabled = disabled;
+	});
+	events.on<{ canSend: boolean; reason?: string }>("chat:state", (state) => {
+		chat.enabled = true;
+		chat.canSend = state.canSend;
+		chat.reason = state.reason ?? "";
+	});
+	events.on<{ requestId: string; ok: boolean; error?: string }>("chat:result", (result) => chat.result(result));
+
 	store.savePreference = (name, value) => events.emit("update:preference", { name, value });
 	events.on<Record<string, unknown>>("preferences", (preferences) => {
 		store.colorblind = preferences?.colorblind === true;

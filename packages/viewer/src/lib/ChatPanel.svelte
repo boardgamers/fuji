@@ -5,6 +5,8 @@
 	const chat = $derived(store.chat);
 
 	let list: HTMLDivElement | undefined = $state();
+	let contents: HTMLDivElement | undefined = $state();
+	let scrollFrame: number | undefined;
 	let pinned = true;
 	const colors = ["#e6c780", "#83ca90", "#80c5d7", "#d999b8"];
 	const notice = $derived(
@@ -28,6 +30,14 @@
 		const id = latest?.dataset.messageId;
 		if (id) chat.markRead(id);
 	}
+	function followLatest() {
+		if (scrollFrame !== undefined) cancelAnimationFrame(scrollFrame);
+		scrollFrame = requestAnimationFrame(() => {
+			if (list && pinned) list.scrollTop = list.scrollHeight;
+			scrollFrame = undefined;
+			visibleRead();
+		});
+	}
 	$effect(() => {
 		const element = list;
 		chat.messages;
@@ -36,15 +46,22 @@
 		let disposed = false;
 		void tick().then(() => {
 			if (!disposed) {
-				if (pinned) element.scrollTop = element.scrollHeight;
-				visibleRead();
+				followLatest();
 			}
 		});
 		const observer = new IntersectionObserver(visibleRead);
 		observer.observe(element);
+		// BGS can reveal the iframe or finish loading its stylesheet after history arrives.
+		// Follow changes to the viewport and message heights, including late avatar/font loads.
+		const resize = new ResizeObserver(followLatest);
+		resize.observe(element);
+		if (contents) resize.observe(contents);
 		return () => {
 			disposed = true;
 			observer.disconnect();
+			resize.disconnect();
+			if (scrollFrame !== undefined) cancelAnimationFrame(scrollFrame);
+			scrollFrame = undefined;
 		};
 	});
 </script>
@@ -73,37 +90,42 @@
 				aria-label="Chat messages"
 				tabindex="0"
 				onscroll={() => {
-					if (list) pinned = list.scrollHeight - list.scrollTop - list.clientHeight < 32;
+					if (list && scrollFrame === undefined) pinned = list.scrollHeight - list.scrollTop - list.clientHeight < 32;
 					visibleRead();
 				}}
 			>
-				{#if !chat.messages.length}<p class="empty">Plan your escape together.</p>{/if}
-				{#each chat.messages as message, i (message._id ?? i)}
-					<article data-message-id={message._id} class:system={message.type === "system"}>
-						{#if message.author}
-							<div class="chat-author">
-								{#if message.playerIndex !== undefined}
-									<button
-										style:color={colors[message.playerIndex]}
-										onclick={() => store.clickPlayer(message.playerIndex!)}
-									>
-										{#if store.avatars[message.playerIndex]}<img
-												src={store.avatars[message.playerIndex]}
-												alt=""
-											/>{/if}{message.author}
-									</button>
-								{:else}<strong>{message.author}</strong>{/if}
-								{#if message.createdAt}<time
-										datetime={message.createdAt}
-										title={new Date(message.createdAt).toLocaleString()}
-										>{new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time
-									>{/if}
-								{#if message.editedAt}<span title={new Date(message.editedAt).toLocaleString()}>edited</span>{/if}
-							</div>
-						{/if}
-						<p>{message.text}</p>
-					</article>
-				{/each}
+				<div bind:this={contents}>
+					{#if !chat.messages.length}<p class="empty">Plan your escape together.</p>{/if}
+					{#each chat.messages as message, i (message._id ?? i)}
+						<article data-message-id={message._id} class:system={message.type === "system"}>
+							{#if message.author}
+								<div class="chat-author">
+									{#if message.playerIndex !== undefined}
+										<button
+											style:color={colors[message.playerIndex]}
+											onclick={() => store.clickPlayer(message.playerIndex!)}
+										>
+											{#if store.avatars[message.playerIndex]}<img
+													src={store.avatars[message.playerIndex]}
+													alt=""
+												/>{/if}{message.author}
+										</button>
+									{:else}<strong>{message.author}</strong>{/if}
+									{#if message.createdAt}<time
+											datetime={message.createdAt}
+											title={new Date(message.createdAt).toLocaleString()}
+											>{new Date(message.createdAt).toLocaleTimeString([], {
+												hour: "2-digit",
+												minute: "2-digit",
+											})}</time
+										>{/if}
+									{#if message.editedAt}<span title={new Date(message.editedAt).toLocaleString()}>edited</span>{/if}
+								</div>
+							{/if}
+							<p>{message.text}</p>
+						</article>
+					{/each}
+				</div>
 			</div>
 			{#if chat.canSend && !chat.disabled}
 				<div class="chat-composer">

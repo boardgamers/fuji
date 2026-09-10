@@ -501,7 +501,11 @@
 					<div class="teammate-info">
 						<span class="teammate-name"
 							>{p.name}{#if seat === i}<small>YOU</small>{/if}</span
-						><span class="role-name"
+						><span
+							class="role-name"
+							title={s.skillChoices?.includes(i)
+								? "This player is choosing their skill."
+								: `${SKILLS[p.skill].description}${p.injuries.includes("amnesia") ? " Currently unavailable due to amnesia." : ""}`}
 							>{s.skillChoices?.includes(i)
 								? "Choosing skill"
 								: SKILLS[p.skill].name}{#each p.injuries as injury}<InjuryIcon
@@ -706,7 +710,6 @@
 							</div>{/if}
 					{/if}
 				</section>
-				<ChatPanel {store} />
 				<section class="journal inline-journal" aria-label="Expedition journal">
 					<header class="journal-header">
 						<h2>Expedition journal</h2>
@@ -737,471 +740,466 @@
 				</section>
 			</div>
 			<aside class="journey">
-				<div class="phase-heading">
-					<span class="eyebrow"
-						>{s.outcome
-							? "EXPEDITION RESULT"
-							: s.phase === "setup"
-								? "BEFORE YOU BEGIN"
-								: `PHASE ${phaseNumber + 1} OF 6`}</span
-					>
-					<h2>{nextAction}</h2>
-				</div>
-				<nav class="phase-track" aria-label="Round phases">
-					{#each ["Plan", "Reroll", "Equip", "Move", "Erupt"] as label, i}<span
-							class:active={phaseNumber === i + 1}
-							class:complete={phaseNumber > i + 1}
-							title={label}
-							aria-label={label}
-							aria-current={phaseNumber === i + 1 ? "step" : undefined}><PhaseIcon phase={i} /></span
-						>{/each}
-				</nav>
-				{#if store.error}<div class="error" role="alert">
-						{store.error}<button
-							class="text-button"
-							onclick={() => {
-								store.waiting = false;
-								store.error = "";
-							}}>Dismiss</button
-						>
-					</div>{/if}
-				{#if s.outcome}
-					<div class="outcome" class:won={s.outcome === "won"}>
-						<span class="outcome-icon">{s.outcome === "won" ? "✧" : "△"}</span>
-						<p>{s.reason}</p>
-						<p class="muted">{s.round} rounds · {s.players.length} adventurers</p>
-						{#if s.outcome === "won"}<strong
-								>{s.players.reduce((n, p) => n + 4 - p.injuries.length + p.cards.length, 0)} expedition points</strong
-							>{/if}
-					</div>
-					{#if store.local}<button class="primary" onclick={openNewGame}>Start a new expedition</button>{/if}
-				{:else if !me}<p class="instruction">Follow the expedition. Private dice remain hidden until the reveal.</p>
-				{:else if s.skillChoices?.length}
-					<p class="instruction">
-						{s.skillChoices[0] === seat
-							? "Choose your skill."
-							: `${s.players[s.skillChoices[0]!]!.name} is choosing a skill.`}
-					</p>
-					<div class="skill-choices">
-						{#each Object.entries(SKILLS) as [id, skill]}
-							{@const owner = s.players.find((p, i) => !s.skillChoices!.includes(i) && p.skill === id)}
-							<button
-								disabled={s.skillChoices[0] !== seat || !!owner || store.waiting}
-								onclick={() => store.dispatch({ action: "chooseSkill", skill: id })}
-							>
-								<strong>{skill.name}</strong><span>{skill.description}</span>
-								<small
-									>{skill.dice} dice · draw {skill.draw}, keep {skill.keep} equipment{owner
-										? ` · ${owner.name}`
-										: ""}</small
-								>
-							</button>
-						{/each}
-					</div>
-				{:else if s.phase === "setup"}
-					{#if me.setupDone}<p class="instruction">
-							Your bag is packed. Waiting for the rest of the expedition.
-						</p>{:else}
-						<p class="instruction">
-							This is preparation, before round 1.
-							{#if me.cards.length > SKILLS[me.skill].keep}
-								Choose {SKILLS[me.skill].keep} of your {me.cards.length} equipment cards to keep.
-							{/if}
-							Routes become available once everyone is ready.
-						</p>
-					{/if}
-					<div class="pack-options">
-						{#each me.cards as c}{@const info = EQUIPMENT.find((e) => e.id === c.id)!}<button
-								aria-pressed={keep.includes(c.id)}
-								disabled={me.setupDone || me.cards.length === SKILLS[me.skill].keep}
-								class:selected={keep.includes(c.id)}
-								onclick={() => (keep = keep.includes(c.id) ? keep.filter((id) => id !== c.id) : [...keep, c.id])}
-								><img
-									src={art("equipment", EQUIPMENT.findIndex((x) => x.id === c.id) + 1)}
-									alt={EQUIPMENT.find((x) => x.id === c.id)?.name}
-								/><span class="pack-copy"
-									><strong>{info.name}</strong><small>{info.description}</small><small class="equipment-timing"
-										>Use during {info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}.</small
-									></span
-								><i>{keep.includes(c.id) ? "✓" : "+"}</i></button
+				<ChatPanel {store} />
+				<div class="journey-actions">
+					<h2 class="sr-only">{nextAction}</h2>
+					<nav class="phase-track" aria-label="Round phases">
+						{#each ["Plan", "Reroll", "Equip", "Move", "Erupt"] as label, i}<span
+								class:active={phaseNumber === i + 1}
+								class:complete={phaseNumber > i + 1}
+								title={label}
+								aria-label={label}
+								aria-current={phaseNumber === i + 1 ? "step" : undefined}><PhaseIcon phase={i} /></span
 							>{/each}
-					</div>
-					{#if !me.setupDone}
-						{#if SKILLS[me.skill].dice === 5}<fieldset class="visible-choices">
-								<legend>Choose the die to leave behind</legend>
-								<div class="choice-row">
-									{#each me.dice as d}<button aria-pressed={drop === d.id} onclick={() => (drop = d.id)}
-											>⚄ {"ABC"[d.type]} · {Number(d.id.split("-")[1]) + 1}</button
-										>{/each}
-								</div>
-							</fieldset>{/if}
-						<p class="packing-count">{keep.length} / {SKILLS[me.skill].keep} cards selected</p>
-						<button
-							class="primary"
-							disabled={keep.length !== SKILLS[me.skill].keep || store.waiting}
-							onclick={() => store.dispatch({ action: "setup", keep, drop })}
-							>Ready for the journey <span>→</span></button
-						>
-					{/if}
-				{:else if me.pendingInjuries}
-					<p class="instruction">Choose an injury. Its effect lasts for the rest of the expedition.</p>
-					<div class="injury-options">
-						{#each INJURIES.filter((i) => !me.injuries.includes(i)) as injury}<button
-								onclick={() => store.dispatch({ action: "injury", injury, die: dice[0] })}
-								disabled={injury === "leg" && dice.length !== 1}
-								><strong
-									><InjuryIcon {injury} />
-									{injury === "amnesia" ? "Amnesia" : `${injury[0]!.toUpperCase()}${injury.slice(1)} injury`}</strong
-								><span
-									>{{
-										leg: "Select one of your dice to lose after this round.",
-										arm: "You can no longer use equipment.",
-										eye: "Lose normal rerolls. Skill and equipment rerolls still work.",
-										amnesia: "Lose your character skill.",
-									}[injury]}</span
-								></button
-							>{/each}
-					</div>
-				{:else if s.pending}
-					{#if pendingMe}<p class="instruction">
-							{s.pending.kind === "lend"
-								? "A teammate asks to borrow a die. Select one to lend, or decline."
-								: s.pending.required
-									? "Choose exactly one die to reroll."
-									: "Select any dice to reroll. You may also stop."}
-						</p>
-						<button
-							class="primary"
-							disabled={store.waiting ||
-								(s.pending.required && dice.length !== 1) ||
-								(s.pending.kind === "lend" && dice.length !== 1)}
-							onclick={() => store.dispatch({ action: "respond", ids: dice })}
-							>{s.pending.kind === "lend" ? "Lend selected die" : "Reroll selected dice"}</button
-						>{#if !s.pending.required}<button class="secondary" onclick={() => store.dispatch({ action: "decline" })}
-								>{s.pending.kind === "lend" ? "Decline" : "Finish rerolls"}</button
-							>{/if}
-					{:else}<p class="instruction">
-							Waiting for {s.pending.players.map((i) => s.players[i]!.name).join(", ")} to resolve an equipment effect.
-						</p>{/if}
-				{:else if s.phase === "planning"}
-					<p class="instruction">
-						Choose a destination. Share your intentions, but keep numbers and exact dice results private.
-					</p>
-					{#if dangerousRoute && !me.ready}<div class="warning" role="alert">
-							<p>
-								Lava will reach {terrain(cell(s, dangerousRoute).terrain).name} at the next eruption. Choose a safer destination.
-							</p>
-							<button
+					</nav>
+					{#if store.error}<div class="error" role="alert">
+							{store.error}<button
 								class="text-button"
-								disabled={store.waiting || !!reserved[dangerousRoute]}
-								onclick={acceptDangerousRoute}>Choose this dangerous route</button
+								onclick={() => {
+									store.waiting = false;
+									store.error = "";
+								}}>Dismiss</button
 							>
 						</div>{/if}
-					{#if destination}<div class="destination">
-							<img src={art("land", destination.id)} alt="" />
-							<div>
-								<span class="eyebrow">YOUR DESTINATION</span>
-								<h3>{destination.name}</h3>
-								<RequirementDisplay requirement={destination.requirement} colorblind={store.colorblind} />
-							</div>
+					{#if s.outcome}
+						<div class="outcome" class:won={s.outcome === "won"}>
+							<span class="outcome-icon">{s.outcome === "won" ? "✧" : "△"}</span>
+							<p>{s.reason}</p>
+							<p class="muted">{s.round} rounds · {s.players.length} adventurers</p>
+							{#if s.outcome === "won"}<strong
+									>{s.players.reduce((n, p) => n + 4 - p.injuries.length + p.cards.length, 0)} expedition points</strong
+								>{/if}
 						</div>
-						<div class="journey-stats">
-							<div><strong>{currentRoute.length - 1}</strong><span>spaces</span></div>
-							<div><strong>{rerollAllowance(s, seat!, currentRoute)}</strong><span>rerolls</span></div>
-							<div><strong>{total(me, destination.id)}</strong><span>your total</span></div>
-						</div>{/if}
-					{#if currentRoute.some((id) => cell(s, id).eruption)}<p class="warning">
-							This route crosses an eruption marker. Moving here triggers extra lava.
-						</p>{/if}
-					{#if danger.includes(currentRoute.at(-1) ?? "")}<p class="warning">
-							This destination is threatened by the next eruption.
-						</p>{/if}
-					{#if reserved[currentRoute.at(-1)!]}<p class="instruction">
-							{reserved[currentRoute.at(-1)!]} has reserved this destination. Choose another location.
-						</p>{/if}
-					{#if !me.ready}<button
-							class="primary"
-							disabled={store.waiting || !!reserved[currentRoute.at(-1)!]}
-							onclick={confirmTravel}>Ready to travel <span>→</span></button
-						>{:else}<p class="confirmed">✓ Your route is set. Waiting for the team.</p>
-						<button class="text-button" onclick={() => store.dispatch({ action: "plan", path: me.path })}
-							>Change my route</button
-						>{/if}
-				{:else if s.phase === "reroll"}
-					<p class="instruction">Reroll in silence. Your dice actions are below the map.</p>
-				{:else if s.phase === "equipment"}
-					<p class="instruction">
-						Discuss equipment with your teammates. Your dice are still private and your destination is locked.
-					</p>
-					{#if !me.ready}<button
-							class="primary"
-							onclick={() => store.dispatch({ action: "ready" })}
-							disabled={store.waiting}>Ready to reveal <span>→</span></button
-						>{:else}<p class="confirmed">✓ Ready. Waiting for the team.</p>{/if}
-				{:else if s.phase === "movement"}
-					{#if s.activeResolution === null}<p class="instruction">
-							Choose who moves next. A route that triggers extra lava is often best resolved last.
+						{#if store.local}<button class="primary" onclick={openNewGame}>Start a new expedition</button>{/if}
+					{:else if !me}<p class="instruction">Follow the expedition. Private dice remain hidden until the reveal.</p>
+					{:else if s.skillChoices?.length}
+						<p class="instruction">
+							{s.skillChoices[0] === seat
+								? "Choose your skill."
+								: `${s.players[s.skillChoices[0]!]!.name} is choosing a skill.`}
 						</p>
-						{#if !me.resolved}<button class="primary" onclick={() => store.dispatch({ action: "beginMovement" })}
-								>Resolve my journey <span>→</span></button
-							>{:else}<p class="confirmed">✓ Your journey is resolved.</p>{/if}
-					{:else if resolvingPlayer && result}{@const criterion = terrain(
-							cell(s, resolvingPlayer.path.at(-1)!).terrain
-						).requirement}
-						<div class="comparison">
-							<span class="eyebrow">{result.success ? "CAN MOVE" : "MUST STAY"}</span><strong
-								>{result.own}<small> vs </small>{Math.max(...result.peers.map((p) => p.total))}</strong
-							>
-							<p>
-								{result.success
-									? `Lead of ${result.margin} · lose ${result.loss} stamina`
-									: `Tie or lower · lose ${result.loss} stamina`}
+						<div class="skill-choices">
+							{#each Object.entries(SKILLS) as [id, skill]}
+								{@const owner = s.players.find((p, i) => !s.skillChoices!.includes(i) && p.skill === id)}
+								<button
+									disabled={s.skillChoices[0] !== seat || !!owner || store.waiting}
+									onclick={() => store.dispatch({ action: "chooseSkill", skill: id })}
+								>
+									<strong>{skill.name}</strong><span>{skill.description}</span>
+									<small
+										>{skill.dice} dice · draw {skill.draw}, keep {skill.keep} equipment{owner
+											? ` · ${owner.name}`
+											: ""}</small
+									>
+								</button>
+							{/each}
+						</div>
+					{:else if s.phase === "setup"}
+						{#if me.setupDone}<p class="instruction">
+								Your bag is packed. Waiting for the rest of the expedition.
+							</p>{:else}
+							<p class="instruction">
+								This is preparation, before round 1.
+								{#if me.cards.length > SKILLS[me.skill].keep}
+									Choose {SKILLS[me.skill].keep} of your {me.cards.length} equipment cards to keep.
+								{/if}
+								Routes become available once everyone is ready.
 							</p>
-							<StaminaGuide difficulty={s.difficulty} margin={result.margin} aid={resolvingPlayer.aid} />
-							<span class="muted small"
-								>Dice matching {terrain(cell(s, resolvingPlayer.path.at(-1)!).terrain).name}</span
-							>
-							{#each [{ seat: resolvingSeat!, total: result.own }, ...result.peers] as peer}
-								{@const counted = (peer.seat === -1 ? s.ghost : s.players[peer.seat]!.dice).filter(
-									(d) => !d.aside && matches(face(d), criterion)
-								)}
-								<div class="comparison-player">
-									<div class="comparison-name">
-										<span
-											>{peer.seat === seat
-												? "You"
-												: peer.seat === -1
-													? "Neutral dice"
-													: s.players[peer.seat]!.name}</span
-										><strong>{peer.total}</strong>
-									</div>
-									<div class="comparison-dice">
-										{#each counted as d}<Die die={d} colorblind={store.colorblind} disabled />{:else}<span
-												>No matching dice</span
+						{/if}
+						<div class="pack-options">
+							{#each me.cards as c}{@const info = EQUIPMENT.find((e) => e.id === c.id)!}<button
+									aria-pressed={keep.includes(c.id)}
+									disabled={me.setupDone || me.cards.length === SKILLS[me.skill].keep}
+									class:selected={keep.includes(c.id)}
+									onclick={() => (keep = keep.includes(c.id) ? keep.filter((id) => id !== c.id) : [...keep, c.id])}
+									><img
+										src={art("equipment", EQUIPMENT.findIndex((x) => x.id === c.id) + 1)}
+										alt={EQUIPMENT.find((x) => x.id === c.id)?.name}
+									/><span class="pack-copy"
+										><strong>{info.name}</strong><small>{info.description}</small><small class="equipment-timing"
+											>Use during {info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}.</small
+										></span
+									><i>{keep.includes(c.id) ? "✓" : "+"}</i></button
+								>{/each}
+						</div>
+						{#if !me.setupDone}
+							{#if SKILLS[me.skill].dice === 5}<fieldset class="visible-choices">
+									<legend>Choose the die to leave behind</legend>
+									<div class="choice-row">
+										{#each me.dice as d}<button aria-pressed={drop === d.id} onclick={() => (drop = d.id)}
+												>⚄ {"ABC"[d.type]} · {Number(d.id.split("-")[1]) + 1}</button
 											>{/each}
 									</div>
-									{#if peer.seat === resolvingSeat && resolvingPlayer.bonus}<span>+{resolvingPlayer.bonus} bonus</span
-										>{/if}
-								</div>
-							{/each}
-						</div>
-						{#if s.pendingHelpers?.includes(seat!)}
-							<p class="instruction">
-								Help {resolvingPlayer.name}? Each bar adds +1 to their total. Your decision resolves the journey
-								automatically.
-							</p>
-							<div class="powerbar-options">
-								{#each powerBarChoices(s, seat!) as count}<button
-										class="secondary"
-										disabled={store.waiting}
-										onclick={() => store.dispatch({ action: "help", count })}
-										>Use {count} bar{count > 1 ? "s" : ""} · total {result.own + count}</button
-									>{/each}
-							</div>
+								</fieldset>{/if}
+							<p class="packing-count">{keep.length} / {SKILLS[me.skill].keep} cards selected</p>
 							<button
 								class="primary"
-								disabled={store.waiting}
-								onclick={() => store.dispatch({ action: "help", count: 0 })}>Don't use bars</button
+								disabled={keep.length !== SKILLS[me.skill].keep || store.waiting}
+								onclick={() => store.dispatch({ action: "setup", keep, drop })}
+								>Ready for the journey <span>→</span></button
 							>
+						{/if}
+					{:else if me.pendingInjuries}
+						<p class="instruction">Choose an injury. Its effect lasts for the rest of the expedition.</p>
+						<div class="injury-options">
+							{#each INJURIES.filter((i) => !me.injuries.includes(i)) as injury}<button
+									onclick={() => store.dispatch({ action: "injury", injury, die: dice[0] })}
+									disabled={injury === "leg" && dice.length !== 1}
+									><strong
+										><InjuryIcon {injury} />
+										{injury === "amnesia" ? "Amnesia" : `${injury[0]!.toUpperCase()}${injury.slice(1)} injury`}</strong
+									><span
+										>{{
+											leg: "Select one of your dice to lose after this round.",
+											arm: "You can no longer use equipment.",
+											eye: "Lose normal rerolls. Skill and equipment rerolls still work.",
+											amnesia: "Lose your character skill.",
+										}[injury]}</span
+									></button
+								>{/each}
+						</div>
+					{:else if s.pending}
+						{#if pendingMe}<p class="instruction">
+								{s.pending.kind === "lend"
+									? "A teammate asks to borrow a die. Select one to lend, or decline."
+									: s.pending.required
+										? "Choose exactly one die to reroll."
+										: "Select any dice to reroll. You may also stop."}
+							</p>
+							<button
+								class="primary"
+								disabled={store.waiting ||
+									(s.pending.required && dice.length !== 1) ||
+									(s.pending.kind === "lend" && dice.length !== 1)}
+								onclick={() => store.dispatch({ action: "respond", ids: dice })}
+								>{s.pending.kind === "lend" ? "Lend selected die" : "Reroll selected dice"}</button
+							>{#if !s.pending.required}<button class="secondary" onclick={() => store.dispatch({ action: "decline" })}
+									>{s.pending.kind === "lend" ? "Decline" : "Finish rerolls"}</button
+								>{/if}
 						{:else}<p class="instruction">
-								Waiting for {s.pendingHelpers?.map((i) => s.players[i]!.name).join(", ") || "the Gatherer"} to decide whether
-								to use power bars.
+								Waiting for {s.pending.players.map((i) => s.players[i]!.name).join(", ")} to resolve an equipment effect.
 							</p>{/if}
-					{/if}
-				{:else if s.phase === "eruption"}
-					<p class="instruction">
-						Journeys resolved. Dice comparisons are in the journal. The lava will spread one step to every adjacent
-						location.
-					</p>
-					<div class="eruption-count"><strong>{danger.length}</strong><span>locations threatened</span></div>
-					<button class="primary ember" disabled={seat !== 0} onclick={() => store.dispatch({ action: "erupt" })}
-						>{seat === 0 ? "Let the lava advance" : "Waiting for the expedition leader"} <span>→</span></button
-					>
-				{/if}
-				{#if me && s.phase !== "setup" && !s.outcome}
-					<section class="equipment-section">
-						<div class="section-title">
-							<h3>Your equipment</h3>
-							<span>{me.cards.length}</span>
-						</div>
-						{#if !me.cards.length}<p class="muted small">Find equipment along the trail.</p>{/if}
-						<div class="equipment-list">
-							{#each me.cards as c}{@const info = EQUIPMENT.find((e) => e.id === c.id)!}{@const available =
-									c.availableRound <= s.round &&
-									!me.injuries.includes("arm") &&
-									(info.phases as readonly number[]).includes(
-										s.phase === "planning" ? 2 : s.phase === "equipment" ? 4 : -1
-									) &&
-									!s.pending &&
-									(c.id !== "knife" || copyOptions.length > 0)}
+					{:else if s.phase === "planning"}
+						<p class="instruction">
+							Choose a destination. Share your intentions, but keep numbers and exact dice results private.
+						</p>
+						{#if dangerousRoute && !me.ready}<div class="warning" role="alert">
+								<p>
+									Lava will reach {terrain(cell(s, dangerousRoute).terrain).name} at the next eruption. Choose a safer destination.
+								</p>
 								<button
-									class:usable={available}
-									class:open={tool === c.id}
-									onclick={() => chooseTool(c.id)}
-									aria-expanded={tool === c.id}
-									><img src={art("equipment", EQUIPMENT.indexOf(info) + 1)} alt="" /><span
-										><strong>{info.name}</strong><span class="equipment-description">{info.description}</span><small
-											>{c.availableRound > s.round
-												? "Available next round"
-												: c.id === "knife" && !copyOptions.length
-													? "No equipment to copy this phase"
-													: c.used
-														? "One use left"
-														: available
-															? "Available now"
-															: `Use during ${info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}`}</small
-										></span
-									><span class="equipment-plus">{tool === c.id ? "−" : "+"}</span></button
+									class="text-button"
+									disabled={store.waiting || !!reserved[dangerousRoute]}
+									onclick={acceptDangerousRoute}>Choose this dangerous route</button
 								>
-							{/each}
-						</div>
-						{#if tool && me.cards.some((c) => c.id === tool)}{@const c = me.cards.find(
-								(c) => c.id === tool
-							)!}{@const info = EQUIPMENT.find((e) => e.id === tool)!}
-							<div class="tool-form">
-								{#if tool !== "knife"}<p>{info.description}</p>{/if}
-								{#if tool === "knife"}<fieldset class="visible-choices equipment-copy">
-										<legend>Copy equipment</legend>
-										{#each copyOptions as option}<button
-												class="copy-option"
-												aria-pressed={copied === option.id}
-												onclick={() => {
-													copied = option.id;
-													dice = [];
-													tilePicks = [];
-												}}
-											>
-												<EquipmentIcon id={option.id} /><span
-													><strong>{option.name}</strong>
-													<small
-														>{s.players
-															.filter(
-																(p, i) =>
-																	i !== seat && p.cards.some((c) => c.id === option.id && c.availableRound <= s.round)
-															)
-															.map((p) => p.name)
-															.join(", ")}</small
-													>
-													<span>{option.description}</span></span
-												>
-											</button>{:else}<p>No equipment can be copied in this phase.</p>{/each}
-									</fieldset>{/if}
-								{#if ["water", "lighter", "map"].includes(actionTool ?? "")}
-									<PlayerChoices
-										players={s.players}
-										{seat}
-										value={target}
-										disabled={store.waiting}
-										label={actionTool === "map"
-											? "Lend a die to"
-											: actionTool === "lighter"
-												? "Borrow a die from"
-												: "Reroll dice for"}
-										excludeSelf={actionTool === "map" || actionTool === "lighter"}
-										onchange={(i) => (target = i)}
-									/>
-								{/if}
-								{#if ["shovel", "torch", "tape", "machete", "compass", "map"].includes(actionTool ?? "")}<p
-										class="muted small"
-									>
-										Select {actionTool === "machete"
-											? "one or two dice"
-											: actionTool === "torch"
-												? "one or more dice to reroll"
-												: "the dice"} below the map. {dice.length} selected.
-									</p>{/if}
-								{#if actionTool === "shovel"}<fieldset class="visible-choices">
-										<legend>New value</legend>
-										<div class="choice-row">
-											{#each [1, 2, 3, 4, 5, 6] as n}<Die
-													die={{ ...(me.dice.find((d) => dice.includes(d.id)) ?? me.dice[0]!), face: n }}
-													selected={turnFace === n}
-													colorblind={store.colorblind}
-													onclick={() => (turnFace = n)}
-												/>{/each}
+							</div>{/if}
+						{#if destination}<div class="destination">
+								<img src={art("land", destination.id)} alt="" />
+								<div>
+									<span class="eyebrow">YOUR DESTINATION</span>
+									<h3>{destination.name}</h3>
+									<RequirementDisplay requirement={destination.requirement} colorblind={store.colorblind} />
+								</div>
+							</div>
+							<div class="journey-stats">
+								<div><strong>{currentRoute.length - 1}</strong><span>spaces</span></div>
+								<div><strong>{rerollAllowance(s, seat!, currentRoute)}</strong><span>rerolls</span></div>
+								<div><strong>{total(me, destination.id)}</strong><span>your total</span></div>
+							</div>{/if}
+						{#if currentRoute.some((id) => cell(s, id).eruption)}<p class="warning">
+								This route crosses an eruption marker. Moving here triggers extra lava.
+							</p>{/if}
+						{#if danger.includes(currentRoute.at(-1) ?? "")}<p class="warning">
+								This destination is threatened by the next eruption.
+							</p>{/if}
+						{#if reserved[currentRoute.at(-1)!]}<p class="instruction">
+								{reserved[currentRoute.at(-1)!]} has reserved this destination. Choose another location.
+							</p>{/if}
+						{#if !me.ready}<button
+								class="primary"
+								disabled={store.waiting || !!reserved[currentRoute.at(-1)!]}
+								onclick={confirmTravel}>Ready to travel <span>→</span></button
+							>{:else}<p class="confirmed">✓ Your route is set. Waiting for the team.</p>
+							<button class="text-button" onclick={() => store.dispatch({ action: "plan", path: me.path })}
+								>Change my route</button
+							>{/if}
+					{:else if s.phase === "reroll"}
+						<p class="instruction">Reroll in silence. Your dice actions are below the map.</p>
+					{:else if s.phase === "equipment"}
+						<p class="instruction">
+							Discuss equipment with your teammates. Your dice are still private and your destination is locked.
+						</p>
+						{#if !me.ready}<button
+								class="primary"
+								onclick={() => store.dispatch({ action: "ready" })}
+								disabled={store.waiting}>Ready to reveal <span>→</span></button
+							>{:else}<p class="confirmed">✓ Ready. Waiting for the team.</p>{/if}
+					{:else if s.phase === "movement"}
+						{#if s.activeResolution === null}<p class="instruction">
+								Choose who moves next. A route that triggers extra lava is often best resolved last.
+							</p>
+							{#if !me.resolved}<button class="primary" onclick={() => store.dispatch({ action: "beginMovement" })}
+									>Resolve my journey <span>→</span></button
+								>{:else}<p class="confirmed">✓ Your journey is resolved.</p>{/if}
+						{:else if resolvingPlayer && result}{@const criterion = terrain(
+								cell(s, resolvingPlayer.path.at(-1)!).terrain
+							).requirement}
+							<div class="comparison">
+								<span class="eyebrow">{result.success ? "CAN MOVE" : "MUST STAY"}</span><strong
+									>{result.own}<small> vs </small>{Math.max(...result.peers.map((p) => p.total))}</strong
+								>
+								<p>
+									{result.success
+										? `Lead of ${result.margin} · lose ${result.loss} stamina`
+										: `Tie or lower · lose ${result.loss} stamina`}
+								</p>
+								<StaminaGuide difficulty={s.difficulty} margin={result.margin} aid={resolvingPlayer.aid} />
+								<span class="muted small"
+									>Dice matching {terrain(cell(s, resolvingPlayer.path.at(-1)!).terrain).name}</span
+								>
+								{#each [{ seat: resolvingSeat!, total: result.own }, ...result.peers] as peer}
+									{@const counted = (peer.seat === -1 ? s.ghost : s.players[peer.seat]!.dice).filter(
+										(d) => !d.aside && matches(face(d), criterion)
+									)}
+									<div class="comparison-player">
+										<div class="comparison-name">
+											<span
+												>{peer.seat === seat
+													? "You"
+													: peer.seat === -1
+														? "Neutral dice"
+														: s.players[peer.seat]!.name}</span
+											><strong>{peer.total}</strong>
 										</div>
-									</fieldset>{/if}
-								{#if ["binoculars", "rope"].includes(actionTool ?? "")}<p class="muted small">
-										{#if actionTool === "binoculars"}Choose two empty land tiles anywhere on the map. No range limit. No
-											players, destination markers, equipment or eruption tokens; no village or lava tiles.
-										{:else}Choose one adjacent land location on the map.{/if}
-										<span
-											>{tilePicks.length} selected{tilePicks.length
-												? `: ${tilePicks.map((id) => terrain(cell(s, id).terrain).name).join(" + ")}`
-												: ""}.</span
-										>
-										{#if actionTool === "binoculars" && tileHint}<span role="status">{tileHint}</span>{/if}
-									</p>{/if}
+										<div class="comparison-dice">
+											{#each counted as d}<Die die={d} colorblind={store.colorblind} disabled />{:else}<span
+													>No matching dice</span
+												>{/each}
+										</div>
+										{#if peer.seat === resolvingSeat && resolvingPlayer.bonus}<span>+{resolvingPlayer.bonus} bonus</span
+											>{/if}
+									</div>
+								{/each}
+							</div>
+							{#if s.pendingHelpers?.includes(seat!)}
+								<p class="instruction">
+									Help {resolvingPlayer.name}? Each bar adds +1 to their total. Your decision resolves the journey
+									automatically.
+								</p>
+								<div class="powerbar-options">
+									{#each powerBarChoices(s, seat!) as count}<button
+											class="secondary"
+											disabled={store.waiting}
+											onclick={() => store.dispatch({ action: "help", count })}
+											>Use {count} bar{count > 1 ? "s" : ""} · total {result.own + count}</button
+										>{/each}
+								</div>
 								<button
-									class="secondary"
-									disabled={store.waiting ||
-										c.availableRound > s.round ||
-										(tool === "knife" && !copyOptions.some((option) => option.id === copied)) ||
-										me.injuries.includes("arm") ||
-										!(info.phases as readonly number[]).includes(
-											s.phase === "planning" ? 2 : s.phase === "equipment" ? 4 : -1
-										) ||
-										!!s.pending ||
-										(actionTool === "machete" && (dice.length < 1 || dice.length > 2)) ||
-										(actionTool === "torch" && dice.length === 0) ||
-										(actionTool === "shovel" && dice.length !== 1) ||
-										(actionTool === "binoculars" &&
-											(tilePicks.length !== 2 || tilePicks.some((id) => binocularReasons?.[id]))) ||
-										(actionTool === "rope" && tilePicks.length !== 1) ||
-										(actionTool === "map" && (dice.length !== 1 || target === seat))}
-									onclick={confirmTool}>Use {info.name}</button
+									class="primary"
+									disabled={store.waiting}
+									onclick={() => store.dispatch({ action: "help", count: 0 })}>Don't use bars</button
 								>
-								{#if hasSkill(me, "manager")}<details class="equipment-transfer">
-										<summary>Give this card…</summary>
-										<p class="muted small">
-											Transfer the {info.name} card to a teammate using your Equipment Manager ability.
-										</p>
+							{:else}<p class="instruction">
+									Waiting for {s.pendingHelpers?.map((i) => s.players[i]!.name).join(", ") || "the Gatherer"} to decide whether
+									to use power bars.
+								</p>{/if}
+						{/if}
+					{:else if s.phase === "eruption"}
+						<p class="instruction">
+							Journeys resolved. Dice comparisons are in the journal. The lava will spread one step to every adjacent
+							location.
+						</p>
+						<div class="eruption-count"><strong>{danger.length}</strong><span>locations threatened</span></div>
+						<button class="primary ember" disabled={seat !== 0} onclick={() => store.dispatch({ action: "erupt" })}
+							>{seat === 0 ? "Let the lava advance" : "Waiting for the expedition leader"} <span>→</span></button
+						>
+					{/if}
+					{#if me && s.phase !== "setup" && !s.outcome}
+						<section class="equipment-section">
+							<div class="section-title">
+								<h3>Your equipment</h3>
+								<span>{me.cards.length}</span>
+							</div>
+							{#if !me.cards.length}<p class="muted small">Find equipment along the trail.</p>{/if}
+							<div class="equipment-list">
+								{#each me.cards as c}{@const info = EQUIPMENT.find((e) => e.id === c.id)!}{@const available =
+										c.availableRound <= s.round &&
+										!me.injuries.includes("arm") &&
+										(info.phases as readonly number[]).includes(
+											s.phase === "planning" ? 2 : s.phase === "equipment" ? 4 : -1
+										) &&
+										!s.pending &&
+										(c.id !== "knife" || copyOptions.length > 0)}
+									<button
+										class:usable={available}
+										class:open={tool === c.id}
+										onclick={() => chooseTool(c.id)}
+										aria-expanded={tool === c.id}
+										><img src={art("equipment", EQUIPMENT.indexOf(info) + 1)} alt="" /><span
+											><strong>{info.name}</strong><span class="equipment-description">{info.description}</span><small
+												>{c.availableRound > s.round
+													? "Available next round"
+													: c.id === "knife" && !copyOptions.length
+														? "No equipment to copy this phase"
+														: c.used
+															? "One use left"
+															: available
+																? "Available now"
+																: `Use during ${info.phases.map((p) => (p === 2 ? "planning" : "equipment")).join(" or ")}`}</small
+											></span
+										><span class="equipment-plus">{tool === c.id ? "−" : "+"}</span></button
+									>
+								{/each}
+							</div>
+							{#if tool && me.cards.some((c) => c.id === tool)}{@const c = me.cards.find(
+									(c) => c.id === tool
+								)!}{@const info = EQUIPMENT.find((e) => e.id === tool)!}
+								<div class="tool-form">
+									{#if tool !== "knife"}<p>{info.description}</p>{/if}
+									{#if tool === "knife"}<fieldset class="visible-choices equipment-copy">
+											<legend>Copy equipment</legend>
+											{#each copyOptions as option}<button
+													class="copy-option"
+													aria-pressed={copied === option.id}
+													onclick={() => {
+														copied = option.id;
+														dice = [];
+														tilePicks = [];
+													}}
+												>
+													<EquipmentIcon id={option.id} /><span
+														><strong>{option.name}</strong>
+														<small
+															>{s.players
+																.filter(
+																	(p, i) =>
+																		i !== seat && p.cards.some((c) => c.id === option.id && c.availableRound <= s.round)
+																)
+																.map((p) => p.name)
+																.join(", ")}</small
+														>
+														<span>{option.description}</span></span
+													>
+												</button>{:else}<p>No equipment can be copied in this phase.</p>{/each}
+										</fieldset>{/if}
+									{#if ["water", "lighter", "map"].includes(actionTool ?? "")}
 										<PlayerChoices
 											players={s.players}
 											{seat}
-											value={giveTarget}
-											label="Give card to"
-											excludeSelf
+											value={target}
 											disabled={store.waiting}
-											onchange={(i) => (giveTarget = i)}
+											label={actionTool === "map"
+												? "Lend a die to"
+												: actionTool === "lighter"
+													? "Borrow a die from"
+													: "Reroll dice for"}
+											excludeSelf={actionTool === "map" || actionTool === "lighter"}
+											onchange={(i) => (target = i)}
 										/>
-										<button
-											class="secondary"
-											disabled={store.waiting || !!s.pending || !["planning", "equipment"].includes(s.phase)}
-											onclick={() => store.dispatch({ action: "give", id: tool, target: giveTarget })}
-											>Give {info.name} card</button
+									{/if}
+									{#if ["shovel", "torch", "tape", "machete", "compass", "map"].includes(actionTool ?? "")}<p
+											class="muted small"
 										>
-									</details>{/if}
-							</div>
-						{/if}
-					</section>
-				{/if}
-				{#if focusTerrain && s.phase !== "setup"}<div class="location-detail">
-						<span class="eyebrow">INSPECTING THE TRAIL</span><strong>{focusTerrain.name}</strong>
-						<img class="inspected-art" src={art("land", focusTerrain.id)} alt={focusTerrain.name} /><RequirementDisplay
-							requirement={focusTerrain.requirement}
-							colorblind={store.colorblind}
-						/>
-						{#if reserved[focusId]}<span
-								>Reserved by {reserved[focusId]}. Choose another destination; you may still pass through.</span
-							>{/if}
-						{#if focus?.lava}<span>Lava: cannot enter or cross.</span>
-						{:else}
-							{#if focusTerrain.reroll}<span>↻ +1 reroll when chosen as your destination.</span>{/if}
-							{#if focus?.equipment}<span>Equipment: finish your move here to draw a card, usable next round.</span
+											Select {actionTool === "machete"
+												? "one or two dice"
+												: actionTool === "torch"
+													? "one or more dice to reroll"
+													: "the dice"} below the map. {dice.length} selected.
+										</p>{/if}
+									{#if actionTool === "shovel"}<fieldset class="visible-choices">
+											<legend>New value</legend>
+											<div class="choice-row">
+												{#each [1, 2, 3, 4, 5, 6] as n}<Die
+														die={{ ...(me.dice.find((d) => dice.includes(d.id)) ?? me.dice[0]!), face: n }}
+														selected={turnFace === n}
+														colorblind={store.colorblind}
+														onclick={() => (turnFace = n)}
+													/>{/each}
+											</div>
+										</fieldset>{/if}
+									{#if ["binoculars", "rope"].includes(actionTool ?? "")}<p class="muted small">
+											{#if actionTool === "binoculars"}Choose two empty land tiles anywhere on the map. No range limit.
+												No players, destination markers, equipment or eruption tokens; no village or lava tiles.
+											{:else}Choose one adjacent land location on the map.{/if}
+											<span
+												>{tilePicks.length} selected{tilePicks.length
+													? `: ${tilePicks.map((id) => terrain(cell(s, id).terrain).name).join(" + ")}`
+													: ""}.</span
+											>
+											{#if actionTool === "binoculars" && tileHint}<span role="status">{tileHint}</span>{/if}
+										</p>{/if}
+									<button
+										class="secondary"
+										disabled={store.waiting ||
+											c.availableRound > s.round ||
+											(tool === "knife" && !copyOptions.some((option) => option.id === copied)) ||
+											me.injuries.includes("arm") ||
+											!(info.phases as readonly number[]).includes(
+												s.phase === "planning" ? 2 : s.phase === "equipment" ? 4 : -1
+											) ||
+											!!s.pending ||
+											(actionTool === "machete" && (dice.length < 1 || dice.length > 2)) ||
+											(actionTool === "torch" && dice.length === 0) ||
+											(actionTool === "shovel" && dice.length !== 1) ||
+											(actionTool === "binoculars" &&
+												(tilePicks.length !== 2 || tilePicks.some((id) => binocularReasons?.[id]))) ||
+											(actionTool === "rope" && tilePicks.length !== 1) ||
+											(actionTool === "map" && (dice.length !== 1 || target === seat))}
+										onclick={confirmTool}>Use {info.name}</button
+									>
+									{#if hasSkill(me, "manager")}<details class="equipment-transfer">
+											<summary>Give this card…</summary>
+											<p class="muted small">
+												Transfer the {info.name} card to a teammate using your Equipment Manager ability.
+											</p>
+											<PlayerChoices
+												players={s.players}
+												{seat}
+												value={giveTarget}
+												label="Give card to"
+												excludeSelf
+												disabled={store.waiting}
+												onchange={(i) => (giveTarget = i)}
+											/>
+											<button
+												class="secondary"
+												disabled={store.waiting || !!s.pending || !["planning", "equipment"].includes(s.phase)}
+												onclick={() => store.dispatch({ action: "give", id: tool, target: giveTarget })}
+												>Give {info.name} card</button
+											>
+										</details>{/if}
+								</div>
+							{/if}
+						</section>
+					{/if}
+					{#if focusTerrain && s.phase !== "setup"}<div class="location-detail">
+							<span class="eyebrow">INSPECTING THE TRAIL</span><strong>{focusTerrain.name}</strong>
+							<img
+								class="inspected-art"
+								src={art("land", focusTerrain.id)}
+								alt={focusTerrain.name}
+							/><RequirementDisplay requirement={focusTerrain.requirement} colorblind={store.colorblind} />
+							{#if reserved[focusId]}<span
+									>Reserved by {reserved[focusId]}. Choose another destination; you may still pass through.</span
 								>{/if}
-							{#if focus?.eruption}<span
-									>Eruption: entering or crossing triggers {focus.eruption} extra eruption{focus.eruption === 1
-										? ""
-										: "s"}. One-time trigger.</span
-								>{/if}
-							{#if focus && threatened(s).includes(focus.id)}<span>The next eruption will cover this location.</span
-								>{/if}
-							{#if focusTerrain.kind === "village"}<span
-									>Village: any house-marked location counts toward the team’s escape.</span
-								>{/if}
-						{/if}
-					</div>{/if}
+							{#if focus?.lava}<span>Lava: cannot enter or cross.</span>
+							{:else}
+								{#if focusTerrain.reroll}<span>↻ +1 reroll when chosen as your destination.</span>{/if}
+								{#if focus?.equipment}<span>Equipment: finish your move here to draw a card, usable next round.</span
+									>{/if}
+								{#if focus?.eruption}<span
+										>Eruption: entering or crossing triggers {focus.eruption} extra eruption{focus.eruption === 1
+											? ""
+											: "s"}. One-time trigger.</span
+									>{/if}
+								{#if focus && threatened(s).includes(focus.id)}<span>The next eruption will cover this location.</span
+									>{/if}
+								{#if focusTerrain.kind === "village"}<span
+										>Village: any house-marked location counts toward the team’s escape.</span
+									>{/if}
+							{/if}
+						</div>{/if}
+				</div>
 			</aside>
 		</div>
 		{#if revealed || s.players.some((p, i) => i !== seat && p.dice.some((d) => d.face > 0))}<section

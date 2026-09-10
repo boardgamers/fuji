@@ -136,7 +136,9 @@
 <style>
 	.expedition-chat {
 		border-top: 1px solid #e6c78030;
-		padding: 20px 24px;
+		padding: 12px;
+		border: 1px solid #e6c78030;
+		border-radius: 3px;
 		background: #102a23;
 		min-width: 0;
 	}
@@ -152,7 +154,7 @@
 		font-weight: 500;
 	}
 	.chat-messages {
-		max-height: 260px;
+		height: clamp(140px, 22vh, 250px);
 		overflow: auto;
 		overscroll-behavior: contain;
 		overflow-anchor: none;
@@ -232,7 +234,7 @@
 		color: #142a22;
 		border: 0;
 		border-radius: 5px;
-		padding: 10px 18px;
+		padding: 8px 12px;
 		font-weight: 600;
 		cursor: pointer;
 	}

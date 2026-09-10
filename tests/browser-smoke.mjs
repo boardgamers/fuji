@@ -1,5 +1,6 @@
 import { chromium } from "playwright";
 import fs from "node:fs";
+import { initGame } from "../packages/engine/dist/index.js";
 fs.mkdirSync("work/browser", { recursive: true });
 
 (async () => {
@@ -7,6 +8,12 @@ fs.mkdirSync("work/browser", { recursive: true });
 	const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 	const errors = [];
 	page.on("pageerror", (e) => errors.push(e.message));
+	await page.addInitScript(
+		(game) => {
+			localStorage.setItem("fuji-dev-v1", JSON.stringify(game));
+		},
+		initGame(3, { skillAssignment: "fixed" }, "first-light")
+	);
 	await page.goto("http://127.0.0.1:5187");
 	await page.waitForSelector(".map");
 	if (

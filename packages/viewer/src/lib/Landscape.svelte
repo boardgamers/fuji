@@ -137,13 +137,13 @@
 							? " · Lava: cannot enter or cross"
 							: `${data.reroll ? " · +1 reroll at this destination" : ""}${c.equipment ? " · Equipment: finish here to draw a card usable next round" : ""}${c.eruption ? ` · Entering or crossing triggers ${c.eruption} extra eruption(s)` : ""}${danger.includes(c.id) ? " · Covered by the next eruption" : ""}`}</title
 					>
-					<rect x={x(c.id) - 44} y={y(c.id) - 35} width="88" height="70" rx="13" class="land-base" />
+					<rect x={x(c.id) - 47} y={y(c.id) - 38} width="94" height="76" rx="13" class="land-base" />
 					<image
 						href={art("land", c.lava ? 1 : c.terrain)}
-						x={x(c.id) - 47}
-						y={y(c.id) - 39}
-						width="94"
-						height="78"
+						x={x(c.id) - 49}
+						y={y(c.id) - 41}
+						width="98"
+						height="82"
 						preserveAspectRatio="xMidYMid slice"
 						mask="url(#land-mask)"
 						class="tile-art"
@@ -152,7 +152,7 @@
 							d={`M ${x(c.id) - 35} ${y(c.id) + 15} l 20 -12 -5 -14 25 4 18 -16 M ${x(c.id) + 5} ${y(c.id) - 8} l 12 18 -8 15`}
 							class="lava-crack"
 						/>{/if}
-					<rect x={x(c.id) - 44} y={y(c.id) - 35} width="88" height="70" rx="13" class="location-ring" />
+					<rect x={x(c.id) - 47} y={y(c.id) - 38} width="94" height="76" rx="13" class="location-ring" />
 					{#if data.kind === "village"}<g
 							class="village-marker"
 							transform={`translate(${x(c.id)},${y(c.id) - 32})`}
@@ -181,21 +181,21 @@
 							<path d="M-4 -2 -2 3 0 0 3 5 4 -2 M0 -6V-10 M-5 -6 -8 -9 M5 -6 8 -9" class="eruption-lava" />
 						</g>{/if}
 					{#if danger.includes(c.id)}<rect
-							x={x(c.id) - 44}
-							y={y(c.id) - 35}
-							width="88"
-							height="70"
+							x={x(c.id) - 47}
+							y={y(c.id) - 38}
+							width="94"
+							height="76"
 							rx="13"
 							class="danger-ring"
 						/>{/if}
 					{#if !c.lava && ["land", "village"].includes(data.kind)}<rect
-							x={x(c.id) - 40}
-							y={y(c.id) + 13}
-							width="80"
+							x={x(c.id) - 43}
+							y={y(c.id) + 16}
+							width="86"
 							height="18"
 							rx="4"
 							fill="#112820e6"
-						/><RequirementSymbols requirement={data.requirement} x={x(c.id)} y={y(c.id) + 22} {colorblind} />{/if}
+						/><RequirementSymbols requirement={data.requirement} x={x(c.id)} y={y(c.id) + 25} {colorblind} />{/if}
 					{#if data.reroll && !c.lava}<text x={x(c.id) - 34} y={y(c.id) + (c.eruption ? 9 : -16)} class="reroll-mark"
 							>↻</text
 						>{/if}

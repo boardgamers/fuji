@@ -6,7 +6,6 @@
 
 	let list: HTMLDivElement | undefined = $state();
 	let pinned = true;
-	let lastRead = "";
 	const colors = ["#e6c780", "#83ca90", "#80c5d7", "#d999b8"];
 	const notice = $derived(
 		chat.disabled
@@ -27,10 +26,7 @@
 			return r.bottom <= Math.min(bounds.bottom, window.innerHeight) && r.bottom > Math.max(bounds.top, 0);
 		});
 		const id = latest?.dataset.messageId;
-		if (id && id !== lastRead) {
-			lastRead = id;
-			chat.read(id);
-		}
+		if (id) chat.markRead(id);
 	}
 	$effect(() => {
 		const element = list;

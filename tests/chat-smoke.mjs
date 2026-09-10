@@ -62,6 +62,38 @@ try {
 	assert.equal(await panel.getByText("Edited lobby message").count(), 0);
 	assert.equal(await panel.getByText("Reconnected").count(), 1);
 	assert.equal(await page.getByRole("textbox", { name: "Chat message" }).inputValue(), "Still drafting");
+	// Once the newest message was read, scrolling through older history must be silent.
+	await page.evaluate(() =>
+		window.bridge.emit(
+			"chat:messages",
+			Array.from({ length: 40 }, (_, i) => ({
+				_id: (100 + i).toString(16).padStart(8, "0") + "0000000000000000",
+				text: `Message ${i}`,
+				type: "text",
+			}))
+		)
+	);
+	await page.locator(".chat-messages").evaluate((el) => {
+		el.scrollTop = el.scrollHeight;
+		el.dispatchEvent(new Event("scroll"));
+	});
+	await page.waitForTimeout(650);
+	const receipts = await page.evaluate(() => window.events.filter((e) => e.name === "chat:read").length);
+	for (const top of [0, 200, 500, 100, 99999, 0, 99999]) {
+		await page.locator(".chat-messages").evaluate((el, top) => {
+			el.scrollTop = top;
+			el.dispatchEvent(new Event("scroll"));
+		}, top);
+	}
+	await page.getByRole("button", { name: "Collapse chat" }).click();
+	await page.getByRole("button", { name: "Expand chat" }).click();
+	await page.waitForTimeout(650);
+	assert.equal(await page.evaluate(() => window.events.filter((e) => e.name === "chat:read").length), receipts);
+	await page.evaluate(() =>
+		window.bridge.emit("chat:appended", [{ _id: "0000008c0000000000000000", text: "New arrival", type: "text" }])
+	);
+	await page.waitForTimeout(650);
+	assert.equal(await page.evaluate(() => window.events.filter((e) => e.name === "chat:read").length), receipts + 1);
 	await page.screenshot({ path: "work/chat-desktop.png" });
 	await page.evaluate(() => window.bridge.emit("chat:disabled", true));
 	assert.equal(await page.getByRole("textbox", { name: "Chat message" }).count(), 0);

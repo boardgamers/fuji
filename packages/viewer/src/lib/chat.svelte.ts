@@ -23,6 +23,22 @@ export class Chat {
 	private timer: ReturnType<typeof setTimeout> | undefined;
 	send: (data: { text: string; requestId: string }) => void = () => {};
 	read: (messageId: string) => void = () => {};
+	private newestRead = "";
+	private readTimer: ReturnType<typeof setTimeout> | undefined;
+	markRead(messageId: string) {
+		// BGS message IDs are time-ordered ObjectIds. Keep the watermark even when
+		// older messages are deleted, history is replaced, or the panel is collapsed.
+		if (!/^[0-9a-f]{24}$/i.test(messageId)) return;
+		const id = messageId.toLowerCase();
+		if (id <= this.newestRead) return;
+		this.newestRead = id;
+		// Coalesce newly visible messages without postponing indefinitely while scrolling.
+		if (this.readTimer) return;
+		this.readTimer = setTimeout(() => {
+			this.readTimer = undefined;
+			this.read(this.newestRead);
+		}, 500);
+	}
 	replace(messages: ChatMessage[]) {
 		this.enabled = true;
 		this.messages = messages;
@@ -53,6 +69,7 @@ export class Chat {
 		} else this.error = result.error || "Message could not be sent. Please try again.";
 	}
 	destroy() {
+		clearTimeout(this.readTimer);
 		clearTimeout(this.timer);
 	}
 }

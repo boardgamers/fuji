@@ -106,27 +106,26 @@
 				{/each}
 			</div>
 			{#if chat.canSend && !chat.disabled}
-				<form
-					onsubmit={(event) => {
-						event.preventDefault();
-						chat.submit();
-					}}
-				>
-					<textarea
+				<div class="chat-composer">
+					<input
+						type="text"
 						aria-label="Chat message"
 						placeholder="Message your teammates…"
-						rows="2"
 						bind:value={chat.draft}
 						onkeydown={(event) => {
 							if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
 								event.preventDefault();
 								chat.submit();
 							}
-						}}></textarea>
-					<button class="chat-send" disabled={!!chat.pending || !chat.draft.trim()} type="submit"
-						>{chat.pending ? "Sending…" : "Send"}</button
+						}}
+					/>
+					<button
+						class="chat-send"
+						disabled={!!chat.pending || !chat.draft.trim()}
+						type="button"
+						onclick={() => chat.submit()}>{chat.pending ? "Sending…" : "Send"}</button
 					>
-				</form>
+				</div>
 			{:else}<p class="notice">{notice}</p>{/if}
 			{#if chat.error}<p class="chat-error" role="alert">{chat.error}</p>{/if}
 		{/if}
@@ -208,33 +207,39 @@
 	.notice {
 		color: #a5bdb0;
 	}
-	form {
+	.chat-composer {
 		display: flex;
-		gap: 10px;
-		align-items: stretch;
+		gap: 8px;
+		align-items: center;
 	}
-	textarea {
+	input {
 		flex: 1;
 		min-width: 0;
 		background: #0b211c;
 		color: #f5ebce;
 		border: 1px solid #6d8976;
 		border-radius: 5px;
-		padding: 10px;
+		padding: 4px 8px;
 		font: inherit;
 		font-size: 15px;
-		resize: vertical;
 	}
-	textarea:focus-visible {
+	input:focus-visible {
 		outline: 2px solid #e6c780;
 		outline-offset: 2px;
+	}
+	input,
+	.chat-send {
+		box-sizing: border-box;
+		height: 34px;
+		line-height: 20px;
 	}
 	.chat-send {
 		background: #e6c780;
 		color: #142a22;
 		border: 0;
 		border-radius: 5px;
-		padding: 8px 12px;
+		padding: 4px 12px;
+		white-space: nowrap;
 		font-weight: 600;
 		cursor: pointer;
 	}

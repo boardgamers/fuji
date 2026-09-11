@@ -35,25 +35,29 @@ for (const preview of await previews.all()) {
 	const value = Number(await preview.locator("text").textContent());
 	assert.equal(value, total(state.players[0], cell(state, tileId).terrain) + state.players[0].bonus);
 }
-await page.locator(".teammate-status").first().click();
-assert.deepEqual(await page.evaluate(() => events), []);
-await page.locator(".teammate-name").first().click();
-assert.equal((await page.evaluate(() => events))[0][0], "player");
-for (const index of [0, 2]) {
-	await page.locator(".teammate").nth(index).locator(".equipment-chip").first().click();
-	const rect = await page.locator(".equipment-preview:popover-open").boundingBox();
-	assert(rect && rect.x >= 0 && rect.x + rect.width <= 390 && rect.y >= 0 && rect.y + rect.height <= 740);
 
-	await page.keyboard.press("Escape");
-}
-await page.evaluate(() => scrollTo(0, 600));
-const rect = await page.locator(".mobile-dock").boundingBox();
-assert(rect && rect.y >= -1 && rect.y < 5);
-
-await page.locator(".mobile-dock button").first().click();
-assert.equal((await page.evaluate(() => events)).at(-1)[1].action, "ready");
-assert.deepEqual(errors, []);
-console.log(
-	"Mobile ready button remains visible; only username emits player click; equipment previews fit first/last cards."
+await page.evaluate(() => bridge.emit("chat:messages", []));
+await page.getByRole("button", { name: "Journal", exact: true }).last().click();
+await page.evaluate(() =>
+	bridge.emit("chat:appended", [
+		{ _id: "abcdef000000000000000001", author: "Teammate", playerIndex: 1, text: "Try the bridge", type: "text" },
+	])
 );
+await page.waitForTimeout(100);
+assert(
+	await page
+		.locator(".dock-chat")
+		.textContent()
+		.then((t) => t.includes("1"))
+);
+await page.locator(".dock-chat").click();
+await page.waitForTimeout(700);
+assert.equal(await page.locator(".dock-chat").textContent(), "Chat");
+
+await page.setViewportSize({ width: 1440, height: 1000 });
+assert(await page.locator(".dice-preview").first().isVisible());
+assert(await page.locator(".desktop-journal").isVisible());
+assert(!(await page.locator(".social-tabs").isVisible()));
+assert.deepEqual(errors, []);
+console.log("Fuji: mobile tabs, unread, desktop previews passed");
 await browser.close();

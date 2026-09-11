@@ -319,7 +319,7 @@
 
 <style>
 	.dice-preview {
-		display: none;
+		display: block;
 		pointer-events: none;
 	}
 	.dice-preview rect {

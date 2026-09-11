@@ -66,6 +66,17 @@
 	let drop = $state("");
 	let help = $state(false);
 	let journal = $state(true);
+	let socialTab = $state("chat");
+	$effect(() => {
+		store.chat.playerIndex = seat;
+	});
+	function openChat() {
+		socialTab = "chat";
+		store.chat.open = true;
+		requestAnimationFrame(() =>
+			document.querySelector(".expedition-chat")?.scrollIntoView({ behavior: "smooth", block: "center" })
+		);
+	}
 	const journalEntries = $derived(
 		store.journal
 			.filter((entry) => !entry.detail)
@@ -378,6 +389,37 @@
 	);
 </script>
 
+{#snippet journalPanel(location: string)}
+	<section class="journal inline-journal" aria-label="Expedition journal">
+		<header class="journal-header">
+			<h2>Expedition journal</h2>
+			<button
+				class="text-button"
+				aria-label={journal ? "Collapse journal" : "Expand journal"}
+				aria-expanded={journal}
+				aria-controls={`journal-entries-${location}`}
+				onclick={() => (journal = !journal)}>{journal ? "−" : "+"}</button
+			>
+		</header>
+		{#if journal}
+			<ol id={`journal-entries-${location}`} tabindex="0" aria-label="Journal entries">
+				{#each journalEntries as e, i}
+					{#if i === 0 || journalEntries[i - 1]!.round !== e.round}
+						<li class="journal-divider">
+							<h3>{e.round === 0 ? "Preparation" : `Round ${String(e.round).padStart(2, "0")}`}</h3>
+						</li>
+					{/if}
+					<li class:latest={i === 0} class:journal-phase={e.type === "phase"}>
+						{#if e.type === "phase"}
+							<h4><span aria-hidden="true">◇</span>{e.text}</h4>
+						{:else}<div class="journal-entry">
+								<JournalEntry entry={e} colorblind={store.colorblind} />
+							</div>{/if}
+					</li>{/each}
+			</ol>{/if}
+	</section>
+{/snippet}
+
 {#if s}
 	<main class="expedition">
 		<div class="game-tools">
@@ -394,22 +436,21 @@
 								: s.phase}</span
 				>
 			</div>
-			{#if store.chat.enabled}<button
-					class="text-button"
-					onclick={() => {
-						store.chat.open = true;
-						requestAnimationFrame(() =>
-							document.querySelector(".expedition-chat")?.scrollIntoView({ behavior: "smooth", block: "center" })
-						);
-					}}>Chat</button
+			{#if store.chat.enabled}<button class="text-button" onclick={openChat}
+					>Chat{store.chat.unread ? ` · ${store.chat.unread}` : ""}</button
 				>{/if}
 			<button class="text-button" onclick={() => (help = true)} aria-label="Open playing guide">Help</button>
 			<button
 				class="text-button"
 				onclick={() => {
 					journal = true;
+					socialTab = "journal";
 					requestAnimationFrame(() =>
-						document.querySelector(".inline-journal")?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+						document
+							.querySelector(
+								window.innerWidth <= 850 && store.chat.enabled ? ".mobile-journal .inline-journal" : ".inline-journal"
+							)
+							?.scrollIntoView({ behavior: "smooth", block: "nearest" })
 					);
 				}}>Journal</button
 			>
@@ -502,6 +543,9 @@
 						(s.phase === "equipment" && me.ready && !canReopenChoice(s, seat!)) ||
 						(s.phase === "eruption" && seat !== 0)}>{mobileLabel} →</button
 				>
+				{#if store.chat.enabled}<button class="dock-chat" onclick={openChat}
+						>Chat{store.chat.unread ? ` · ${store.chat.unread}` : ""}</button
+					>{/if}
 			</div>{/if}
 		<section class="team" aria-label="Your expedition">
 			{#each s.players as p, i}
@@ -740,37 +784,29 @@
 							</div>{/if}
 					{/if}
 				</section>
-				<section class="journal inline-journal" aria-label="Expedition journal">
-					<header class="journal-header">
-						<h2>Expedition journal</h2>
-						<button
-							class="text-button"
-							aria-label={journal ? "Collapse journal" : "Expand journal"}
-							aria-expanded={journal}
-							aria-controls="journal-entries"
-							onclick={() => (journal = !journal)}>{journal ? "−" : "+"}</button
-						>
-					</header>
-					{#if journal}
-						<ol id="journal-entries" tabindex="0" aria-label="Journal entries">
-							{#each journalEntries as e, i}
-								{#if i === 0 || journalEntries[i - 1]!.round !== e.round}
-									<li class="journal-divider">
-										<h3>{e.round === 0 ? "Preparation" : `Round ${String(e.round).padStart(2, "0")}`}</h3>
-									</li>
-								{/if}
-								<li class:latest={i === 0} class:journal-phase={e.type === "phase"}>
-									{#if e.type === "phase"}
-										<h4><span aria-hidden="true">◇</span>{e.text}</h4>
-									{:else}<div class="journal-entry">
-											<JournalEntry entry={e} colorblind={store.colorblind} />
-										</div>{/if}
-								</li>{/each}
-						</ol>{/if}
-				</section>
+				<div class:desktop-journal={store.chat.enabled}>{@render journalPanel("desktop")}</div>
 			</div>
 			<aside class="journey">
-				<ChatPanel {store} />
+				<div class="social-panel" data-tab={socialTab}>
+					{#if store.chat.enabled}<nav class="social-tabs" aria-label="Chat and journal">
+							<button
+								class:active={socialTab === "chat"}
+								onclick={() => {
+									socialTab = "chat";
+									store.chat.open = true;
+								}}>Chat{store.chat.unread ? ` · ${store.chat.unread}` : ""}</button
+							>
+							<button
+								class:active={socialTab === "journal"}
+								onclick={() => {
+									socialTab = "journal";
+									journal = true;
+								}}>Journal</button
+							>
+						</nav>{/if}
+					<ChatPanel {store} />
+					{#if store.chat.enabled}<div class="mobile-journal">{@render journalPanel("mobile")}</div>{/if}
+				</div>
 				<div class="journey-actions">
 					<h2 class="sr-only">{nextAction}</h2>
 					<nav class="phase-track" aria-label="Round phases">

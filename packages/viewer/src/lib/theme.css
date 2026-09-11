@@ -918,7 +918,7 @@ h3 {
 		max-height: none;
 		display: contents;
 	}
-	.journey > .expedition-chat {
+	.journey > .social-panel {
 		grid-row: 1;
 	}
 	.world-column {
@@ -1704,5 +1704,45 @@ button.equipment-chip {
 @media (max-width: 850px) {
 	.mobile-dock button {
 		min-height: 40px;
+	}
+}
+
+.social-tabs,
+.mobile-journal {
+	display: none;
+}
+@media (max-width: 850px) {
+	.desktop-journal {
+		display: none;
+	}
+	.social-tabs {
+		display: flex;
+		gap: 6px;
+		border-bottom: 1px solid var(--line);
+		padding-bottom: 6px;
+	}
+	.social-tabs button {
+		background: transparent;
+		color: var(--text);
+		border: 1px solid #58756a;
+		padding: 6px 14px;
+	}
+	.social-tabs button.active {
+		color: #f1d584;
+		border-color: #f1d584;
+	}
+	.social-panel[data-tab="journal"] .expedition-chat {
+		display: none;
+	}
+	.social-panel[data-tab="journal"] .mobile-journal {
+		display: block;
+	}
+	.mobile-journal #journal-entries-mobile {
+		max-height: 280px;
+		overflow-y: auto;
+	}
+	.mobile-dock .dock-chat {
+		flex-shrink: 0;
+		padding: 8px;
 	}
 }

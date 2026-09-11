@@ -22,6 +22,7 @@
 	function visibleRead() {
 		if (!list || !chat.open || document.visibilityState !== "visible" || !document.hasFocus()) return;
 		const bounds = list.getBoundingClientRect();
+		if (!bounds.width || !bounds.height) return;
 		const rows = [...list.querySelectorAll<HTMLElement>("[data-message-id]")];
 		const latest = rows.reverse().find((row) => {
 			const r = row.getBoundingClientRect();

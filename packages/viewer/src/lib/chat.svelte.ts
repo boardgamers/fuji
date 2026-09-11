@@ -24,8 +24,18 @@ export class Chat {
 	send: (data: { text: string; requestId: string }) => void = () => {};
 	read: (messageId: string) => void = () => {};
 	private newestRead = "";
+	unreadIds: string[] = $state([]);
+	playerIndex: number | undefined;
+	get unread() {
+		return this.unreadIds.filter((id) => this.messages.some((m) => m._id === id)).length;
+	}
 	private readTimer: ReturnType<typeof setTimeout> | undefined;
 	markRead(messageId: string) {
+		const index = this.messages.findIndex((m) => m._id === messageId);
+		if (index >= 0) {
+			const seen = new Set(this.messages.slice(0, index + 1).map((m) => m._id));
+			this.unreadIds = this.unreadIds.filter((id) => !seen.has(id));
+		}
 		// BGS message IDs are time-ordered ObjectIds. Keep the watermark even when
 		// older messages are deleted, history is replaced, or the panel is collapsed.
 		if (!/^[0-9a-f]{24}$/i.test(messageId)) return;
@@ -42,8 +52,20 @@ export class Chat {
 	replace(messages: ChatMessage[]) {
 		this.enabled = true;
 		this.messages = messages;
+		this.unreadIds = [];
 	}
 	append(messages: ChatMessage[]) {
+		this.unreadIds = [
+			...this.unreadIds,
+			...messages
+				.filter(
+					(m) =>
+						m._id &&
+						!this.messages.some((old) => old._id === m._id) &&
+						(m.playerIndex === undefined || m.playerIndex !== this.playerIndex)
+				)
+				.map((m) => m._id!),
+		];
 		this.messages = [
 			...this.messages,
 			...messages.filter((m) => !m._id || !this.messages.some((old) => old._id === m._id)),

@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
 const root = process.cwd() + "/";
-const { initGame, applyMove, stripSecret } = await import(root + "packages/engine/dist/index.js");
+const { initGame, applyMove, stripSecret, total, cell } = await import(root + "packages/engine/dist/index.js");
 let state = initGame(3, { skillAssignment: "fixed" }, "mobile-readiness");
 for (let i = 0; i < 3; i++)
 	if (!state.players[i].setupDone)
@@ -28,6 +28,13 @@ await page.evaluate(
 	},
 	stripSecret(state, 0)
 );
+const previews = page.locator(".dice-preview");
+await previews.first().waitFor({ state: "visible" });
+for (const preview of await previews.all()) {
+	const tileId = await preview.getAttribute("data-location");
+	const value = Number(await preview.locator("text").textContent());
+	assert.equal(value, total(state.players[0], cell(state, tileId).terrain) + state.players[0].bonus);
+}
 await page.locator(".teammate-status").first().click();
 assert.deepEqual(await page.evaluate(() => events), []);
 await page.locator(".teammate-name").first().click();

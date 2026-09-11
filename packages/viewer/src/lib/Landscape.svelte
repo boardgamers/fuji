@@ -1,5 +1,14 @@
 <script lang="ts">
-	import { terrain, cell, distance, threatened, CHARACTER_COLORS, requirementLabel, type View } from "fuji-engine";
+	import {
+		terrain,
+		total,
+		cell,
+		distance,
+		threatened,
+		CHARACTER_COLORS,
+		requirementLabel,
+		type View,
+	} from "fuji-engine";
 	import PlayerMarker from "./PlayerMarker.svelte";
 	import TravelGuide from "./TravelGuide.svelte";
 	import RequirementSymbols from "./RequirementSymbols.svelte";
@@ -14,6 +23,7 @@
 		selectedLocations = [],
 		selectionReasons,
 		reachable = [],
+		previewTotals = false,
 		onclick,
 		oninspect,
 	}: {
@@ -26,6 +36,7 @@
 		selectedLocations?: string[];
 		selectionReasons?: Record<string, string>;
 		reachable?: string[];
+		previewTotals?: boolean;
 		onclick: (id: string) => void;
 		oninspect: (id: string) => void;
 	} = $props();
@@ -196,6 +207,14 @@
 							rx="4"
 							fill="#112820e6"
 						/><RequirementSymbols requirement={data.requirement} x={x(c.id)} y={y(c.id) + 25} {colorblind} />{/if}
+					{#if previewTotals && seat !== undefined && reachable.includes(c.id) && !reserved[c.id] && !c.lava}
+						{@const value = total(state.players[seat]!, c.terrain) + state.players[seat]!.bonus}
+						<g class="dice-preview" data-location={c.id} aria-label={`Your current dice total: ${value}`}>
+							<title>Your current matching dice total, including bonuses. Rerolls may change it.</title>
+							<rect x={x(c.id) - 20} y={y(c.id) - 13} width="40" height="26" rx="6" />
+							<text x={x(c.id)} y={y(c.id) + 6}>{value}</text>
+						</g>
+					{/if}
 					{#if data.reroll && !c.lava}<text x={x(c.id) - 34} y={y(c.id) + (c.eruption ? 9 : -16)} class="reroll-mark"
 							>↻</text
 						>{/if}
@@ -299,6 +318,27 @@
 </div>
 
 <style>
+	.dice-preview {
+		display: none;
+		pointer-events: none;
+	}
+	.dice-preview rect {
+		fill: #102d27;
+		stroke: #efdb9c;
+		stroke-width: 1.5;
+	}
+	.dice-preview text {
+		fill: #fff0bd;
+		font-size: 21px;
+		font-weight: 700;
+		text-anchor: middle;
+	}
+	@media (max-width: 650px), (pointer: coarse) {
+		.dice-preview {
+			display: block;
+		}
+	}
+
 	.landscape {
 		position: relative;
 		overflow: hidden;

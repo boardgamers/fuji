@@ -628,6 +628,7 @@
 					state={store.scene ?? s}
 					{seat}
 					{reserved}
+					previewTotals={s.phase === "planning" && !!me && !me.ready && !s.pending && !tool}
 					selectedLocations={tool ? tilePicks : []}
 					selectionReasons={binocularReasons}
 					selected={s.phase === "setup" ? "" : tool ? (tilePicks.at(-1) ?? "") : (currentRoute.at(-1) ?? "")}

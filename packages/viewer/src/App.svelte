@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { equipmentPopover } from "./lib/equipmentPopover";
 	import ChatPanel from "./lib/ChatPanel.svelte";
 	import { untrack } from "svelte";
 	import {
@@ -23,6 +24,7 @@
 		hasSkill,
 		activeDice,
 		activePlayers,
+		canReopenChoice,
 		type EquipmentId,
 		type View,
 	} from "fuji-engine";
@@ -279,7 +281,7 @@
 	function mobileAction() {
 		if (!s || !me) return;
 		if (s.pending || me.pendingInjuries || s.phase === "setup") {
-			document.querySelector(".journey")?.scrollIntoView({ behavior: "smooth" });
+			document.querySelector(".journey-actions")?.scrollIntoView({ behavior: "smooth" });
 			return;
 		}
 		if (s.phase === "planning") {
@@ -292,12 +294,12 @@
 			return;
 		}
 		if (s.phase === "equipment") {
-			document.querySelector(".journey")?.scrollIntoView({ behavior: "smooth" });
+			store.dispatch({ action: me.ready ? "unready" : "ready" });
 			return;
 		}
 		if (s.phase === "movement") {
 			if (s.activeResolution === null && !me.resolved) store.dispatch({ action: "beginMovement" });
-			else document.querySelector(".journey")?.scrollIntoView({ behavior: "smooth" });
+			else document.querySelector(".journey-actions")?.scrollIntoView({ behavior: "smooth" });
 			return;
 		}
 		if (s.phase === "eruption" && seat === 0) store.dispatch({ action: "erupt" });
@@ -316,7 +318,9 @@
 						: s.phase === "reroll"
 							? "Dice actions"
 							: s.phase === "equipment"
-								? "Equipment & reveal"
+								? me.ready
+									? "Change equipment"
+									: "Ready to reveal"
 								: s.phase === "movement"
 									? "Resolve journey"
 									: "Advance lava"
@@ -480,9 +484,28 @@
 					</div>
 				</details>{/if}
 		</div>
+		{#if me && !s.outcome}<div class="mobile-dock">
+				<div>
+					<span class="eyebrow">{s.phase}</span><strong
+						>{s.phase === "planning"
+							? `${destination?.name ?? ""} · ${destination ? total(me, destination.id) : 0}`
+							: s.phase === "reroll"
+								? `${me.rerolls} rerolls remaining`
+								: me.name}</strong
+					>
+				</div>
+				<button
+					onclick={mobileAction}
+					disabled={store.waiting ||
+						(s.phase === "planning" && !me.ready && !!reserved[currentRoute.at(-1)!]) ||
+						(s.phase === "reroll" && me.ready) ||
+						(s.phase === "equipment" && me.ready && !canReopenChoice(s, seat!)) ||
+						(s.phase === "eruption" && seat !== 0)}>{mobileLabel} →</button
+				>
+			</div>{/if}
 		<section class="team" aria-label="Your expedition">
 			{#each s.players as p, i}
-				<button
+				<article
 					class="teammate"
 					class:own={seat === i}
 					class:opposite={s.players.length === 4 && seat !== undefined && i === (seat + 2) % 4}
@@ -491,16 +514,15 @@
 						: undefined}
 					class:can-act={actingSeats.includes(i)}
 					style:--player-color={CHARACTER_COLORS[p.character]}
-					onclick={() => {
-						if (store.local) store.selectSeat(i);
-						else store.clickPlayer(i);
-					}}
 					aria-label={`${p.name}${seat === i ? ", you" : ""}${actingSeats.includes(i) ? ", can act now" : ""}. ${EXHAUSTION - p.stamina} stamina remaining${p.skill === "gatherer" ? `, ${p.powerBars} power bars` : ""}${store.local ? ". Switch to this player." : ""}`}
 				>
 					<img src={art("character", p.character + 1)} alt="" class="portrait" />
 					<div class="teammate-info">
-						<span class="teammate-name"
-							>{p.name}{#if seat === i}<small>YOU</small>{/if}</span
+						<button
+							type="button"
+							class="teammate-name"
+							onclick={() => (store.local ? store.selectSeat(i) : store.clickPlayer(i))}
+							>{p.name}{#if seat === i}<small>YOU</small>{/if}</button
 						><span
 							class="role-name"
 							title={s.skillChoices?.includes(i)
@@ -562,24 +584,26 @@
 					</div>
 					{#if p.cards.length}<span class="teammate-equipment" aria-label="Equipment">
 							{#each p.cards as c}{@const info = EQUIPMENT.find((e) => e.id === c.id)!}
-								<span
+								<button
+									type="button"
+									use:equipmentPopover
 									class="equipment-chip"
 									class:packed={c.availableRound > s.round}
-									title={`${info.name}: ${info.description}`}
+									aria-label={`${info.name}: ${info.description}`}
 								>
-									<EquipmentIcon id={c.id} />
-									<span class="equipment-preview">
-										<img src={art("equipment", EQUIPMENT.indexOf(info) + 1)} alt={info.name} />
-										<span
-											><strong>{info.name}</strong><span>{info.description}</span>
-											<span class="equipment-phases"
-												>{#each info.phases as phase}<span
-														title={phase === 2 ? "Use during planning" : "Use during equipment"}
-														><PhaseIcon phase={phase === 2 ? 0 : 2} />{phase === 2 ? "Plan" : "Equip"}</span
-													>{/each}</span
-											>
-											{#if c.availableRound > s.round}<em>Available from round {c.availableRound}</em>{/if}
-										</span>
+									<EquipmentIcon id={c.id} /></button
+								>
+								<span class="equipment-preview" popover="auto">
+									<img src={art("equipment", EQUIPMENT.indexOf(info) + 1)} alt={info.name} />
+									<span
+										><strong>{info.name}</strong><span>{info.description}</span>
+										<span class="equipment-phases"
+											>{#each info.phases as phase}<span
+													title={phase === 2 ? "Use during planning" : "Use during equipment"}
+													><PhaseIcon phase={phase === 2 ? 0 : 2} />{phase === 2 ? "Plan" : "Equip"}</span
+												>{/each}</span
+										>
+										{#if c.availableRound > s.round}<em>Available from round {c.availableRound}</em>{/if}
 									</span>
 								</span>
 							{/each}
@@ -593,7 +617,7 @@
 								title={`Injury at ${EXHAUSTION - threshold} stamina remaining`}><span>◆</span></span
 							>{/each}
 					</span>
-				</button>
+				</article>
 			{/each}
 		</section>
 		<div class="game-layout">
@@ -652,6 +676,11 @@
 							</p>{/if}
 						{#if s.phase === "reroll"}<section class="reroll-actions" aria-label="Dice actions">
 								{#if me.ready}<p class="confirmed">✓ Your dice are kept. Waiting for the team.</p>
+									<button
+										class="text-button"
+										onclick={() => store.dispatch({ action: "unready" })}
+										disabled={store.waiting || !canReopenChoice(s, seat!)}>Change my dice choices</button
+									>
 								{:else}
 									<div class="reroll-choice">
 										<strong>{me.rerolls} reroll{me.rerolls === 1 ? "" : "s"} remaining</strong>
@@ -933,7 +962,12 @@
 								class="primary"
 								onclick={() => store.dispatch({ action: "ready" })}
 								disabled={store.waiting}>Ready to reveal <span>→</span></button
-							>{:else}<p class="confirmed">✓ Ready. Waiting for the team.</p>{/if}
+							>{:else}<p class="confirmed">✓ Ready. Waiting for the team.</p>
+							<button
+								class="text-button"
+								onclick={() => store.dispatch({ action: "unready" })}
+								disabled={store.waiting || !canReopenChoice(s, seat!)}>Change my choice</button
+							>{/if}
 					{:else if s.phase === "movement"}
 						{#if s.activeResolution === null}<p class="instruction">
 								Choose who moves next. A route that triggers extra lava is often best resolved last.
@@ -1224,24 +1258,6 @@
 					{#each s.ghost as d}<Die colorblind={store.colorblind} die={d} disabled />{/each}
 				</div>
 			</details>{/if}
-		{#if me && !s.outcome}<div class="mobile-dock">
-				<div>
-					<span class="eyebrow">{s.phase}</span><strong
-						>{s.phase === "planning"
-							? `${destination?.name ?? ""} · ${destination ? total(me, destination.id) : 0}`
-							: s.phase === "reroll"
-								? `${me.rerolls} rerolls remaining`
-								: me.name}</strong
-					>
-				</div>
-				<button
-					onclick={mobileAction}
-					disabled={store.waiting ||
-						(s.phase === "planning" && !me.ready && !!reserved[currentRoute.at(-1)!]) ||
-						(s.phase === "reroll" && me.ready) ||
-						(s.phase === "eruption" && seat !== 0)}>{mobileLabel} →</button
-				>
-			</div>{/if}
 	</main>
 {:else}<div class="waiting">
 		<h1>FUJI</h1>

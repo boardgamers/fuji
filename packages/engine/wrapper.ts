@@ -3,6 +3,7 @@ import {
 	applyMove,
 	stripSecret,
 	activePlayers,
+	canReopenChoice,
 	dropGamePlayer,
 	setPlayerName,
 	replay as replayGame,
@@ -11,8 +12,15 @@ import type { State } from "./src/types.js";
 export { stripSecret };
 export { moveAI } from "./src/ai.js";
 export const hashSeed = true;
-// BGS evaluates the saved state. A live update must preserve active seats.
+// State sharing and time awards are independent.
+export const timeIncrements = (s: State): number[] => s.players.map((_, i) => s.turns?.[i]?.increments ?? 0);
 export const isLiveUpdate = (s: State): boolean => s.liveUpdate === true;
+export const canMoveOutOfTurn = (s: State, move: unknown, player: number): boolean =>
+	canReopenChoice(s, player) &&
+	!!move &&
+	typeof move === "object" &&
+	"action" in move &&
+	(move.action === "unready" || (s.phase === "planning" && move.action === "plan"));
 export async function init(players: number, expansions: string[], options: Record<string, unknown>, seed: string) {
 	if (expansions.length) throw Error("No expansions are implemented.");
 	return initGame(players, options, seed);
@@ -22,7 +30,7 @@ export function move(data: State, input: unknown, player: number) {
 }
 export const ended = (s: State) => s.outcome !== null;
 export const currentPlayer = (s: State) => {
-	const seats = activePlayers(s).filter((i) => s.phase !== "planning" || !s.players[i]!.ready);
+	const seats = activePlayers(s).filter((i) => s.pending || s.phase !== "planning" || !s.players[i]!.ready);
 	return seats.length === 1 ? seats[0] : seats.length ? seats : undefined;
 };
 export const round = (s: State) => s.round;

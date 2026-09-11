@@ -1073,19 +1073,15 @@ h3 {
 	display: none;
 }
 @media (max-width: 850px) {
-	.expedition {
-		padding-bottom: 90px;
-	}
 	.mobile-dock {
-		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
+		position: sticky;
+		top: 0;
+		margin: 0 -12px 12px;
 		z-index: 20;
 		background: #152e26f5;
 		backdrop-filter: blur(10px);
 		border-top: 1px solid #dcc48766;
-		padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+		padding: 8px 14px;
 		display: flex;
 		align-items: center;
 		gap: 12px;
@@ -1189,7 +1185,7 @@ h3 {
 }
 @media (max-width: 850px) {
 	.expedition {
-		padding: 6px 12px 90px;
+		padding: 6px 12px 16px;
 	}
 	.game-tools {
 		gap: 12px;
@@ -1518,13 +1514,10 @@ h3 {
 	line-height: 1.5;
 	pointer-events: none;
 }
-.equipment-chip:hover .equipment-preview {
+.equipment-preview:popover-open {
 	display: flex;
 }
-.teammate:last-child .equipment-preview {
-	left: auto;
-	right: 0;
-}
+
 .equipment-preview img {
 	width: 75px;
 	height: 104px;
@@ -1646,10 +1639,10 @@ h3 {
 }
 
 .teammate {
-	cursor: pointer;
+	cursor: default;
 }
-.teammate:hover .teammate-name,
-.teammate:focus-visible .teammate-name {
+.teammate-name:hover,
+.teammate-name:focus-visible {
 	color: var(--gold);
 	text-decoration: underline;
 	text-underline-offset: 3px;
@@ -1683,4 +1676,33 @@ h3 {
 
 .role-name[title] {
 	cursor: help;
+}
+
+button.teammate-name {
+	background: none;
+	border: 0;
+	padding: 0;
+	text-align: left;
+	color: inherit;
+}
+button.teammate-name:hover {
+	text-decoration: underline;
+	color: var(--gold);
+}
+button.equipment-chip {
+	border: 0;
+}
+.equipment-preview {
+	position: fixed;
+	margin: 0;
+	inset: auto;
+	width: min(300px, calc(100vw - 16px));
+	max-height: calc(100dvh - 16px);
+	overflow-y: auto;
+	pointer-events: auto;
+}
+@media (max-width: 850px) {
+	.mobile-dock button {
+		min-height: 40px;
+	}
 }

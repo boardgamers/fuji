@@ -92,6 +92,10 @@ fs.mkdirSync("work/browser", { recursive: true });
 	if (errors.length || !s.outcome) throw Error("Playtest incomplete");
 	await page.screenshot({ path: "work/browser/fuji-result.png", fullPage: true });
 	const autoPage = await browser.newPage();
+	await autoPage.addInitScript(
+		(game) => localStorage.setItem("fuji-dev-v1", JSON.stringify(game)),
+		initGame(3, { skillAssignment: "fixed" }, "first-light")
+	);
 	await autoPage.goto("http://127.0.0.1:5187");
 	await autoPage.getByText("Playtest tools", { exact: true }).click();
 	const auto = autoPage.getByRole("checkbox", { name: "Automatically play teammates" });

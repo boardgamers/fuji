@@ -236,6 +236,8 @@ test("gatherer caps stored bars and applies them only to active movement total",
 	s.players[1]!.powerBars = 2;
 	s.players[1]!.rerolls = 3;
 	s = applyMove(s, { action: "finishRerolls" }, 1);
+	assert.equal(s.players[1]!.powerBars, 2);
+	s = applyMove(s, { action: "finishRerolls" }, 0);
 	assert.equal(s.players[1]!.powerBars, 3);
 	s.phase = "movement";
 	s.activeResolution = 0;
@@ -1418,4 +1420,112 @@ test("AI crosses a choke point before lava disconnects the otherwise safe side",
 		"3,0",
 		"the extra wave would consume that destination"
 	);
+});
+
+test("reopening cooperative choices is bounded, preserves rerolls and replays", async () => {
+	const wrapper = await import("../wrapper.js");
+	let s = prepared();
+	// Distinct destinations allow the simultaneous planning phase to close.
+	for (let i = 0; i < 3; i++) {
+		const path = Object.values(paths(s, i)).find(
+			(path) => !s.players.some((p, j) => j !== i && p.ready && p.path.at(-1) === path.at(-1))
+		)!;
+		s = applyMove(s, { action: "plan", path }, i);
+		s = applyMove(s, { action: "ready" }, i);
+	}
+	assert.equal(s.phase, "reroll");
+	const gatherer = s.players.findIndex((p) => p.skill === "gatherer");
+	const initial = structuredClone(s.players[gatherer]!);
+	const history = s.history.length,
+		log = s.log.length;
+	for (let i = 0; i < 100; i++) {
+		s = applyMove(s, { action: "finishRerolls" }, gatherer);
+		assert.equal(wrapper.canMoveOutOfTurn(s, { action: "unready" }, gatherer), true);
+		assert.equal(wrapper.canMoveOutOfTurn(s, { action: "reroll", ids: [] }, gatherer), false);
+		s = applyMove(s, { action: "unready" }, gatherer);
+	}
+	assert.equal(s.players[gatherer]!.rerolls, initial.rerolls);
+	assert.equal(s.players[gatherer]!.powerBars, initial.powerBars);
+	assert.equal(s.history.length, history);
+	assert.equal(s.log.length, log);
+	assert.deepEqual(replay(s), s);
+	while (s.phase === "reroll") s = applyMove(s, { action: "finishRerolls" }, activePlayers(s)[0]!);
+	assert.equal(s.phase, "equipment");
+	const seat = activePlayers(s)[0]!;
+	const history2 = s.history.length,
+		log2 = s.log.length;
+	for (let i = 0; i < 100; i++) {
+		s = applyMove(s, { action: "ready" }, seat);
+		assert.equal(s.phase, "equipment");
+		s = applyMove(s, { action: "unready" }, seat);
+	}
+	assert.equal(s.history.length, history2);
+	assert.equal(s.log.length, log2);
+	assert.deepEqual(replay(s), s);
+	s.phase = "movement";
+	assert.equal(wrapper.canMoveOutOfTurn(s, { action: "unready" }, seat), false);
+	assert.throws(() => applyMove(s, { action: "unready" }, seat));
+});
+
+test("every explorer earns one planning completion, including the last, with no reconfirm credit", async () => {
+	const { timeIncrements, isLiveUpdate } = await import("../wrapper.js");
+	for (const players of [3, 4]) {
+		let s = prepared(players);
+		const baseline = timeIncrements(s);
+		s = applyMove(s, { action: "ready" }, 0);
+		s = applyMove(s, { action: "unready" }, 0);
+		const newDestination = Object.values(paths(s, 0)).find((route) => route.at(-1) !== s.players[0]!.position)!;
+		s = applyMove(s, { action: "plan", path: newDestination }, 0);
+		s = applyMove(s, { action: "ready" }, 0);
+		for (let n = 0; n < 100; n++) {
+			s = applyMove(s, { action: "unready" }, 0);
+			s = applyMove(s, { action: "ready" }, 0);
+		}
+		assert.equal(timeIncrements(s)[0], baseline[0]! + 1);
+		assert(isLiveUpdate(s));
+		assert.deepEqual(replay(JSON.parse(JSON.stringify(s))), s);
+		for (let i = 1; i < players; i++) {
+			const path = Object.values(paths(s, i)).find(
+				(route) => !s.players.some((p, j) => j !== i && p.ready && p.path.at(-1) === route.at(-1))
+			)!;
+			s = applyMove(s, { action: "plan", path }, i);
+			s = applyMove(s, { action: "ready" }, i);
+		}
+		assert.equal(s.phase, "reroll");
+		assert.equal(isLiveUpdate(s), false);
+		assert.deepEqual(
+			timeIncrements(s),
+			baseline.map((n) => n + 1)
+		);
+		assert.deepEqual(replay(s), s);
+		assert.equal("turns" in stripSecret(s, 0), false);
+	}
+});
+test("teammate changes renew confirmation credit while manual undo does not", async () => {
+	const { timeIncrements, currentPlayer } = await import("../wrapper.js");
+	let s = withPhase("equipment");
+	s.players.forEach((p) => (p.cards = [{ id: "aid", used: 0, availableRound: 0 }]));
+	s.players[2]!.cards = [
+		{ id: "machete", used: 0, availableRound: 0 },
+		{ id: "water", used: 0, availableRound: 0 },
+	];
+	s = applyMove(s, { action: "ready" }, 0);
+	const confirmed = timeIncrements(s)[0]!;
+	s = applyMove(s, { action: "unready" }, 0);
+	s = applyMove(s, { action: "ready" }, 0);
+	assert.equal(timeIncrements(s)[0], confirmed);
+	s = applyMove(s, { action: "give", id: "machete", target: 0 }, 2);
+	assert.equal(s.players[0]!.ready, false);
+	assert.equal(timeIncrements(s)[0], confirmed, "new credit waits for confirmation");
+	s = applyMove(s, { action: "ready" }, 0);
+	assert.equal(timeIncrements(s)[0], confirmed + 1);
+	s = applyMove(s, { action: "unready" }, 0);
+	s = applyMove(s, { action: "ready" }, 0);
+	assert.equal(timeIncrements(s)[0], confirmed + 1);
+	s = applyMove(s, { action: "equipment", id: "water", target: 0 }, 2);
+	assert.equal(currentPlayer(s), 0);
+	assert.equal(timeIncrements(s)[0], confirmed + 1);
+	s = applyMove(s, { action: "respond", ids: [s.players[0]!.dice[0]!.id] }, 0);
+	assert.equal(timeIncrements(s)[0], confirmed + 2);
+	assert.throws(() => applyMove(s, { action: "give", id: "machete", target: 0 }, 2));
 });

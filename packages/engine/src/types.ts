@@ -80,11 +80,17 @@ export interface Pending {
 	required: boolean;
 	receiver?: number;
 }
+export interface TurnProgress {
+	increments: number;
+	credited: boolean;
+}
 export interface PlanningSnapshot {
+	turns: TurnProgress[];
 	players: { path: string[]; ready: boolean }[];
 	revision: number;
 }
 export interface State {
+	turns?: TurnProgress[];
 	skillChoices?: number[];
 	liveUpdate?: boolean;
 	planningSnapshot?: PlanningSnapshot;
@@ -113,7 +119,7 @@ export interface State {
 }
 export interface View extends Omit<
 	State,
-	"seed" | "counter" | "deck" | "history" | "initOptions" | "liveUpdate" | "planningSnapshot"
+	"seed" | "counter" | "deck" | "history" | "initOptions" | "liveUpdate" | "planningSnapshot" | "turns"
 > {
 	deckCount: number;
 }

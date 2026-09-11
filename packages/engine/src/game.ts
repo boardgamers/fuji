@@ -143,8 +143,17 @@ function diceEvent(s: State, label: string, dice: Die[]) {
 		dice: structuredClone(dice),
 	});
 }
+function turnProgress(s: State) {
+	return (s.turns ??= s.players.map(() => ({ increments: 0, credited: false })));
+}
+function confirmTurn(s: State, seat: number) {
+	const turn = turnProgress(s)[seat]!;
+	if (!turn.credited) turn.increments++;
+	turn.credited = true;
+}
 function phase(s: State, next: State["phase"]) {
 	s.phase = next;
+	for (const turn of turnProgress(s)) turn.credited = false;
 	for (const p of s.players) {
 		p.ready = false;
 		p.radio = false;
@@ -239,6 +248,7 @@ export function initGame(players = 3, options: Record<string, unknown> = {}, see
 	if (!Number.isInteger(scenario) || scenario < 1 || scenario > 7) throw Error("Choose scenario 1–7.");
 	const s: State = {
 		schemaVersion: 1,
+		turns: Array.from({ length: players }, () => ({ increments: 0, credited: false })),
 		seed,
 		counter: 0,
 		round: 0,
@@ -384,7 +394,15 @@ function validatePath(s: State, p: Player, input: unknown, max: number) {
 	}
 	return route;
 }
+function equipmentDecision(s: State | View, p: Player): boolean {
+	return (
+		(hasSkill(p, "manager") && p.cards.length > 0) ||
+		(!p.injuries.includes("arm") &&
+			p.cards.some((c) => c.availableRound <= s.round && (equipment(c.id).phases as readonly number[]).includes(4)))
+	);
+}
 function resetReady(s: State) {
+	for (const turn of turnProgress(s)) turn.credited = false;
 	for (const p of s.players) p.ready = false;
 }
 function afterMovement(s: State) {
@@ -545,6 +563,16 @@ function useEquipment(s: State, seat: number, m: Move) {
 	if (id === "torch") s.log.at(-1)!.sound = "dice";
 	if (setAside) s.log.at(-1)!.setAside = structuredClone(setAside);
 }
+export function canReopenChoice(s: State | View, seat: number): boolean {
+	const p = s.players[seat];
+	if (!p?.ready || s.outcome || s.pending || s.skillChoices?.length || s.players.some((p) => p.pendingInjuries))
+		return false;
+	if (s.phase === "planning") return true;
+	if (s.phase === "reroll")
+		return activeDice(p).length > 0 && (p.rerolls > 0 || (hasSkill(p, "buddy") && !p.buddyUsed));
+	if (s.phase === "equipment") return equipmentDecision(s, p);
+	return false;
+}
 function execute(s: State, m: Move, seat: number) {
 	if (s.outcome) throw Error("The expedition has ended.");
 	const p = s.players[seat];
@@ -635,6 +663,12 @@ function execute(s: State, m: Move, seat: number) {
 			p.ready = false;
 			break;
 		}
+		case "unready": {
+			if (!canReopenChoice(s, seat))
+				throw Error("You can only reopen your own choice while the team is still choosing.");
+			p.ready = false;
+			break;
+		}
 		case "ready": {
 			if (s.phase !== "planning" && s.phase !== "equipment") throw Error("You cannot confirm in this phase.");
 			if (p.ready) throw Error("Already ready.");
@@ -646,8 +680,9 @@ function execute(s: State, m: Move, seat: number) {
 				)
 					throw Error("Neighbors need different destinations.");
 			}
+			confirmTurn(s, seat);
 			p.ready = true;
-			if (s.phase !== "planning") event(s, `${p.name} is ready.`, "move", true);
+
 			if (s.players.every((p) => p.ready)) {
 				if (s.phase === "planning") {
 					for (const [seat, player] of s.players.entries()) {
@@ -684,10 +719,9 @@ function execute(s: State, m: Move, seat: number) {
 		}
 		case "finishRerolls": {
 			if (s.phase !== "reroll" || p.ready) throw Error("Rerolls are already complete.");
-			if (hasSkill(p, "gatherer")) p.powerBars = Math.min(3, p.powerBars + p.rerolls);
-			p.rerolls = 0;
+			confirmTurn(s, seat);
 			p.ready = true;
-			if (s.players.every((p) => p.ready)) phase(s, "equipment");
+			finishTeamRerolls(s);
 			break;
 		}
 		case "buddy": {
@@ -934,6 +968,14 @@ function finishAssistance(s: State, seat: number) {
 	}
 	if (!s.pendingHelpers?.length) execute(s, { action: "resolve" }, seat);
 }
+function finishTeamRerolls(s: State) {
+	if (!s.players.every((p) => p.ready)) return;
+	for (const p of s.players) {
+		if (hasSkill(p, "gatherer")) p.powerBars = Math.min(3, p.powerBars + p.rerolls);
+		p.rerolls = 0;
+	}
+	phase(s, "equipment");
+}
 function advanceRerolls(s: State) {
 	if (s.phase !== "reroll") return;
 	for (const p of s.players) {
@@ -941,11 +983,9 @@ function advanceRerolls(s: State) {
 		const diceAvailable = activeDice(p).length > 0;
 		const canSetAside = diceAvailable && hasSkill(p, "buddy") && !p.buddyUsed;
 		if (canSetAside || (diceAvailable && p.rerolls > 0)) continue;
-		if (hasSkill(p, "gatherer")) p.powerBars = Math.min(3, p.powerBars + p.rerolls);
-		p.rerolls = 0;
 		p.ready = true;
 	}
-	if (s.players.every((p) => p.ready)) phase(s, "equipment");
+	finishTeamRerolls(s);
 }
 function advanceMovement(s: State) {
 	if (s.initOptions.autoMovement !== true) return;
@@ -999,13 +1039,7 @@ function advanceForcedActions(s: State) {
 		if (s.pending || s.players.some((p) => p.pendingInjuries)) break;
 		if (s.phase === "equipment") {
 			for (const p of s.players) {
-				const canGive = hasSkill(p, "manager") && p.cards.length > 0;
-				const canUse =
-					!p.injuries.includes("arm") &&
-					p.cards.some(
-						(card) => card.availableRound <= s.round && (equipment(card.id).phases as readonly number[]).includes(4)
-					);
-				if (!canGive && !canUse) p.ready = true;
+				if (!equipmentDecision(s, p)) p.ready = true;
 			}
 			if (!s.players.every((p) => p.ready)) break;
 			phase(s, "movement");
@@ -1038,6 +1072,7 @@ function restorePlanning(s: State, snapshot: PlanningSnapshot) {
 		p.ready = snapshot.players[i]!.ready;
 	});
 	s.revision = snapshot.revision;
+	s.turns = structuredClone(snapshot.turns);
 	s.planningSnapshot = structuredClone(snapshot);
 	s.liveUpdate = true;
 }
@@ -1066,16 +1101,18 @@ export function applyMove(data: State, input: unknown, seat: number): State {
 	if (JSON.stringify(move).length > 3000) throw Error("Move is too large.");
 	const s = structuredClone(data);
 	execute(s, move, seat);
+	if (!["plan", "ready", "unready", "finishRerolls"].includes(move.action)) turnProgress(s)[seat]!.increments++;
 	advanceForcedActions(s);
 	s.revision++;
 	const live =
-		data.phase === "planning" &&
-		s.phase === "planning" &&
+		["planning", "reroll", "equipment"].includes(data.phase) &&
+		s.phase === data.phase &&
 		s.round === data.round &&
-		(move.action === "plan" || move.action === "ready");
+		["plan", "ready", "unready", "finishRerolls"].includes(move.action);
 	if (live) {
 		s.liveUpdate = true;
 		s.planningSnapshot = {
+			turns: structuredClone(turnProgress(s)),
 			players: s.players.map((p) => ({ path: [...p.path], ready: p.ready })),
 			revision: s.revision,
 		};
@@ -1094,6 +1131,7 @@ export function stripSecret(s: State, seat?: number): View {
 		initOptions: ____,
 		liveUpdate: _____,
 		planningSnapshot: ______,
+		turns: _______,
 		...publicState
 	} = structuredClone(s);
 	const revealed = s.phase === "movement" || s.phase === "eruption" || s.phase === "ended";

@@ -553,6 +553,7 @@ function useEquipment(s: State, seat: number, m: Move) {
 		p.cards = p.cards.filter((c) => c !== card);
 		s.discard.push(card.id);
 	}
+	(s.chatMessages ??= []).push(`${p.name} used ${equipment(card.id).name}${id !== card.id ? ` as ${info.name}` : ""}.`);
 	resetReady(s);
 	if (id !== "rope")
 		event(
@@ -1132,6 +1133,7 @@ export function stripSecret(s: State, seat?: number): View {
 		liveUpdate: _____,
 		planningSnapshot: ______,
 		turns: _______,
+		chatMessages: ________,
 		...publicState
 	} = structuredClone(s);
 	const revealed = s.phase === "movement" || s.phase === "eruption" || s.phase === "ended";

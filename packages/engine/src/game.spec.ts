@@ -1529,3 +1529,15 @@ test("teammate changes renew confirmation credit while manual undo does not", as
 	assert.equal(timeIncrements(s)[0], confirmed + 2);
 	assert.throws(() => applyMove(s, { action: "give", id: "machete", target: 0 }, 2));
 });
+
+test("equipment use produces one public chat message and drains once", async () => {
+	const wrapper = await import("../wrapper.js");
+	let s = withPhase();
+	s.players[0]!.name = "Climber";
+	s = equip(s, 0, "flare");
+	assert.deepEqual(s.chatMessages, ["Climber used Flare gun."]);
+	assert.equal("chatMessages" in stripSecret(s, 1), false);
+	const drained = wrapper.messages(s);
+	assert.deepEqual(drained.messages, s.chatMessages);
+	assert.deepEqual(wrapper.messages(drained.data).messages, []);
+});

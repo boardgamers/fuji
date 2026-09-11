@@ -46,3 +46,10 @@ export function setPlayerMetaData(s: State, seat: number, meta: { name: string }
 	return setPlayerName(s, seat, meta.name);
 }
 export const dropPlayer = dropGamePlayer;
+
+export function messages(data: State): { messages: string[]; data: State } {
+	const messages = data.chatMessages ?? [];
+	const next = { ...data };
+	delete next.chatMessages;
+	return { messages, data: next };
+}

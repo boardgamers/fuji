@@ -90,6 +90,7 @@ export interface PlanningSnapshot {
 	revision: number;
 }
 export interface State {
+	chatMessages?: string[];
 	turns?: TurnProgress[];
 	skillChoices?: number[];
 	liveUpdate?: boolean;
@@ -119,7 +120,7 @@ export interface State {
 }
 export interface View extends Omit<
 	State,
-	"seed" | "counter" | "deck" | "history" | "initOptions" | "liveUpdate" | "planningSnapshot" | "turns"
+	"seed" | "counter" | "deck" | "history" | "initOptions" | "liveUpdate" | "planningSnapshot" | "turns" | "chatMessages"
 > {
 	deckCount: number;
 }

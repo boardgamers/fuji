@@ -1541,3 +1541,26 @@ test("equipment use produces one public chat message and drains once", async () 
 	assert.deepEqual(drained.messages, s.chatMessages);
 	assert.deepEqual(wrapper.messages(drained.data).messages, []);
 });
+
+test("each injury announces its effect in chat once", async () => {
+	const wrapper = await import("../wrapper.js");
+	for (const [injury, effect] of Object.entries({
+		leg: "loses one die after this round",
+		arm: "can no longer use equipment",
+		eye: "loses normal rerolls; skill and equipment rerolls still work",
+		amnesia: "loses their character skill",
+	})) {
+		const s = withPhase("movement");
+		s.activeResolution = 0;
+		s.players[0]!.name = "Explorer";
+		s.players[0]!.pendingInjuries = 1;
+		s.players[0]!.resolved = true;
+		const next = applyMove(s, { action: "injury", injury, die: s.players[0]!.dice[0]!.id }, 0);
+		const result = wrapper.messages(next);
+		assert.deepEqual(result.messages, [
+			`Explorer suffered ${injury === "amnesia" ? "amnesia" : `a ${injury} injury`} — ${effect}.`,
+		]);
+		assert.deepEqual(wrapper.messages(result.data).messages, []);
+		assert.equal(s.chatMessages, undefined);
+	}
+});

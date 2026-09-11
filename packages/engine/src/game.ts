@@ -884,6 +884,15 @@ function execute(s: State, m: Move, seat: number) {
 			p.injuries.push(injury);
 			p.pendingInjuries--;
 			event(s, `${p.name} suffered ${injury === "amnesia" ? "amnesia" : `a ${injury} injury`}.`, "injury");
+			const effect = {
+				leg: "loses one die after this round",
+				arm: "can no longer use equipment",
+				eye: "loses normal rerolls; skill and equipment rerolls still work",
+				amnesia: "loses their character skill",
+			}[injury];
+			(s.chatMessages ??= []).push(
+				`${p.name} suffered ${injury === "amnesia" ? "amnesia" : `a ${injury} injury`} — ${effect}.`
+			);
 			afterMovement(s);
 			break;
 		}

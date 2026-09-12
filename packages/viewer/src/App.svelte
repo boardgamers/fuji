@@ -3,6 +3,7 @@
 	import ChatPanel from "./lib/ChatPanel.svelte";
 	import { untrack } from "svelte";
 	import {
+		DICE,
 		terrain,
 		cell,
 		paths,
@@ -435,6 +436,7 @@
 								? "Preparation"
 								: s.phase}</span
 				>
+				<span class="difficulty-label" title={`Difficulty level ${s.difficulty} of 4`}>Level {s.difficulty}</span>
 			</div>
 			{#if store.chat.enabled}<button class="text-button" onclick={openChat}
 					>Chat{store.chat.unread ? ` · ${store.chat.unread}` : ""}</button
@@ -553,9 +555,7 @@
 					class="teammate"
 					class:own={seat === i}
 					class:opposite={s.players.length === 4 && seat !== undefined && i === (seat + 2) % 4}
-					title={s.players.length === 4 && seat !== undefined && i === (seat + 2) % 4
-						? "Opposite player, not your neighbour. Your dice are not compared with each other."
-						: undefined}
+					title={`${s.skillChoices?.includes(i) ? "Choosing skill" : `${SKILLS[p.skill].name}: ${SKILLS[p.skill].description}${p.injuries.includes("amnesia") ? " Currently unavailable due to amnesia." : ""}`}${s.players.length === 4 && seat !== undefined && i === (seat + 2) % 4 ? " Opposite player, not your neighbour. Your dice are not compared with each other." : ""}`}
 					class:can-act={actingSeats.includes(i)}
 					style:--player-color={CHARACTER_COLORS[p.character]}
 					aria-label={`${p.name}${seat === i ? ", you" : ""}${actingSeats.includes(i) ? ", can act now" : ""}. ${EXHAUSTION - p.stamina} stamina remaining${p.skill === "gatherer" ? `, ${p.powerBars} power bars` : ""}${store.local ? ". Switch to this player." : ""}`}
@@ -572,11 +572,21 @@
 							title={s.skillChoices?.includes(i)
 								? "This player is choosing their skill."
 								: `${SKILLS[p.skill].description}${p.injuries.includes("amnesia") ? " Currently unavailable due to amnesia." : ""}`}
-							>{s.skillChoices?.includes(i)
-								? "Choosing skill"
-								: SKILLS[p.skill].name}{#each p.injuries as injury}<InjuryIcon
-									{injury}
-								/>{/each}{#if p.skill === "gatherer"}<span
+							><button
+								type="button"
+								class="role-details"
+								use:equipmentPopover
+								aria-label={`About ${SKILLS[p.skill].name}`}
+							>
+								{s.skillChoices?.includes(i) ? "Choosing skill" : SKILLS[p.skill].name}
+								<span aria-hidden="true">ⓘ</span>
+							</button><span class="equipment-preview role-preview" popover="auto">
+								<strong>{s.skillChoices?.includes(i) ? "Choosing skill" : SKILLS[p.skill].name}</strong>
+								<p>
+									{s.skillChoices?.includes(i) ? "This player is choosing their skill." : SKILLS[p.skill].description}
+								</p>
+								{#if p.injuries.includes("amnesia")}<p>Currently unavailable due to amnesia.</p>{/if}
+							</span>{#each p.injuries as injury}<InjuryIcon {injury} />{/each}{#if p.skill === "gatherer"}<span
 									class="public-bars"
 									title={`${p.powerBars} power bar${p.powerBars === 1 ? "" : "s"}. Each adds +1 to a player's movement total.`}
 									aria-label={`${p.powerBars} power bars`}
@@ -889,12 +899,34 @@
 								>{/each}
 						</div>
 						{#if !me.setupDone}
-							{#if SKILLS[me.skill].dice === 5}<fieldset class="visible-choices">
-									<legend>Choose the die to leave behind</legend>
-									<div class="choice-row">
-										{#each me.dice as d}<button aria-pressed={drop === d.id} onclick={() => (drop = d.id)}
-												>⚄ {"ABC"[d.type]} · {Number(d.id.split("-")[1]) + 1}</button
-											>{/each}
+							{#if SKILLS[me.skill].dice === 5}<fieldset class="visible-choices starting-dice">
+									<legend>Choose one die to leave behind</legend>
+									<p>
+										You will keep five dice for the expedition. Each row shows all six faces of a die; the two dice of
+										each type are identical.
+									</p>
+									<div class="starting-dice-options">
+										{#each me.dice.filter((d, i, dice) => dice.findIndex((other) => other.type === d.type) === i) as d}
+											<button
+												type="button"
+												aria-pressed={me.dice.find((other) => other.id === drop)?.type === d.type}
+												onclick={() => (drop = d.id)}
+											>
+												<span class="starting-die-label"
+													>Leave one of these <span aria-hidden="true"
+														>{me.dice.find((other) => other.id === drop)?.type === d.type ? "✓" : ""}</span
+													></span
+												>
+												<span class="starting-die-faces"
+													>{#each DICE[d.type]! as color, index}<span
+															class="starting-die-face"
+															style:--face-color={{ blue: "#82ccdb", pink: "#e16d9a", yellow: "#f2cd5d" }[color]}
+															aria-label={`${color} ${index + 1}`}
+															>{index + 1}{#if store.colorblind}<small>{color}</small>{/if}</span
+														>{/each}</span
+												>
+											</button>
+										{/each}
 									</div>
 								</fieldset>{/if}
 							<p class="packing-count">{keep.length} / {SKILLS[me.skill].keep} cards selected</p>

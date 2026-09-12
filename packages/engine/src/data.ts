@@ -87,7 +87,7 @@ export const SKILLS = {
 		draw: 1,
 		keep: 1,
 		page: 2,
-		description: "One additional reroll during the reroll phase.",
+		description: "Start with five dice. One additional reroll during the reroll phase.",
 	},
 	gatherer: {
 		name: "Gatherer",
@@ -111,7 +111,7 @@ export const SKILLS = {
 		draw: 2,
 		keep: 2,
 		page: 5,
-		description: "Travel up to four spaces. A four-space journey allows no phase-three rerolls.",
+		description: "Start with five dice. Travel up to four spaces. A four-space journey allows no phase-three rerolls.",
 	},
 	tinkerer: {
 		name: "Tinkerer",

@@ -578,11 +578,7 @@
 							class="teammate-name"
 							onclick={() => (store.local ? store.selectSeat(i) : store.clickPlayer(i))}
 							>{p.name}{#if seat === i}<small>YOU</small>{/if}</button
-						><span
-							class="role-name"
-							title={s.skillChoices?.includes(i)
-								? "This player is choosing their skill."
-								: `${SKILLS[p.skill].description}${p.injuries.includes("amnesia") ? " Currently unavailable due to amnesia." : ""}`}
+						><span class="role-name" title=""
 							><button
 								type="button"
 								class="role-details"
@@ -694,7 +690,7 @@
 					{seat}
 					{reserved}
 					previewTotals={s.phase === "planning" && !!me && !me.ready && !s.pending && !tool}
-					previewImpacts={s.phase === "planning" && !!me && !s.pending && !tool}
+					previewImpacts={["planning", "reroll", "equipment"].includes(s.phase) && !!me}
 					selectedLocations={tool ? tilePicks : []}
 					selectionReasons={binocularReasons}
 					selected={s.phase === "setup" ? "" : tool ? (tilePicks.at(-1) ?? "") : (currentRoute.at(-1) ?? "")}

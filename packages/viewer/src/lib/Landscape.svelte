@@ -47,7 +47,7 @@
 		previewImpacts && seat !== undefined
 			? neighbors(state, seat).filter((i) => {
 					const p = state.players[i]!;
-					return p.path.length > 1 || p.ready;
+					return state.phase !== "planning" || p.path.length > 1 || p.ready;
 				})
 			: []
 	);
@@ -82,6 +82,33 @@
 	);
 	const ownColor = $derived(seat === undefined ? "#f1d584" : CHARACTER_COLORS[state.players[seat]!.character]);
 	// Stable parallel lanes keep shared segments visible, including opposite directions.
+	const destinationMarker = (id: string, player: number) => {
+		const c = cell(state, id);
+		const data = terrain(c.terrain);
+		const targets = state.players.flatMap((p, i) =>
+			!p.resolved && (p.path.length > 1 || p.ready) && p.path.at(-1) === id ? [i] : []
+		);
+		const obstacles = [
+			...(c.equipment && !c.lava ? [[29, -25, 10]] : []),
+			...(c.eruption && !c.lava ? [[-29, -25, 13]] : []),
+			...(data.kind === "village" ? [[0, -32, 13]] : []),
+			...(data.reroll && !c.lava ? [[-34, c.eruption ? 3 : -22, 9]] : []),
+		];
+		const candidates = [
+			[0, -27],
+			[-26, -27],
+			[26, -27],
+			[48, -3],
+			[-48, -3],
+			[48, 21],
+			[-48, 21],
+		];
+		const available = candidates.filter(([cx, cy]) =>
+			obstacles.every(([ox, oy, radius]) => Math.hypot(cx! - ox!, cy! - oy!) >= radius! + 12)
+		);
+		const offset = available[targets.indexOf(player)] ?? [48, 21];
+		return `translate(${x(id) + offset[0]!},${y(id) + offset[1]!})`;
+	};
 	const routePoints = (path: string[], player: number) => {
 		const offset = (player - (state.players.length - 1) / 2) * 8;
 		return path.map((id) => `${x(id) + offset},${y(id) + offset}`).join(" ");
@@ -227,11 +254,11 @@
 							{@const cx = x(c.id) + (index - (peers.length - 1) / 2) * 43}
 							<g
 								class="dice-preview impact-preview"
-								class:provisional={!player.ready}
+								class:provisional={state.phase === "planning" && !player.ready}
 								data-location={c.id}
 								data-player={playerIndex}
 								style:--impact-color={CHARACTER_COLORS[player.character]}
-								aria-label={`Your dice total against ${player.name}: ${value}. ${player.ready ? "Confirmed" : "Provisional"} destination.`}
+								aria-label={`Your dice total against ${player.name}: ${value}. ${state.phase !== "planning" || player.ready ? "Confirmed" : "Provisional"} destination.`}
 							>
 								<rect x={cx - 20} y={y(c.id) - 13} width="40" height="26" rx="6" />
 								<text x={cx} y={y(c.id) + 6}>{value}</text>
@@ -269,7 +296,7 @@
 									stroke={CHARACTER_COLORS[p.character]}
 								/>
 							{/if}
-							<g transform={`translate(${x(destination) + 27},${y(destination) - 27 + i * 20})`}>
+							<g class="destination-marker" transform={destinationMarker(destination, i)}>
 								<PlayerMarker avatar={avatars[i]} number={i + 1} color={CHARACTER_COLORS[p.character]!} radius={10} />
 							</g>
 						</g>

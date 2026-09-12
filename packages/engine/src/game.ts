@@ -439,6 +439,8 @@ function useEquipment(s: State, seat: number, m: Move) {
 	const target = () => integer(m.target, 0, s.players.length - 1);
 	let setAside: Die[] | undefined;
 	let effectText = "";
+	let equipmentMessage = "";
+	let loan: { die: Die; recipient: number } | undefined;
 	switch (id) {
 		case "binoculars": {
 			const ids = strings(m.tiles, 2);
@@ -467,11 +469,8 @@ function useEquipment(s: State, seat: number, m: Move) {
 			const c = cell(s, ids[0]!);
 			if (!walkable(c) || terrain(c.terrain).kind !== "land" || distance(cell(s, p.position), c) !== 1)
 				throw Error("Choose an adjacent land location.");
-			event(
-				s,
-				`${p.name} moved to ${terrain(c.terrain).name} using ${card.id === "knife" ? "Pocketknife as Rope" : "Rope"}.`,
-				"equipment"
-			);
+			equipmentMessage = `${p.name} moved to ${terrain(c.terrain).name} using ${card.id === "knife" ? "Pocketknife as Rope" : "Rope"}.`;
+			event(s, equipmentMessage, "equipment");
 			s.log.at(-1)!.animation = { kind: "move", seat, path: [p.position, c.id] };
 			p.position = c.id;
 			collect(s, p);
@@ -545,6 +544,7 @@ function useEquipment(s: State, seat: number, m: Move) {
 			p.dice = p.dice.filter((x) => x.id !== d.id);
 			s.players[recipient]!.dice.push(d);
 			effectText = `lent 1 die to ${s.players[recipient]!.name} until the end of the round`;
+			loan = { die: structuredClone(d), recipient };
 			break;
 		}
 	}
@@ -553,14 +553,15 @@ function useEquipment(s: State, seat: number, m: Move) {
 		p.cards = p.cards.filter((c) => c !== card);
 		s.discard.push(card.id);
 	}
-	(s.chatMessages ??= []).push(`${p.name} used ${equipment(card.id).name}${id !== card.id ? ` as ${info.name}` : ""}.`);
-	resetReady(s);
 	if (id !== "rope")
-		event(
-			s,
-			`${p.name} used ${equipment(card.id).name}${id !== card.id ? ` as ${info.name}` : ""}${effectText ? ` · ${effectText}` : ""}.`,
-			"equipment"
-		);
+		equipmentMessage = `${p.name} used ${equipment(card.id).name}${id !== card.id ? ` as ${info.name}` : ""}${effectText ? ` · ${effectText}` : ""}.`;
+	(s.chatMessages ??= []).push(equipmentMessage);
+	resetReady(s);
+	if (id !== "rope") event(s, equipmentMessage, "equipment");
+	if (loan) {
+		s.log.at(-1)!.dice = [loan.die];
+		s.log.at(-1)!.diceVisibleTo = [seat, loan.recipient];
+	}
 	if (id === "torch") s.log.at(-1)!.sound = "dice";
 	if (setAside) s.log.at(-1)!.setAside = structuredClone(setAside);
 }
@@ -1145,6 +1146,12 @@ export function stripSecret(s: State, seat?: number): View {
 		chatMessages: ________,
 		...publicState
 	} = structuredClone(s);
+	for (const entry of publicState.log) {
+		if (entry.diceVisibleTo && (seat === undefined || !entry.diceVisibleTo.includes(seat))) {
+			delete entry.dice;
+		}
+		delete entry.diceVisibleTo;
+	}
 	const revealed = s.phase === "movement" || s.phase === "eruption" || s.phase === "ended";
 	publicState.players.forEach((p, i) => {
 		p.dice.forEach((d) => {

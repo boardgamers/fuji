@@ -68,6 +68,7 @@ export interface Event {
 	};
 	dice?: Die[];
 	diceLabel?: string;
+	diceVisibleTo?: number[];
 	round: number;
 	text: string;
 	type: "phase" | "move" | "equipment" | "eruption" | "injury" | "end";

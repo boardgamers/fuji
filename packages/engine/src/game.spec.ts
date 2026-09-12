@@ -1535,7 +1535,7 @@ test("equipment use produces one public chat message and drains once", async () 
 	let s = withPhase();
 	s.players[0]!.name = "Climber";
 	s = equip(s, 0, "flare");
-	assert.deepEqual(s.chatMessages, ["Climber used Flare gun."]);
+	assert.deepEqual(s.chatMessages, ["Climber used Flare gun · +3 movement value."]);
 	assert.equal("chatMessages" in stripSecret(s, 1), false);
 	const drained = wrapper.messages(s);
 	assert.deepEqual(drained.messages, s.chatMessages);
@@ -1563,4 +1563,42 @@ test("each injury announces its effect in chat once", async () => {
 		assert.deepEqual(wrapper.messages(result.data).messages, []);
 		assert.equal(s.chatMessages, undefined);
 	}
+});
+
+test("equipment chat matches the journal, including recipients without revealing borrowed dice", () => {
+	for (const id of ["map", "water", "lighter", "torch", "rope", "knife"]) {
+		let s = withPhase(id === "torch" ? "planning" : "equipment");
+		const die = s.players[0]!.dice[0]!;
+		const extra: Record<string, unknown> = { target: 1, ids: [die.id] };
+		if (id === "rope" || id === "knife") {
+			const start = cell(s, s.players[0]!.position);
+			const dest = s.board.find(
+				(c) => !c.lava && terrain(c.terrain).kind === "land" && Math.abs(c.x - start.x) + Math.abs(c.y - start.y) === 1
+			)!;
+			extra.tiles = [dest.id];
+			if (id === "knife") {
+				extra.copy = "rope";
+				s.players[1]!.cards = [{ id: "rope", used: 0, availableRound: 0 }];
+			}
+		}
+		s = equip(s, 0, id, extra);
+		const entry = s.log.filter((e) => e.type === "equipment").at(-1)!;
+		assert.deepEqual(s.chatMessages, [entry.text]);
+		if (id === "map") {
+			assert.match(entry.text, new RegExp(`lent 1 die to ${s.players[1]!.name}`));
+			assert.equal(stripSecret(s, 2).players[1]!.dice.find((d) => d.id === die.id)!.face, 0);
+		}
+	}
+});
+
+test("Map records the transferred face privately for lender and recipient", () => {
+	let s = withPhase();
+	const die = structuredClone(s.players[0]!.dice[0]!);
+	s = equip(s, 0, "map", { target: 1, ids: [die.id] });
+	for (const seat of [0, 1]) assert.deepEqual(stripSecret(s, seat).log.at(-1)!.dice, [die]);
+	for (const seat of [2, undefined]) assert.equal(stripSecret(s, seat).log.at(-1)!.dice, undefined);
+	// Later changes to the recipient's dice must not update the lender's snapshot.
+	s.players[1]!.dice.find((d) => d.id === die.id)!.face = die.face === 6 ? 1 : 6;
+	assert.deepEqual(stripSecret(s, 0).log.at(-1)!.dice, [die]);
+	assert.equal(stripSecret(s, 0).players[1]!.dice.find((d) => d.id === die.id)!.face, 0);
 });

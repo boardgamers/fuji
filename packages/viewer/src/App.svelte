@@ -442,8 +442,7 @@
 					type="button"
 					class="difficulty-label"
 					use:equipmentPopover
-					aria-label={`Difficulty level ${s.difficulty}: stamina costs`}
-					>Level {s.difficulty} <span aria-hidden="true">ⓘ</span></button
+					aria-label={`Difficulty level ${s.difficulty}: stamina costs`}>Level {s.difficulty}</button
 				>
 				<span class="equipment-preview difficulty-preview" popover="auto">
 					<strong>Difficulty level {s.difficulty} of 4</strong>

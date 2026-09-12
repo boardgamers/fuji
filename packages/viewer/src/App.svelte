@@ -171,7 +171,7 @@
 	const diceTerrain = $derived(s?.phase === "planning" ? focusTerrain : destination);
 	const rule = $derived(diceTerrain?.requirement);
 	const diceConflicts = $derived.by(() => {
-		if (!s || !me || seat === undefined || !["reroll", "equipment"].includes(s.phase)) return {};
+		if (!s || !me || seat === undefined || !["planning", "reroll", "equipment"].includes(s.phase)) return {};
 		// Only our visible dice and the public destinations of comparison neighbors.
 		return Object.fromEntries(
 			me.dice.map((d) => [
@@ -180,6 +180,7 @@
 					? []
 					: neighbors(s, seat).flatMap((i) => {
 							const player = s.players[i]!;
+							if (s.phase === "planning" && player.path.length <= 1 && !player.ready) return [];
 							const destination = terrain(cell(s, player.path.at(-1) ?? player.position).terrain);
 							return matches(face(d), destination.requirement)
 								? [
@@ -188,6 +189,7 @@
 											name: player.name,
 											color: CHARACTER_COLORS[player.character]!,
 											location: destination.name,
+											provisional: s.phase === "planning" && !player.ready,
 										},
 									]
 								: [];
@@ -436,7 +438,17 @@
 								? "Preparation"
 								: s.phase}</span
 				>
-				<span class="difficulty-label" title={`Difficulty level ${s.difficulty} of 4`}>Level {s.difficulty}</span>
+				<button
+					type="button"
+					class="difficulty-label"
+					use:equipmentPopover
+					aria-label={`Difficulty level ${s.difficulty}: stamina costs`}
+					>Level {s.difficulty} <span aria-hidden="true">ⓘ</span></button
+				>
+				<span class="equipment-preview difficulty-preview" popover="auto">
+					<strong>Difficulty level {s.difficulty} of 4</strong>
+					<StaminaGuide difficulty={s.difficulty} expanded />
+				</span>
 			</div>
 			{#if store.chat.enabled}<button class="text-button" onclick={openChat}
 					>Chat{store.chat.unread ? ` · ${store.chat.unread}` : ""}</button
@@ -683,6 +695,7 @@
 					{seat}
 					{reserved}
 					previewTotals={s.phase === "planning" && !!me && !me.ready && !s.pending && !tool}
+					previewImpacts={s.phase === "planning" && !!me && !s.pending && !tool}
 					selectedLocations={tool ? tilePicks : []}
 					selectionReasons={binocularReasons}
 					selected={s.phase === "setup" ? "" : tool ? (tilePicks.at(-1) ?? "") : (currentRoute.at(-1) ?? "")}
@@ -726,13 +739,14 @@
 									<strong>{localTotal}</strong><span>Matching dice total<br />{diceTerrain.name}</span>
 								</div>{/if}
 						</div>
-						{#if ["reroll", "equipment"].includes(s.phase)}<p class="dice-conflict-guide">
+						{#if ["planning", "reroll", "equipment"].includes(s.phase)}<p class="dice-conflict-guide">
 								Player numbers mark dice that also count against that teammate’s destination.
+								{#if s.phase === "planning"}Dashed markers are provisional; solid markers are confirmed.{/if}
 							</p>{/if}
 						{#if s.phase === "reroll"}<section class="reroll-actions" aria-label="Dice actions">
 								{#if me.ready}<p class="confirmed">✓ Your dice are kept. Waiting for the team.</p>
 									<button
-										class="text-button"
+										class="revise-choice"
 										onclick={() => store.dispatch({ action: "unready" })}
 										disabled={store.waiting || !canReopenChoice(s, seat!)}>Change my dice choices</button
 									>
@@ -1018,7 +1032,7 @@
 								disabled={store.waiting || !!reserved[currentRoute.at(-1)!]}
 								onclick={confirmTravel}>Ready to travel <span>→</span></button
 							>{:else}<p class="confirmed">✓ Your route is set. Waiting for the team.</p>
-							<button class="text-button" onclick={() => store.dispatch({ action: "plan", path: me.path })}
+							<button class="revise-choice" onclick={() => store.dispatch({ action: "plan", path: me.path })}
 								>Change my route</button
 							>{/if}
 					{:else if s.phase === "reroll"}
@@ -1033,7 +1047,7 @@
 								disabled={store.waiting}>Ready to reveal <span>→</span></button
 							>{:else}<p class="confirmed">✓ Ready. Waiting for the team.</p>
 							<button
-								class="text-button"
+								class="revise-choice"
 								onclick={() => store.dispatch({ action: "unready" })}
 								disabled={store.waiting || !canReopenChoice(s, seat!)}>Change my choice</button
 							>{/if}

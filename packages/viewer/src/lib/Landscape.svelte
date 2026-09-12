@@ -2,6 +2,7 @@
 	import {
 		terrain,
 		total,
+		neighbors,
 		cell,
 		distance,
 		threatened,
@@ -24,6 +25,7 @@
 		selectionReasons,
 		reachable = [],
 		previewTotals = false,
+		previewImpacts = false,
 		onclick,
 		oninspect,
 	}: {
@@ -37,9 +39,18 @@
 		selectionReasons?: Record<string, string>;
 		reachable?: string[];
 		previewTotals?: boolean;
+		previewImpacts?: boolean;
 		onclick: (id: string) => void;
 		oninspect: (id: string) => void;
 	} = $props();
+	const impactPlayers = $derived(
+		previewImpacts && seat !== undefined
+			? neighbors(state, seat).filter((i) => {
+					const p = state.players[i]!;
+					return p.path.length > 1 || p.ready;
+				})
+			: []
+	);
 	const opposite = $derived(state.players.length === 4 && seat !== undefined ? (seat + 2) % 4 : -1);
 	const danger = $derived(threatened(state));
 	const mapWidth = $derived(116 + Math.max(...state.board.map((c) => c.x)) * 100);
@@ -109,6 +120,7 @@
 					class:burnt={a.lava || b.lava}
 				/>{/each}
 			{#each state.board as c (c.id)}
+				{@const peers = impactPlayers.filter((i) => state.players[i]!.path.at(-1) === c.id)}
 				{@const data = terrain(c.terrain)}
 				<g
 					class="location"
@@ -207,7 +219,25 @@
 							rx="4"
 							fill="#112820e6"
 						/><RequirementSymbols requirement={data.requirement} x={x(c.id)} y={y(c.id) + 25} {colorblind} />{/if}
-					{#if previewTotals && seat !== undefined && reachable.includes(c.id) && !reserved[c.id] && !c.lava}
+
+					{#if seat !== undefined && peers.length && !c.lava}
+						{#each peers as playerIndex, index}
+							{@const player = state.players[playerIndex]!}
+							{@const value = total(state.players[seat]!, c.terrain)}
+							{@const cx = x(c.id) + (index - (peers.length - 1) / 2) * 43}
+							<g
+								class="dice-preview impact-preview"
+								class:provisional={!player.ready}
+								data-location={c.id}
+								data-player={playerIndex}
+								style:--impact-color={CHARACTER_COLORS[player.character]}
+								aria-label={`Your dice total against ${player.name}: ${value}. ${player.ready ? "Confirmed" : "Provisional"} destination.`}
+							>
+								<rect x={cx - 20} y={y(c.id) - 13} width="40" height="26" rx="6" />
+								<text x={cx} y={y(c.id) + 6}>{value}</text>
+							</g>
+						{/each}
+					{:else if previewTotals && seat !== undefined && reachable.includes(c.id) && !reserved[c.id] && !c.lava}
 						{@const value = total(state.players[seat]!, c.terrain) + state.players[seat]!.bonus}
 						<g class="dice-preview" data-location={c.id} aria-label={`Your current dice total: ${value}`}>
 							<title>Your current matching dice total, including bonuses. Rerolls may change it.</title>
@@ -332,6 +362,16 @@
 		font-size: 21px;
 		font-weight: 700;
 		text-anchor: middle;
+	}
+	.impact-preview rect {
+		stroke: var(--impact-color);
+		stroke-width: 2;
+	}
+	.impact-preview text {
+		fill: var(--impact-color);
+	}
+	.impact-preview.provisional rect {
+		stroke-dasharray: 4 3;
 	}
 	@media (max-width: 650px), (pointer: coarse) {
 		.dice-preview {

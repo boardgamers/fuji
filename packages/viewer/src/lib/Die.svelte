@@ -13,13 +13,18 @@
 		colorblind?: boolean;
 		selected?: boolean;
 		relevant?: boolean;
-		conflicts?: { seat: number; name: string; color: string; location: string }[];
+		conflicts?: { seat: number; name: string; color: string; location: string; provisional?: boolean }[];
 		disabled?: boolean;
 		onclick?: () => void;
 	} = $props();
 	const f = $derived(face(die));
 	const conflictHelp = $derived(
-		conflicts.map((p) => `Adds ${die.face} to the total ${p.name} must beat at ${p.location}`).join(". ")
+		conflicts
+			.map(
+				(p) =>
+					`Adds ${die.face} to the total ${p.name} must beat at ${p.location}${p.provisional ? " (provisional destination)" : ""}`
+			)
+			.join(". ")
 	);
 	const layouts: Record<number, number[]> = {
 		1: [4],
@@ -55,7 +60,9 @@
 			>{#each Array(9) as _, i}<i class:filled={layouts[die.face]?.includes(i)}></i>{/each}</span
 		>{#if colorblind}<span class="die-caption">{f.color}</span>{/if}{:else}<span aria-hidden="true">?</span>{/if}
 	{#if conflicts.length && die.face && !die.aside}<span class="conflict-badges" aria-hidden="true">
-			{#each conflicts as player}<span style:--player-color={player.color}>{player.seat + 1}</span>{/each}
+			{#each conflicts as player}<span class:provisional={player.provisional} style:--player-color={player.color}
+					>{player.seat + 1}</span
+				>{/each}
 		</span>{/if}
 </button>
 
@@ -132,6 +139,9 @@
 		font-size: 11px;
 		font-weight: 700;
 		box-shadow: 0 2px 4px #0005;
+	}
+	.conflict-badges > span.provisional {
+		border-style: dashed;
 	}
 	.die.aside {
 		opacity: 0.5;

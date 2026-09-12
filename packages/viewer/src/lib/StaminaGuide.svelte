@@ -1,12 +1,17 @@
 <script lang="ts">
-	let { difficulty, margin, aid = false }: { difficulty: number; margin?: number; aid?: boolean } = $props();
+	let {
+		difficulty,
+		margin,
+		aid = false,
+		expanded = false,
+	}: { difficulty: number; margin?: number; aid?: boolean; expanded?: boolean } = $props();
 	const maximum = $derived(difficulty + 2);
 	const current = $derived(
 		margin === undefined ? undefined : margin <= 0 ? 0 : Math.min(maximum, Math.ceil(margin / 2))
 	);
 </script>
 
-<details class="stamina-guide">
+<details class="stamina-guide" open={expanded}>
 	<summary>ⓘ Stamina cost</summary>
 	<p>Lead = your total − the highest neighbouring total.</p>
 	<table>

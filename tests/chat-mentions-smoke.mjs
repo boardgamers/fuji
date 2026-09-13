@@ -62,11 +62,11 @@ for (const width of [390, 1400]) {
 	assert.equal(await suggestions.getByRole("button", { name: "@Full Name", exact: true }).count(), 0);
 	await p.evaluate(() => e.emit("player", { index: 0 }));
 	await p.getByRole("textbox", { name: "Chat message" }).fill("@F");
+	await p.getByRole("textbox", { name: "Chat message" }).press("Tab");
+	await p.getByRole("textbox", { name: "Chat message" }).pressSequentially("hello");
+	assert.equal(await p.getByRole("textbox", { name: "Chat message" }).inputValue(), '@"Full Name" hello');
 	await p.getByRole("textbox", { name: "Chat message" }).press("Enter");
-	assert.equal(await p.getByRole("textbox", { name: "Chat message" }).inputValue(), '@"Full Name" ');
-	await p.getByRole("textbox", { name: "Chat message" }).press("End");
-	await p.getByRole("textbox", { name: "Chat message" }).press("Enter");
-	assert.equal(await p.evaluate(() => sent[0].text), '@"Full Name"');
+	assert.equal(await p.evaluate(() => sent[0].text), '@"Full Name" hello');
 	assert.equal(await p.getByRole("link", { name: "Rules", exact: true }).getAttribute("href"), "https://example.com");
 	assert.equal(await p.locator("article script").count(), 0);
 	assert.equal(await p.getByText(/Waiting for Full Name to choose an injury/).count(), 1);

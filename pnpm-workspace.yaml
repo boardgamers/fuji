@@ -1,4 +1,4 @@
 packages:
   - packages/*
 minimumReleaseAgeExclude:
-  - "@boardgamers/protocol@0.2.1"
+  - "@boardgamers/protocol@0.2.2"

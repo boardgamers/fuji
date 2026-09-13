@@ -34,8 +34,8 @@ importers:
   packages/viewer:
     dependencies:
       '@boardgamers/protocol':
-        specifier: 0.2.1
-        version: 0.2.1
+        specifier: 0.2.2
+        version: 0.2.2
       fuji-engine:
         specifier: workspace:*
         version: link:../engine
@@ -61,8 +61,8 @@ importers:
 
 packages:
 
-  '@boardgamers/protocol@0.2.1':
-    resolution: {integrity: sha512-e114ohTXaZ1cHdzJs9kj+MkT1ciHGtcaqFherLVMFNrgvxLUGq8kZ8cCxsObXI4n0MGjzPU+Y/j+DAKD0yHoxw==}
+  '@boardgamers/protocol@0.2.2':
+    resolution: {integrity: sha512-5o5nPZW6CN6PysF0i90OR+B30djiFhAGutCZe5RKJV6h3RgqE36HA7l0pOpvhdHz8uYtqE0nmaPlc+2ZtYiM/A==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -631,7 +631,7 @@ packages:
 
 snapshots:
 
-  '@boardgamers/protocol@0.2.1':
+  '@boardgamers/protocol@0.2.2':
     dependencies:
       zod: 4.6.2
 

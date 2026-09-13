@@ -1,8 +1,28 @@
 <script lang="ts">
 	import { tick } from "svelte";
 	import type { Store } from "./store.svelte";
+	import { mentionQueryAt, filterMentionCandidates, applyMention } from "./mentions";
 	let { store }: { store: Store } = $props();
 	const chat = $derived(store.chat);
+	let composer: HTMLInputElement | undefined = $state();
+	let caret = $state(0);
+	let choice = $state(0);
+	let dismissed = $state(false);
+	const query = $derived(dismissed ? null : mentionQueryAt(chat.draft, caret));
+	const candidates = $derived(query ? filterMentionCandidates(chat.mentions, query.query) : []);
+	async function chooseMention(name: string) {
+		if (!query) return;
+		const next = applyMention(chat.draft, query, name);
+		chat.draft = next.text;
+		caret = next.caret + 1;
+		dismissed = true;
+		await tick();
+		composer?.focus();
+		composer?.setSelectionRange(caret, caret);
+	}
+	function safeLink(url: string) {
+		return /^https?:\/\//i.test(url);
+	}
 
 	let list: HTMLDivElement | undefined = $state();
 	let contents: HTMLDivElement | undefined = $state();
@@ -123,19 +143,74 @@
 									{#if message.editedAt}<span title={new Date(message.editedAt).toLocaleString()}>edited</span>{/if}
 								</div>
 							{/if}
-							<p>{message.text}</p>
+							<p>
+								{#each message.segments ?? [{ kind: "text" as const, text: message.text }] as segment}
+									{#if segment.kind === "link" && safeLink(segment.url)}<a
+											href={segment.url}
+											target="_blank"
+											rel="noopener noreferrer">{segment.text}</a
+										>
+									{:else if segment.kind === "mention"}{@const player = chat.mentions.find((p) => p.id === segment.id)}
+										{#if player?.playerIndex !== undefined}<button
+												class="chat-mention"
+												onclick={() => store.clickPlayer(player.playerIndex!)}>@{segment.name}</button
+											>
+										{:else}<a
+												class="chat-mention"
+												href={`https://boardgamers.space/user/${encodeURIComponent(segment.name)}`}
+												target="_blank"
+												rel="noopener noreferrer">@{segment.name}</a
+											>{/if}
+									{:else}{segment.text}{/if}
+								{/each}
+							</p>
 						</article>
 					{/each}
 				</div>
 			</div>
 			{#if chat.canSend && !chat.disabled}
+				{#if candidates.length}<div class="mention-choices" aria-label="Mention a teammate">
+						{#each candidates as candidate, i}<button
+								type="button"
+								class:selected={i === choice}
+								onmousedown={(e) => e.preventDefault()}
+								onclick={() => chooseMention(candidate.name)}>@{candidate.name}</button
+							>{/each}
+					</div>{/if}
 				<div class="chat-composer">
 					<input
 						type="text"
 						aria-label="Chat message"
 						placeholder="Message your teammates…"
 						bind:value={chat.draft}
+						bind:this={composer}
+						oninput={() => {
+							caret = composer?.selectionStart ?? 0;
+							choice = 0;
+							dismissed = false;
+						}}
+						onclick={() => {
+							caret = composer?.selectionStart ?? 0;
+							dismissed = false;
+						}}
 						onkeydown={(event) => {
+							if (!event.isComposing && candidates.length) {
+								if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+									event.preventDefault();
+									choice = (choice + (event.key === "ArrowDown" ? 1 : candidates.length - 1)) % candidates.length;
+									return;
+								}
+								if (event.key === "Escape") {
+									event.preventDefault();
+									dismissed = true;
+									return;
+								}
+								if (event.key === "Enter" || event.key === "Tab") {
+									event.preventDefault();
+									void chooseMention(candidates[choice]?.name ?? candidates[0]!.name);
+									return;
+								}
+							}
 							if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
 								event.preventDefault();
 								chat.submit();
@@ -156,6 +231,37 @@
 {/if}
 
 <style>
+	.chat-mention {
+		color: var(--gold, #e6c780);
+		font: inherit;
+		font-weight: 600;
+		padding: 0 2px;
+		background: #e6c78015;
+		border: 0;
+		cursor: pointer;
+	}
+	.mention-choices {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 6px 0;
+	}
+	.mention-choices button {
+		color: #f1e6bf;
+		background: #203b32;
+		border: 1px solid #e6c78055;
+		padding: 5px 8px;
+	}
+	.mention-choices button.selected {
+		border-color: #e6c780;
+		background: #365348;
+	}
+	article p a {
+		color: #9ed9ea;
+		text-decoration: underline;
+		overflow-wrap: anywhere;
+	}
+
 	.expedition-chat {
 		border-top: 1px solid #e6c78030;
 		padding: 12px;

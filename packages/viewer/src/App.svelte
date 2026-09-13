@@ -438,6 +438,7 @@
 								? "Preparation"
 								: s.phase}</span
 				>
+				<span class="difficulty-label">Scenario {s.scenario ?? 1}</span>
 				<button
 					type="button"
 					class="difficulty-label"
@@ -1047,7 +1048,13 @@
 								disabled={store.waiting || !canReopenChoice(s, seat!)}>Change my choice</button
 							>{/if}
 					{:else if s.phase === "movement"}
-						{#if s.activeResolution === null}<p class="instruction">
+						{#if s.players.some((p) => p.pendingInjuries)}<p class="instruction">
+								Waiting for {s.players
+									.filter((p) => p.pendingInjuries)
+									.map((p) => p.name)
+									.join(", ")} to choose an injury.
+							</p>
+						{:else if s.activeResolution === null}<p class="instruction">
 								Choose who moves next. A route that triggers extra lava is often best resolved last.
 							</p>
 							{#if !me.resolved}<button class="primary" onclick={() => store.dispatch({ action: "beginMovement" })}
@@ -1111,9 +1118,9 @@
 									disabled={store.waiting}
 									onclick={() => store.dispatch({ action: "help", count: 0 })}>Don't use bars</button
 								>
-							{:else}<p class="instruction">
-									Waiting for {s.pendingHelpers?.map((i) => s.players[i]!.name).join(", ") || "the Gatherer"} to decide whether
-									to use power bars.
+							{:else if s.pendingHelpers?.length}<p class="instruction">
+									Waiting for {s.pendingHelpers.map((i) => s.players[i]!.name).join(", ")} to decide whether to use power
+									bars.
 								</p>{/if}
 						{/if}
 					{:else if s.phase === "eruption"}

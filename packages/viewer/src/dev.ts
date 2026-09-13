@@ -1,4 +1,6 @@
 import { mount } from "svelte";
+import { parseMentions } from "./lib/mentions";
+import type { ChatSegment } from "./lib/chat.svelte";
 import App from "./App.svelte";
 import { Store } from "./lib/store.svelte";
 import { initGame, applyMove, moveAI, stripSecret, activePlayers, type State } from "fuji-engine";
@@ -21,6 +23,15 @@ store.chat.send = ({ text, requestId }) => {
 			author: store.state?.players[playerIndex]?.name ?? `Player ${playerIndex + 1}`,
 			playerIndex,
 			text,
+			segments: parseMentions(text, new Map(store.chat.mentions.map((p) => [p.id, p.name]))).flatMap(
+				(segment): ChatSegment[] =>
+					segment.kind === "mention"
+						? [segment]
+						: segment.text
+								.split(/(https?:\/\/[^\s<>"'`]+)/g)
+								.filter(Boolean)
+								.map((text) => (/^https?:\/\//.test(text) ? { kind: "link", url: text, text } : { kind: "text", text }))
+			),
 			type: "text",
 			createdAt: new Date().toISOString(),
 		},
@@ -77,6 +88,11 @@ if (import.meta.hot)
 function publish() {
 	localStorage.setItem("fuji-dev-v1", JSON.stringify(game));
 	store.receive(stripSecret(game, store.seat));
+	store.chat.mentions = game.players.map((p, playerIndex) => ({
+		id: `local-${playerIndex}`,
+		name: p.name,
+		playerIndex,
+	}));
 	scheduleTeammate();
 }
 store.send = (move) => {

@@ -2,7 +2,7 @@ import { mount, tick } from "svelte";
 import App from "./App.svelte";
 import { Store } from "./lib/store.svelte";
 import { Emitter } from "./lib/emitter";
-import type { ChatMessage } from "./lib/chat.svelte";
+import type { ChatMessage, ChatMention } from "./lib/chat.svelte";
 import type { View } from "fuji-engine";
 import "./lib/theme.css";
 export function launch(selector: string) {
@@ -25,10 +25,11 @@ export function launch(selector: string) {
 	events.on<boolean>("chat:disabled", (disabled) => {
 		chat.disabled = disabled;
 	});
-	events.on<{ canSend: boolean; reason?: string }>("chat:state", (state) => {
+	events.on<{ canSend: boolean; reason?: string; mentions?: ChatMention[] }>("chat:state", (state) => {
 		chat.enabled = true;
 		chat.canSend = state.canSend;
 		chat.reason = state.reason ?? "";
+		chat.mentions = state.mentions ?? [];
 	});
 	events.on<{ requestId: string; ok: boolean; error?: string }>("chat:result", (result) => chat.result(result));
 

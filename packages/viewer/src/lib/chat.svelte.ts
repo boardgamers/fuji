@@ -1,3 +1,8 @@
+export type ChatSegment =
+	| { kind: "text"; text: string }
+	| { kind: "link"; text: string; url: string }
+	| { kind: "mention"; id: string; name: string };
+export type ChatMention = { id: string; name: string; playerIndex?: number };
 export type ChatMessage = {
 	_id?: string;
 	author?: string;
@@ -5,11 +10,13 @@ export type ChatMessage = {
 	playerIndex?: number;
 	createdAt?: string;
 	text: string;
+	segments?: ChatSegment[];
 	type: "text" | "system";
 	editedAt?: string;
 };
 export class Chat {
 	enabled = $state(false);
+	mentions: ChatMention[] = $state([]);
 	open = $state(true);
 	messages: ChatMessage[] = $state([]);
 	canSend = $state(false);

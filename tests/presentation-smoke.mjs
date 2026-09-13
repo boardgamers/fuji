@@ -6,7 +6,7 @@ try {
 	await page.goto("http://127.0.0.1:5187/");
 	await page.locator(".map").waitFor();
 	await page.locator(".equipment-chip").first().hover();
-	await page.locator(".equipment-preview").first().waitFor({ state: "visible" });
+	await page.locator(".equipment-chip + .equipment-preview").first().waitFor({ state: "visible" });
 	await page.screenshot({ path: "work/browser/fuji-equipment-preview.png", fullPage: true });
 	const result = await page.evaluate(
 		async (initial) => {

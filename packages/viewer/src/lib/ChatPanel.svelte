@@ -9,7 +9,14 @@
 	let choice = $state(0);
 	let dismissed = $state(false);
 	const query = $derived(dismissed ? null : mentionQueryAt(chat.draft, caret));
-	const candidates = $derived(query ? filterMentionCandidates(chat.mentions, query.query) : []);
+	const candidates = $derived(
+		query
+			? filterMentionCandidates(
+					chat.mentions.filter((player) => store.seat === undefined || player.playerIndex !== store.seat),
+					query.query
+				)
+			: []
+	);
 	async function chooseMention(name: string) {
 		if (!query) return;
 		const next = applyMention(chat.draft, query, name);

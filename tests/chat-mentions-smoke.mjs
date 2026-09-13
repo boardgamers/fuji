@@ -26,7 +26,13 @@ for (const width of [390, 1400]) {
 			e.on("chat:send", (m) => sent.push(m));
 			e.emit("player", { index: 0 });
 			e.emit("state", s);
-			e.emit("chat:state", { canSend: true, mentions: [{ id: "u1", name: "Full Name", playerIndex: 1 }] });
+			e.emit("chat:state", {
+				canSend: true,
+				mentions: [
+					{ id: "u0", name: "You", playerIndex: 0 },
+					{ id: "u1", name: "Full Name", playerIndex: 1 },
+				],
+			});
 			e.emit("chat:messages", [
 				{
 					_id: "000000000000000000000001",
@@ -46,6 +52,14 @@ for (const width of [390, 1400]) {
 		},
 		stripSecret(s, 0)
 	);
+	await p.getByRole("textbox", { name: "Chat message" }).fill("@");
+	const suggestions = p.locator(".mention-choices");
+	assert.equal(await suggestions.getByRole("button", { name: "@You", exact: true }).count(), 0);
+	assert.equal(await suggestions.getByRole("button", { name: "@Full Name", exact: true }).isVisible(), true);
+	await p.evaluate(() => e.emit("player", { index: 1 }));
+	await suggestions.getByRole("button", { name: "@You", exact: true }).waitFor();
+	assert.equal(await suggestions.getByRole("button", { name: "@Full Name", exact: true }).count(), 0);
+	await p.evaluate(() => e.emit("player", { index: 0 }));
 	await p.getByRole("textbox", { name: "Chat message" }).fill("@F");
 	await p.getByRole("textbox", { name: "Chat message" }).press("Enter");
 	assert.equal(await p.getByRole("textbox", { name: "Chat message" }).inputValue(), '@"Full Name" ');

@@ -40,6 +40,7 @@ for (const width of [390, 1400]) {
 					playerIndex: 1,
 					type: "text",
 					text: "Hi @You https://example.com",
+					createdAt: new Date(2026, 8, 12, 23, 59).toISOString(),
 					segments: [
 						{ kind: "text", text: "Hi " },
 						{ kind: "mention", id: "u1", name: "Full Name" },
@@ -72,6 +73,28 @@ for (const width of [390, 1400]) {
 	assert.equal(await p.getByText(/Gatherer.*decide/).count(), 0);
 	assert.equal(await p.getByText("Scenario 7", { exact: true }).isVisible(), true);
 	assert.equal(await p.getByRole("button", { name: "Difficulty level 2: stamina costs" }).isVisible(), true);
+	await p.evaluate(() =>
+		e.emit("chat:appended", [
+			{
+				_id: "000000000000000000000002",
+				type: "text",
+				text: "Next day",
+				createdAt: new Date(2026, 8, 13, 0, 1).toISOString(),
+			},
+			{
+				_id: "000000000000000000000003",
+				type: "text",
+				text: "Same day",
+				createdAt: new Date(2026, 8, 13, 0, 2).toISOString(),
+			},
+		])
+	);
+	await p.locator(".chat-day").nth(1).waitFor();
+	assert.deepEqual(await p.locator(".chat-day time").evaluateAll((dates) => dates.map((date) => date.dateTime)), [
+		"2026-09-12",
+		"2026-09-13",
+	]);
+	await p.screenshot({ path: `/tmp/fuji-chat-dates-${width}.png`, fullPage: true });
 	assert.deepEqual(errors, []);
 	await p.close();
 }

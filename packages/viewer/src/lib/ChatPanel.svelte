@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { chatDateSeparators } from "@boardgamers/protocol/chat";
 	import type { Store } from "./store.svelte";
 	import { bindChatComposer, bindChatViewport, type ChatSuggestions } from "@boardgamers/protocol/chat/dom";
 	let { store }: { store: Store } = $props();
 	const chat = $derived(store.chatState);
+	const dates = $derived(chatDateSeparators(chat.messages));
 	let composer: HTMLInputElement | undefined = $state();
 	let list: HTMLDivElement | undefined = $state();
 	let contents: HTMLDivElement | undefined = $state();
@@ -63,6 +65,8 @@
 				<div bind:this={contents}>
 					{#if !chat.messages.length}<p class="empty">Plan your escape together.</p>{/if}
 					{#each chat.messages as message, i (message._id ?? i)}
+						{@const day = dates[i]}
+						{#if day}<div class="chat-day"><time datetime={day.dateTime}>{day.label}</time></div>{/if}
 						<article data-message-id={message._id} class:system={message.type === "system"}>
 							{#if message.author}
 								<div class="chat-author">
@@ -138,6 +142,24 @@
 {/if}
 
 <style>
+	.chat-day {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 12px 0 8px;
+		font-size: 11px;
+		color: #afbea9;
+	}
+	.chat-day::before,
+	.chat-day::after {
+		content: "";
+		flex: 1;
+		border-top: 1px solid #e6c78030;
+	}
+	.chat-day time {
+		color: inherit;
+		font-size: inherit;
+	}
 	.chat-mention {
 		color: var(--gold, #e6c780);
 		font: inherit;

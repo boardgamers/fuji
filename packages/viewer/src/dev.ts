@@ -1,6 +1,5 @@
 import { mount } from "svelte";
-import { parseMentions } from "./lib/mentions";
-import type { ChatSegment } from "./lib/chat.svelte";
+import { chatSegments } from "@boardgamers/protocol/chat";
 import App from "./App.svelte";
 import { Store } from "./lib/store.svelte";
 import { initGame, applyMove, moveAI, stripSecret, activePlayers, type State } from "fuji-engine";
@@ -8,8 +7,7 @@ import "./lib/theme.css";
 import enginePackage from "../../engine/package.json";
 const store = new Store();
 store.local = true;
-store.chat.enabled = true;
-store.chat.canSend = true;
+store.chat.setState({ canSend: true });
 try {
 	store.chat.replace(JSON.parse(localStorage.getItem("fuji-dev-chat") ?? "[]"));
 } catch {
@@ -19,24 +17,16 @@ store.chat.send = ({ text, requestId }) => {
 	const playerIndex = store.seat ?? 0;
 	store.chat.append([
 		{
-			_id: crypto.randomUUID(),
+			_id: Date.now().toString(16).padStart(12, "0") + crypto.randomUUID().replaceAll("-", "").slice(0, 12),
 			author: store.state?.players[playerIndex]?.name ?? `Player ${playerIndex + 1}`,
 			playerIndex,
 			text,
-			segments: parseMentions(text, new Map(store.chat.mentions.map((p) => [p.id, p.name]))).flatMap(
-				(segment): ChatSegment[] =>
-					segment.kind === "mention"
-						? [segment]
-						: segment.text
-								.split(/(https?:\/\/[^\s<>"'`]+)/g)
-								.filter(Boolean)
-								.map((text) => (/^https?:\/\//.test(text) ? { kind: "link", url: text, text } : { kind: "text", text }))
-			),
+			segments: chatSegments(text, new Map(store.chatState.mentions.map((p) => [p.id, p.name])), true),
 			type: "text",
 			createdAt: new Date().toISOString(),
 		},
 	]);
-	localStorage.setItem("fuji-dev-chat", JSON.stringify(store.chat.messages));
+	localStorage.setItem("fuji-dev-chat", JSON.stringify(store.chatState.messages));
 	store.chat.result({ requestId, ok: true });
 };
 store.setSound(localStorage.getItem("fuji-sound") !== "false");
@@ -88,11 +78,14 @@ if (import.meta.hot)
 function publish() {
 	localStorage.setItem("fuji-dev-v1", JSON.stringify(game));
 	store.receive(stripSecret(game, store.seat));
-	store.chat.mentions = game.players.map((p, playerIndex) => ({
-		id: `local-${playerIndex}`,
-		name: p.name,
-		playerIndex,
-	}));
+	store.chat.setState({
+		canSend: true,
+		mentions: game.players.map((p, playerIndex) => ({
+			id: `local-${playerIndex}`,
+			name: p.name,
+			playerIndex,
+		})),
+	});
 	scheduleTeammate();
 }
 store.send = (move) => {
@@ -108,7 +101,7 @@ store.restart = (players, seed, difficulty, scenario = 1, skillAssignment = "ran
 	game = initGame(players, { difficulty, scenario, skillAssignment }, seed);
 	store.seat = 0;
 	store.chat.replace([]);
-	store.chat.draft = "";
+	store.chat.setDraft("");
 	localStorage.removeItem("fuji-dev-chat");
 	publish();
 };

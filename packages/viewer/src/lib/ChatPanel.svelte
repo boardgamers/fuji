@@ -1,26 +1,23 @@
 <script lang="ts">
 	import { tick } from "svelte";
 	import type { Store } from "./store.svelte";
-	import { mentionQueryAt, filterMentionCandidates, applyMention } from "./mentions";
+	import { mentionQueryAt, applyMention } from "@boardgamers/protocol/chat";
 	let { store }: { store: Store } = $props();
-	const chat = $derived(store.chat);
+	const chat = $derived(store.chatState);
 	let composer: HTMLInputElement | undefined = $state();
 	let caret = $state(0);
 	let choice = $state(0);
 	let dismissed = $state(false);
 	const query = $derived(dismissed ? null : mentionQueryAt(chat.draft, caret));
-	const candidates = $derived(
-		query
-			? filterMentionCandidates(
-					chat.mentions.filter((player) => store.seat === undefined || player.playerIndex !== store.seat),
-					query.query
-				)
-			: []
-	);
+	const candidates = $derived.by(() => {
+		void chat.mentions;
+		void chat.playerIndex;
+		return query ? store.chat.suggestions(query.query) : [];
+	});
 	async function chooseMention(name: string) {
 		if (!query) return;
 		const next = applyMention(chat.draft, query, name);
-		chat.draft = next.text;
+		store.chat.setDraft(next.text);
 		caret = next.caret + 1;
 		dismissed = true;
 		await tick();
@@ -56,7 +53,7 @@
 			return r.bottom <= Math.min(bounds.bottom, window.innerHeight) && r.bottom > Math.max(bounds.top, 0);
 		});
 		const id = latest?.dataset.messageId;
-		if (id) chat.markRead(id);
+		if (id) store.chat.markRead(id);
 	}
 	function followLatest() {
 		if (scrollFrame !== undefined) cancelAnimationFrame(scrollFrame);
@@ -105,7 +102,7 @@
 				aria-label={chat.open ? "Collapse chat" : "Expand chat"}
 				aria-expanded={chat.open}
 				onclick={() => {
-					chat.open = !chat.open;
+					store.chat.setOpen(!chat.open);
 					pinned = true;
 				}}>{chat.open ? "−" : "+"}</button
 			>
@@ -189,9 +186,10 @@
 						type="text"
 						aria-label="Chat message"
 						placeholder="Message your teammates…"
-						bind:value={chat.draft}
+						value={chat.draft}
 						bind:this={composer}
-						oninput={() => {
+						oninput={(event) => {
+							store.chat.setDraft(event.currentTarget.value);
 							caret = composer?.selectionStart ?? 0;
 							choice = 0;
 							dismissed = false;
@@ -220,7 +218,7 @@
 							}
 							if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
 								event.preventDefault();
-								chat.submit();
+								store.chat.submit();
 							}
 						}}
 					/>
@@ -228,7 +226,7 @@
 						class="chat-send"
 						disabled={!!chat.pending || !chat.draft.trim()}
 						type="button"
-						onclick={() => chat.submit()}>{chat.pending ? "Sending…" : "Send"}</button
+						onclick={() => store.chat.submit()}>{chat.pending ? "Sending…" : "Send"}</button
 					>
 				</div>
 			{:else}<p class="notice">{notice}</p>{/if}

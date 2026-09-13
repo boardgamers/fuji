@@ -1,8 +1,12 @@
-import { Chat } from "./chat.svelte";
+import { ChatController } from "@boardgamers/protocol/chat";
 import { SoundDesign, type SoundCue } from "./sound";
 import type { View, Move } from "fuji-engine";
 export class Store {
-	chat = new Chat();
+	chat = new ChatController();
+	chatState = $state.raw(this.chat.snapshot);
+	private unsubscribeChat = this.chat.subscribe((snapshot) => {
+		this.chatState = snapshot;
+	});
 	state: View | null = $state(null);
 	avatars: string[] = $state([]);
 	clickPlayer: (index: number) => void = () => {};
@@ -17,6 +21,7 @@ export class Store {
 	}
 	destroy() {
 		this.dispose();
+		this.unsubscribeChat();
 		this.chat.destroy();
 		this.audio.destroy();
 	}

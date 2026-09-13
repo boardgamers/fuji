@@ -69,11 +69,11 @@
 	let journal = $state(true);
 	let socialTab = $state("chat");
 	$effect(() => {
-		store.chat.playerIndex = seat;
+		store.chat.setPlayer(seat);
 	});
 	function openChat() {
 		socialTab = "chat";
-		store.chat.open = true;
+		store.chat.setOpen(true);
 		requestAnimationFrame(() =>
 			document.querySelector(".expedition-chat")?.scrollIntoView({ behavior: "smooth", block: "center" })
 		);
@@ -450,8 +450,8 @@
 					<StaminaGuide difficulty={s.difficulty} expanded />
 				</span>
 			</div>
-			{#if store.chat.enabled}<button class="text-button" onclick={openChat}
-					>Chat{store.chat.unread ? ` · ${store.chat.unread}` : ""}</button
+			{#if store.chatState.enabled}<button class="text-button" onclick={openChat}
+					>Chat{store.chatState.unreadIds.length ? ` · ${store.chatState.unreadIds.length}` : ""}</button
 				>{/if}
 			<button class="text-button" onclick={() => (help = true)} aria-label="Open playing guide">Help</button>
 			<button
@@ -462,7 +462,9 @@
 					requestAnimationFrame(() =>
 						document
 							.querySelector(
-								window.innerWidth <= 850 && store.chat.enabled ? ".mobile-journal .inline-journal" : ".inline-journal"
+								window.innerWidth <= 850 && store.chatState.enabled
+									? ".mobile-journal .inline-journal"
+									: ".inline-journal"
 							)
 							?.scrollIntoView({ behavior: "smooth", block: "nearest" })
 					);
@@ -557,8 +559,8 @@
 						(s.phase === "equipment" && me.ready && !canReopenChoice(s, seat!)) ||
 						(s.phase === "eruption" && seat !== 0)}>{mobileLabel} →</button
 				>
-				{#if store.chat.enabled}<button class="dock-chat" onclick={openChat}
-						>Chat{store.chat.unread ? ` · ${store.chat.unread}` : ""}</button
+				{#if store.chatState.enabled}<button class="dock-chat" onclick={openChat}
+						>Chat{store.chatState.unreadIds.length ? ` · ${store.chatState.unreadIds.length}` : ""}</button
 					>{/if}
 			</div>{/if}
 		<section class="team" aria-label="Your expedition">
@@ -804,17 +806,17 @@
 							</div>{/if}
 					{/if}
 				</section>
-				<div class:desktop-journal={store.chat.enabled}>{@render journalPanel("desktop")}</div>
+				<div class:desktop-journal={store.chatState.enabled}>{@render journalPanel("desktop")}</div>
 			</div>
 			<aside class="journey">
 				<div class="social-panel" data-tab={socialTab}>
-					{#if store.chat.enabled}<nav class="social-tabs" aria-label="Chat and journal">
+					{#if store.chatState.enabled}<nav class="social-tabs" aria-label="Chat and journal">
 							<button
 								class:active={socialTab === "chat"}
 								onclick={() => {
 									socialTab = "chat";
-									store.chat.open = true;
-								}}>Chat{store.chat.unread ? ` · ${store.chat.unread}` : ""}</button
+									store.chat.setOpen(true);
+								}}>Chat{store.chatState.unreadIds.length ? ` · ${store.chatState.unreadIds.length}` : ""}</button
 							>
 							<button
 								class:active={socialTab === "journal"}
@@ -825,7 +827,7 @@
 							>
 						</nav>{/if}
 					<ChatPanel {store} />
-					{#if store.chat.enabled}<div class="mobile-journal">{@render journalPanel("mobile")}</div>{/if}
+					{#if store.chatState.enabled}<div class="mobile-journal">{@render journalPanel("mobile")}</div>{/if}
 				</div>
 				<div class="journey-actions">
 					<h2 class="sr-only">{nextAction}</h2>

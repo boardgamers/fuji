@@ -10,7 +10,7 @@
 		"fmt": "oxfmt",
 		"fmt:check": "oxfmt --check",
 		"simulate": "pnpm --filter fuji-engine build && node scripts/simulate.mjs",
-		"test:browser": "node tests/browser-smoke.mjs && node tests/bgs-bundle-smoke.mjs && node tests/presentation-smoke.mjs && node tests/chat-smoke.mjs && node tests/mobile-readiness-smoke.mjs && node tests/chat-tabs-smoke.mjs && node tests/chat-mentions-smoke.mjs"
+		"test:browser": "node tests/browser-smoke.mjs && node tests/bgs-bundle-smoke.mjs && node tests/presentation-smoke.mjs && node tests/chat-smoke.mjs && node tests/mobile-readiness-smoke.mjs && node tests/chat-tabs-smoke.mjs && node tests/chat-mentions-smoke.mjs && node tests/protocol-lifecycle-smoke.mjs"
 	},
 	"devDependencies": {
 		"oxfmt": "0.61.0",

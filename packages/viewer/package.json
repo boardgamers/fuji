@@ -10,7 +10,7 @@
 		"check": "svelte-check --tsconfig ./tsconfig.json"
 	},
 	"dependencies": {
-		"@boardgamers/protocol": "0.1.0",
+		"@boardgamers/protocol": "0.2.0",
 		"fuji-engine": "workspace:*"
 	},
 	"devDependencies": {

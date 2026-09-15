@@ -38,6 +38,7 @@ for (const preview of await previews.all()) {
 
 await page.evaluate(() => bridge.emit("chat:messages", []));
 await page.getByRole("button", { name: "Journal", exact: true }).last().click();
+assert.equal(await page.locator(".dock-chat").count(), 0, "no floating chat shortcut without unread messages");
 await page.evaluate(() =>
 	bridge.emit("chat:appended", [
 		{ _id: "abcdef000000000000000001", author: "Teammate", playerIndex: 1, text: "Try the bridge", type: "text" },
@@ -52,7 +53,7 @@ assert(
 );
 await page.locator(".dock-chat").click();
 await page.waitForTimeout(700);
-assert.equal(await page.locator(".dock-chat").textContent(), "Chat");
+assert.equal(await page.locator(".dock-chat").count(), 0, "reading chat hides the shortcut again");
 
 await page.setViewportSize({ width: 1440, height: 1000 });
 assert(await page.locator(".dice-preview").first().isVisible());

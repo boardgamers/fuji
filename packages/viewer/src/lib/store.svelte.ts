@@ -33,6 +33,15 @@ export class Store {
 	private receivedSeat: number | undefined;
 	private frames: { scene: View; duration: number; cue?: SoundCue }[] = [];
 	private animationTimer: ReturnType<typeof setTimeout> | undefined;
+	private presentationDone = new Set<() => void>();
+	private finishPresentation() {
+		for (const done of this.presentationDone) done();
+		this.presentationDone.clear();
+	}
+	async present(view: View) {
+		this.receive(view);
+		if (this.animating) await new Promise<void>((resolve) => this.presentationDone.add(resolve));
+	}
 	private playFrame() {
 		const frame = this.frames.shift();
 		if (!frame) {
@@ -40,6 +49,7 @@ export class Store {
 			this.journal = this.state?.log ?? [];
 			this.animating = false;
 			this.waiting = false;
+			this.finishPresentation();
 			return;
 		}
 		this.animating = true;
@@ -54,6 +64,7 @@ export class Store {
 		this.audio.stop();
 		this.frames = [];
 		this.animating = false;
+		this.finishPresentation();
 	}
 	skipPresentation() {
 		this.dispose();

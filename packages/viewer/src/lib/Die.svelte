@@ -7,6 +7,7 @@
 		relevant = false,
 		conflicts = [],
 		disabled = false,
+		tutorialTarget,
 		onclick = () => {},
 	}: {
 		die: Die;
@@ -15,6 +16,7 @@
 		relevant?: boolean;
 		conflicts?: { seat: number; name: string; color: string; location: string; provisional?: boolean }[];
 		disabled?: boolean;
+		tutorialTarget?: string;
 		onclick?: () => void;
 	} = $props();
 	const f = $derived(face(die));
@@ -38,6 +40,7 @@
 
 <button
 	class="die"
+	data-tutorial={tutorialTarget}
 	class:chosen={selected}
 	class:relevant
 	class:aside={die.aside}

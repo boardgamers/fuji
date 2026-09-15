@@ -1,0 +1,115 @@
+.tutorial-session {
+	--tutorial-height: 160px;
+}
+.tutorial-guide-host {
+	position: sticky;
+	top: 0;
+	z-index: 40;
+	padding: 8px 16px;
+	background: #0b211b;
+}
+.bgs-tutorial-guide {
+	border: 1px solid #d8be7890;
+	border-radius: 5px;
+	background: #19392e;
+	color: #eee5ce;
+	padding: 12px 16px;
+	box-shadow: 0 4px 16px #0003;
+}
+.bgs-tutorial-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	color: #f2d58d;
+}
+.bgs-tutorial-body p {
+	margin: 8px 0 12px;
+	line-height: 1.5;
+	max-width: 1050px;
+}
+.bgs-tutorial-controls {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	align-items: start;
+}
+.bgs-tutorial-resets {
+	display: flex;
+	gap: 8px;
+	margin-left: auto;
+}
+.bgs-tutorial-guide button {
+	min-height: 32px;
+	padding: 5px 12px;
+	border: 1px solid #d8be7855;
+	border-radius: 4px;
+	background: #24483a;
+	color: #f5e8c0;
+	font: inherit;
+	cursor: pointer;
+}
+.bgs-tutorial-guide button:hover {
+	background: #375e49;
+}
+.bgs-tutorial-guide button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+.bgs-tutorial-guide button:focus-visible {
+	outline: 2px solid #f2d58d;
+	outline-offset: 2px;
+}
+.bgs-tutorial-guide [hidden] {
+	display: none;
+}
+.bgs-tutorial-guide small {
+	display: block;
+	color: #a9bfae;
+	margin-top: 8px;
+	font-size: 11px;
+}
+.bgs-tutorial-guide [role="alert"] {
+	color: #ffd6b7;
+}
+.bgs-tutorial-highlight {
+	outline: 2px dashed #ffe39b;
+	outline-offset: 4px;
+}
+.location.bgs-tutorial-highlight {
+	outline: none;
+}
+.location.bgs-tutorial-highlight .location-ring {
+	stroke: #ffe39b;
+	stroke-width: 4px;
+	stroke-dasharray: 6 3;
+}
+.tutorial-session [data-tutorial] {
+	scroll-margin-top: calc(var(--tutorial-height) + 75px);
+	scroll-margin-bottom: 20px;
+}
+.tutorial-session .mobile-dock {
+	top: var(--tutorial-height);
+}
+@media (max-width: 850px) {
+	.tutorial-guide-host {
+		padding: 6px 8px;
+	}
+	.bgs-tutorial-guide {
+		padding: 8px 10px;
+		font-size: 13px;
+	}
+	.bgs-tutorial-body p {
+		margin: 6px 0 8px;
+	}
+	.bgs-tutorial-guide button {
+		min-height: 36px;
+		padding: 5px 9px;
+	}
+	.bgs-tutorial-controls {
+		gap: 6px;
+	}
+	.bgs-tutorial-guide small {
+		display: none;
+	}
+}

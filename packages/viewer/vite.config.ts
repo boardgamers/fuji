@@ -9,7 +9,12 @@ export default defineConfig({
 	build: {
 		cssCodeSplit: false,
 		// Vite requires a bundle name; registerViewer owns the fuji global.
-		lib: { name: "fujiBundle", entry: "src/viewer.ts", formats: ["iife"], fileName: () => "fuji-viewer.iife.js" },
+		lib: {
+			name: "fujiBundle",
+			entry: "src/viewer.ts",
+			formats: ["iife"],
+			fileName: () => "fuji-viewer.iife.js",
+		},
 		rolldownOptions: { output: { assetFileNames: "fuji-viewer.[ext]" } },
 	},
 });

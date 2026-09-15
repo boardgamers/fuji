@@ -115,7 +115,12 @@
 	};
 </script>
 
-<div class="landscape" style:--route-color={ownColor} style:--landscape-art={`url(${art("land", 21)})`}>
+<div
+	data-tutorial="board"
+	class="landscape"
+	style:--route-color={ownColor}
+	style:--landscape-art={`url(${art("land", 21)})`}
+>
 	<div class="map-scroll">
 		<svg
 			viewBox={`0 0 ${mapWidth} ${mapHeight}`}
@@ -151,6 +156,7 @@
 				{@const data = terrain(c.terrain)}
 				<g
 					class="location"
+					data-tutorial={`tile:${c.id}`}
 					class:inactive={state.phase === "setup"}
 					class:reserved={!!reserved[c.id]}
 					class:reachable={reachable.includes(c.id)}

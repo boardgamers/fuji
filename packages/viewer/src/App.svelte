@@ -148,6 +148,7 @@
 		if (tool === "knife" && !copyOptions.some((c) => c.id === copied) && copyOptions[0]) copied = copyOptions[0].id;
 	});
 	const actionTool = $derived(tool === "knife" ? (copyOptions.some((c) => c.id === copied) ? copied : null) : tool);
+	const shovelDie = $derived(dice.length === 1 ? me?.dice.find((d) => d.id === dice[0]) : undefined);
 	const binocularReasons = $derived.by(() => {
 		if (actionTool !== "binoculars" || !s) return undefined;
 		return Object.fromEntries(
@@ -252,7 +253,7 @@
 	});
 
 	function pickDie(id: string) {
-		dice = dice.includes(id) ? dice.filter((x) => x !== id) : [...dice, id];
+		dice = dice.includes(id) ? dice.filter((x) => x !== id) : actionTool === "shovel" ? [id] : [...dice, id];
 	}
 	function chooseLocation(id: string) {
 		if (s?.phase === "setup") return;
@@ -393,7 +394,7 @@
 </script>
 
 {#snippet journalPanel(location: string)}
-	<section class="journal inline-journal" aria-label="Expedition journal">
+	<section data-tutorial="journal" class="journal inline-journal" aria-label="Expedition journal">
 		<header class="journal-header">
 			<h2>Expedition journal</h2>
 			<button
@@ -552,6 +553,7 @@
 					>
 				</div>
 				<button
+					data-tutorial={s.phase === "movement" ? "resolve" : "confirm"}
 					onclick={mobileAction}
 					disabled={store.waiting ||
 						(s.phase === "planning" && !me.ready && !!reserved[currentRoute.at(-1)!]) ||
@@ -707,7 +709,7 @@
 						if (s.phase !== "setup") inspected = id;
 					}}
 				/>
-				<section class="personal" aria-label="Your dice">
+				<section class="personal" aria-label="Your dice" data-tutorial="dice">
 					<div class="personal-title">
 						<div>
 							<span class="eyebrow"
@@ -722,6 +724,7 @@
 					{#if me}
 						<div class="dice-row">
 							{#each me.dice as d (d.id)}<Die
+									tutorialTarget={`die:${d.id}`}
 									colorblind={store.colorblind}
 									die={d}
 									selected={dice.includes(d.id)}
@@ -783,6 +786,7 @@
 									<button
 										class="primary finish-dice"
 										disabled={store.waiting}
+										data-tutorial="finish-rerolls"
 										onclick={() => store.dispatch({ action: "finishRerolls" })}
 										>Done with my dice{hasSkill(me, "gatherer") && me.rerolls
 											? ` · gain ${Math.min(me.rerolls, 3 - me.powerBars)} bars`
@@ -1028,6 +1032,7 @@
 						{#if !me.ready}<button
 								class="primary"
 								disabled={store.waiting || !!reserved[currentRoute.at(-1)!]}
+								data-tutorial="confirm"
 								onclick={confirmTravel}>Ready to travel <span>→</span></button
 							>{:else}<p class="confirmed">✓ Your route is set. Waiting for the team.</p>
 							<button class="revise-choice" onclick={() => store.dispatch({ action: "plan", path: me.path })}
@@ -1041,6 +1046,7 @@
 						</p>
 						{#if !me.ready}<button
 								class="primary"
+								data-tutorial="confirm"
 								onclick={() => store.dispatch({ action: "ready" })}
 								disabled={store.waiting}>Ready to reveal <span>→</span></button
 							>{:else}<p class="confirmed">✓ Ready. Waiting for the team.</p>
@@ -1059,8 +1065,10 @@
 						{:else if s.activeResolution === null}<p class="instruction">
 								Choose who moves next. A route that triggers extra lava is often best resolved last.
 							</p>
-							{#if !me.resolved}<button class="primary" onclick={() => store.dispatch({ action: "beginMovement" })}
-									>Resolve my journey <span>→</span></button
+							{#if !me.resolved}<button
+									data-tutorial="resolve"
+									class="primary"
+									onclick={() => store.dispatch({ action: "beginMovement" })}>Resolve my journey <span>→</span></button
 								>{:else}<p class="confirmed">✓ Your journey is resolved.</p>{/if}
 						{:else if resolvingPlayer && result}{@const criterion = terrain(
 								cell(s, resolvingPlayer.path.at(-1)!).terrain
@@ -1131,12 +1139,16 @@
 							location.
 						</p>
 						<div class="eruption-count"><strong>{danger.length}</strong><span>locations threatened</span></div>
-						<button class="primary ember" disabled={seat !== 0} onclick={() => store.dispatch({ action: "erupt" })}
+						<button
+							data-tutorial="erupt"
+							class="primary ember"
+							disabled={seat !== 0}
+							onclick={() => store.dispatch({ action: "erupt" })}
 							>{seat === 0 ? "Let the lava advance" : "Waiting for the expedition leader"} <span>→</span></button
 						>
 					{/if}
 					{#if me && s.phase !== "setup" && !s.outcome}
-						<section class="equipment-section">
+						<section class="equipment-section" data-tutorial="equipment">
 							<div class="section-title">
 								<h3>Your equipment</h3>
 								<span>{me.cards.length}</span>
@@ -1152,6 +1164,7 @@
 										!s.pending &&
 										(c.id !== "knife" || copyOptions.length > 0)}
 									<button
+										data-tutorial={`equipment:${c.id}`}
 										class:usable={available}
 										class:open={tool === c.id}
 										onclick={() => chooseTool(c.id)}
@@ -1221,17 +1234,19 @@
 									{#if ["shovel", "torch", "tape", "machete", "compass", "map"].includes(actionTool ?? "")}<p
 											class="muted small"
 										>
-											Select {actionTool === "machete"
-												? "one or two dice"
-												: actionTool === "torch"
-													? "one or more dice to reroll"
-													: "the dice"} below the map. {dice.length} selected.
+											Select {actionTool === "shovel"
+												? "one die"
+												: actionTool === "machete"
+													? "one or two dice"
+													: actionTool === "torch"
+														? "one or more dice to reroll"
+														: "the dice"} below the map. {dice.length} selected.
 										</p>{/if}
-									{#if actionTool === "shovel"}<fieldset class="visible-choices">
+									{#if actionTool === "shovel" && shovelDie}<fieldset class="visible-choices">
 											<legend>New value</legend>
 											<div class="choice-row">
 												{#each [1, 2, 3, 4, 5, 6] as n}<Die
-														die={{ ...(me.dice.find((d) => dice.includes(d.id)) ?? me.dice[0]!), face: n }}
+														die={{ ...shovelDie, face: n }}
 														selected={turnFace === n}
 														colorblind={store.colorblind}
 														onclick={() => (turnFace = n)}

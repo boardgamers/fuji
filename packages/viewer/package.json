@@ -7,10 +7,11 @@
 	"scripts": {
 		"dev": "vite --host 127.0.0.1 --port 5187 --strictPort",
 		"build": "vite build",
-		"check": "svelte-check --tsconfig ./tsconfig.json"
+		"check": "svelte-check --tsconfig ./tsconfig.json",
+		"test:tutorial": "node --test src/tutorial/*.spec.ts"
 	},
 	"dependencies": {
-		"@boardgamers/protocol": "0.2.2",
+		"@boardgamers/protocol": "0.3.0",
 		"fuji-engine": "workspace:*"
 	},
 	"devDependencies": {

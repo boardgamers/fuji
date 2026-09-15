@@ -289,6 +289,7 @@ import path from "node:path";
 	if ((await copies.getByRole("button").count()) !== 2)
 		throw Error("Copy options must only show equipment usable in this phase");
 	await copies.getByRole("button", { name: /Shovel/ }).click();
+	await page.locator(".personal .die:not([disabled])").first().click();
 	await page.getByRole("group", { name: "New value" }).getByRole("button").nth(5).click();
 	if (await page.locator("select").count()) throw Error("Gameplay should expose choices without dropdowns");
 	await page.screenshot({ path: "work/browser/fuji-copy-equipment.png", fullPage: true });

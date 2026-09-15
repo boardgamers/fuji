@@ -40,6 +40,19 @@ try {
 		current.emit("chat:result", { requestId: request.requestId, ok: true });
 	});
 	assert.equal(await input.inputValue(), "Edited while sending");
+	await page.evaluate(() => fuji.launchTutorial("#app", { chapter: "lava" }));
+	await page.locator(".bgs-tutorial-guide").waitFor();
+	assert.equal(await page.getByRole("textbox", { name: "Chat message" }).count(), 0);
+	assert.equal(await page.evaluate(() => current.emit("state:updated")), false);
+	await page.evaluate((state) => {
+		window.current = fuji.launch("#app");
+		current.emit("player", { index: 0 });
+		current.emit("state", state);
+		current.emit("chat:state", { canSend: true });
+	}, state);
+	await page.getByRole("textbox", { name: "Chat message" }).waitFor();
+	assert.equal(await page.locator(".bgs-tutorial-guide").count(), 0);
+	assert.equal(await page.locator(".tutorial-session").count(), 0);
 	await page.evaluate(() => fuji.destroy());
 	assert.equal(await page.locator("#app").innerHTML(), "");
 	assert.equal(await page.evaluate(() => current.emit("state:updated")), false);

@@ -78,12 +78,12 @@
 		{#each entry.setAside as d}<Die die={{ ...d, aside: false }} {colorblind} disabled />{/each}
 	</div>
 {:else if entry.dice}
-	<details class="revealed-log">
-		<summary>⚄ {entry.diceLabel ?? entry.text}</summary>
+	<div class="revealed-log">
+		<div>⚄ {entry.diceLabel ?? entry.text}</div>
 		<div class="journal-dice">
 			{#each entry.dice as d}<Die die={d} {colorblind} disabled />{:else}<span>No matching dice</span>{/each}
 		</div>
-	</details>
+	</div>
 {:else}
 	<span
 		><span class="event-icon" aria-hidden="true"

@@ -5,9 +5,7 @@ import { firstSteps, firstStepsState, lessonMove, DESTINATION } from "./first-st
 const only =
 	(...actions: string[]) =>
 	(_state: State, move: Move) =>
-		actions.includes(move.action)
-			? undefined
-			: "Follow this step's highlighted action. Choose Retry step to try again.";
+		actions.includes(move.action) ? undefined : "Follow this step's highlighted action. Use Replay step to try again.";
 
 function setTerrain(state: State, id: string, type: number) {
 	const target = cell(state, id);
@@ -167,7 +165,7 @@ export const terrainLesson: TutorialOptions<State, Move> = {
 		{
 			id: "first-roll",
 			title: "Spend the first reroll",
-			text: "Keep the four matching dice (1, 2, 2, 1). Select both 6s — the fifth and sixth dice — and reroll them together. This spends one reroll, leaving one more.",
+			text: "Keep the four matching dice (1, 2, 2, 1). Select both 6s (dice 5 and 6) and reroll them together. This spends one reroll, leaving one more.",
 			target: "dice",
 			complete: (s) => s.players[0]!.rerolls === 1,
 			validateMove: (_s, m) =>
@@ -278,4 +276,102 @@ export const lavaLesson: TutorialOptions<State, Move> = {
 	},
 };
 
-export const lessons = [firstSteps, equipmentLesson, terrainLesson, lavaLesson];
+export const WIN_DESTINATION = "4,1";
+export function winState() {
+	let state = firstStepsState();
+	state.round = 5;
+	state.initOptions.autoMovement = true;
+	state.initOptions.autoProgress = false;
+	// Use the garden as one of this prepared map's five village tiles.
+	cell(state, "4,0").terrain = 31;
+	for (let wave = 0; wave < 4; wave++) {
+		const next = threatened(state);
+		for (const c of state.board) if (next.includes(c.id)) c.lava = true;
+	}
+	state.players.forEach((player, seat) => {
+		player.position = "3,2";
+		player.path = [player.position];
+		player.dice.forEach((die) => {
+			die.face = [6, 1, 5][seat]!;
+		});
+	});
+	for (const [seat, path] of [
+		[1, ["3,2", "4,2", "4,1", "4,0"]],
+		[2, ["3,2", "4,2"]],
+	] as const) {
+		state = applyMove(state, { action: "plan", path: [...path] }, seat);
+		state = applyMove(state, { action: "ready" }, seat);
+	}
+	return state;
+}
+
+function winMove(state: State, move: Move) {
+	let next = applyMove(state, move, 0);
+	for (const seat of [1, 2]) {
+		if (next.phase === "reroll" && !next.players[seat]!.ready) {
+			next = applyMove(next, { action: "finishRerolls" }, seat);
+		}
+		if (state.phase === "equipment" && next.phase === "equipment" && !next.players[seat]!.ready) {
+			next = applyMove(next, { action: "ready" }, seat);
+		}
+	}
+	return next;
+}
+
+export const winLesson: TutorialOptions<State, Move> = {
+	game: "fuji",
+	id: "village",
+	version: 1,
+	initialState: winState,
+	move: winMove,
+	steps: [
+		{
+			id: "welcome",
+			title: "One last journey",
+			text: "The lava is close and the village is within reach. Mika has chosen Village garden and Ren has chosen Blossom square. Help all three explorers get to safety. Reaching the village alone does not win the game.",
+			target: "board",
+		},
+		{
+			id: "destination",
+			title: "Choose Village street",
+			text: "Choose the highlighted Village street, two spaces away. It counts 4s and 6s, so your six 6s are a strong match. Each explorer must choose a different destination.",
+			target: `tile:${WIN_DESTINATION}`,
+			complete: (s) => s.players[0]!.path.at(-1) === WIN_DESTINATION,
+			validateMove: (_s, m) =>
+				m.action === "plan" && Array.isArray(m.path) && m.path.length === 3 && m.path.at(-1) === WIN_DESTINATION
+					? undefined
+					: "Choose Village street via Blossom square.",
+		},
+		{
+			id: "confirm",
+			title: "Confirm your destination",
+			text: "Mika and Ren are ready. Confirm your route to begin the dice phase.",
+			target: "confirm",
+			complete: (s) => s.phase === "reroll",
+			validateMove: only("ready"),
+		},
+		{
+			id: "keep",
+			title: "Keep these strong dice",
+			text: "All your dice count at Village street. Keep them and finish rerolling. Your teammates keep the dice that suit their own destinations.",
+			target: "finish-rerolls",
+			complete: (s) => s.phase === "equipment",
+			validateMove: only("finishRerolls"),
+		},
+		{
+			id: "escape",
+			title: "Bring everyone home",
+			text: "Choose Ready to reveal. The game compares the dice and moves everyone in order. Watch all three explorers enter the village.",
+			target: "confirm",
+			complete: (s) => s.outcome === "won",
+			validateMove: only("ready"),
+		},
+	],
+	completion: {
+		title: "Everyone escaped!",
+		text: "You, Mika and Ren all reached the village. The whole team wins immediately, before another eruption. That is the goal: bring everyone home together.",
+		target: "board",
+	},
+};
+
+export const lessons = [firstSteps, equipmentLesson, terrainLesson, lavaLesson, winLesson];

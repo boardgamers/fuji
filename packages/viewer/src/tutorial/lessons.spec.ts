@@ -2,7 +2,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createTutorial } from "@boardgamers/protocol/tutorial";
 import { applyMove, cell, paths, stripSecret, terrain, threatened } from "fuji-engine";
-import { equipmentLesson, terrainLesson, lavaLesson, BONUS_TILE, ERUPTION_TILE } from "./lessons.ts";
+import {
+	equipmentLesson,
+	terrainLesson,
+	lavaLesson,
+	BONUS_TILE,
+	ERUPTION_TILE,
+	winLesson,
+	WIN_DESTINATION,
+} from "./lessons.ts";
 
 test("equipment teaches a legal turn and private loan, with cards discarded once", async () => {
 	const c = await createTutorial(equipmentLesson);
@@ -104,4 +112,24 @@ test("automatic movement cannot save a plan caught by the extra plus normal erup
 	assert.match(after.log.at(-1)!.text, /Mika was caught by the lava/);
 	assert.equal(c.snapshot.canContinue, false);
 	assert.equal(c.snapshot.completed, true, c.snapshot.error);
+});
+
+test("all three explorers reach the village and win before another eruption", async () => {
+	const c = await createTutorial(winLesson);
+	assert.ok(c.snapshot.state.players.every((p) => !cell(c.snapshot.state, p.position).lava));
+	assert.ok(threatened(c.snapshot.state).includes("3,2"), "The next wave threatens their starting position");
+	await c.continue();
+	assert.equal(await c.play({ action: "plan", path: ["3,2", "4,2", WIN_DESTINATION] }), true, c.snapshot.error);
+	assert.equal(await c.play({ action: "ready" }), true, c.snapshot.error);
+	assert.equal(c.snapshot.state.phase, "reroll");
+	assert.equal(await c.play({ action: "finishRerolls" }), true, c.snapshot.error);
+	assert.equal(c.snapshot.state.phase, "equipment");
+	assert.equal(await c.play({ action: "ready" }), true, c.snapshot.error);
+	assert.equal(c.snapshot.state.outcome, "won");
+	assert.ok(
+		c.snapshot.state.players.every((p) => terrain(cell(c.snapshot.state, p.position).terrain).kind === "village")
+	);
+	assert.equal(c.snapshot.state.log.filter((e) => e.journey?.moved).length, 3);
+	assert.equal(c.snapshot.state.log.filter((e) => e.animation?.kind === "eruption").length, 0);
+	assert.equal(c.snapshot.completed, true);
 });

@@ -27,9 +27,9 @@ The engine tests cover deterministic replay, invalid-move atomicity, private inf
 
 ## Tutorial
 
-Open `http://127.0.0.1:5187/tutorial.html?chapter=first-steps` to play a lesson. Each chapter uses the real engine, a prepared position and scripted teammates. Progress resumes separately for each chapter; the guide offers hints and restart controls.
+Open `http://127.0.0.1:5187/tutorial.html?chapter=first-steps` to play a lesson. Each chapter uses the real engine, a prepared position and scripted teammates. Progress resumes separately for each chapter; playback controls let you go back, replay a step or start over.
 
-`pnpm build` produces one viewer JS/CSS bundle for games and tutorials. Upload it as the viewer with global name `fuji`, then add these chapters under **Tutorial** in BGS admin (revision `2` for chapters 1–3, `5` for chapter 4):
+`pnpm build` produces one viewer JS/CSS bundle for games and tutorials. Upload it as the viewer with global name `fuji`, then add these chapters under **Tutorial** in BGS admin (revision `2` for chapters 1–3, `5` for chapter 4, `1` for chapter 5):
 
 | ID                | Title                              | Covers                                                                          |
 | ----------------- | ---------------------------------- | ------------------------------------------------------------------------------- |
@@ -37,6 +37,7 @@ Open `http://127.0.0.1:5187/tutorial.html?chapter=first-steps` to play a lesson.
 | `equipment`       | Equipment & helping teammates      | Shovel, Map, card timing, discards and private loans.                           |
 | `terrain-bonuses` | Location bonuses & supplies        | Bonus rerolls, equipment tokens and next-round availability.                    |
 | `lava`            | When two lava waves catch the team | A deliberate defeat: an extra eruption plus the normal wave catches a teammate. |
+| `village`         | Everyone reaches the village       | A team victory, with all three explorers completing their final journeys.       |
 
 Chapter sources: `packages/viewer/src/tutorial/first-steps.ts` and `lessons.ts`. Keep setup and teammate actions deterministic; bump the chapter revision for incompatible changes. `pnpm check` tests legal actions, lesson outcomes, hidden information and saved progress. `node tests/tutorial-browser.mjs` completes every chapter on desktop and mobile. BGS calls `fuji.launchTutorial` for local lessons and `fuji.launch` for multiplayer games.
 

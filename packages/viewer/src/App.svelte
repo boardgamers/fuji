@@ -41,6 +41,7 @@
 	import PlayerChoices from "./lib/PlayerChoices.svelte";
 	import TravelGuide from "./lib/TravelGuide.svelte";
 	import StaminaGuide from "./lib/StaminaGuide.svelte";
+	import VictoryPetals from "./lib/VictoryPetals.svelte";
 	let { store }: { store: Store } = $props();
 	const s = $derived(store.scene ?? store.state);
 	const actingSeats = $derived(
@@ -425,6 +426,7 @@
 {/snippet}
 
 {#if s}
+	<VictoryPetals won={s.outcome === "won"} animating={store.animating} />
 	<main class="expedition">
 		<div class="game-tools">
 			<div class="round-status">

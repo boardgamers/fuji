@@ -128,7 +128,7 @@ export const firstSteps: TutorialOptions<State, Move> = {
 		{
 			id: "welcome",
 			title: "Escape together",
-			text: "Help everyone reach the village before the lava catches anyone. You control the gold explorer; Mika and Ren are scripted teammates. Preparation is done — let’s plan your first move.",
+			text: "Help everyone reach the village before the lava catches anyone. You control the gold explorer; Mika and Ren are scripted teammates. Preparation is done. Let’s plan your first move.",
 			target: "board",
 		},
 		{

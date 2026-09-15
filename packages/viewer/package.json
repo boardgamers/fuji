@@ -11,7 +11,7 @@
 		"test:tutorial": "node --test src/tutorial/*.spec.ts"
 	},
 	"dependencies": {
-		"@boardgamers/protocol": "0.3.0",
+		"@boardgamers/protocol": "0.3.1",
 		"fuji-engine": "workspace:*"
 	},
 	"devDependencies": {

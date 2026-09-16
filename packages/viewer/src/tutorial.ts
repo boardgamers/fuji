@@ -8,7 +8,7 @@ import { lessons } from "./tutorial/lessons";
 import "./lib/theme.css";
 import "./tutorial/tutorial.css";
 
-export const mountTutorial: TutorialMount = async (target, { chapter, onProgress }) => {
+export const mountTutorial: TutorialMount = async (target, { chapter, onProgress, nextChapter }) => {
 	const lesson = lessons.find((entry) => entry.id === chapter);
 	if (!lesson) throw Error("Unknown chapter");
 	target.className = "tutorial-session";
@@ -51,7 +51,7 @@ export const mountTutorial: TutorialMount = async (target, { chapter, onProgress
 	});
 	const app = mount(App, { target: game, props: { store } });
 	await tick();
-	const cleanupGuide = mountTutorialGuide(guide, controller);
+	const cleanupGuide = mountTutorialGuide(guide, controller, { nextChapter });
 	const resize = new ResizeObserver(() => {
 		target.style.setProperty("--tutorial-height", `${guide.getBoundingClientRect().height}px`);
 	});

@@ -124,3 +124,15 @@
 		display: none;
 	}
 }
+
+.bgs-tutorial-guide .bgs-tutorial-next-chapter {
+	height: 36px;
+	padding: 0 10px;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	white-space: nowrap;
+}
+.bgs-tutorial-guide [hidden] {
+	display: none;
+}

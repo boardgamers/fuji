@@ -220,7 +220,7 @@ export const firstSteps: TutorialOptions<State, Move> = {
 				.slice()
 				.reverse()
 				.find((e) => e.journey?.name === "You")?.journey;
-			return `You reached Hilltop lookout! Your lead was ${(result?.own ?? 0) - (result?.highest ?? 0)} and you lost ${result?.loss ?? 0} stamina. A small lead costs more stamina; a tie or lower means you stay put. The journal records the comparison. Mika and Ren have also resolved their journeys, and the lava has spread. A new round is ready.`;
+			return `You reached Hilltop lookout! Your lead was ${(result?.own ?? 0) - (result?.highest ?? 0)} and you lost ${result?.loss ?? 0} stamina. A small lead costs more stamina; a tie or lower means you stay put. Mika and Ren have moved, the lava has spread and a new round begins.`;
 		},
 		target: "journal",
 		hint: "The whole team must escape. Keep an eye on teammates' destinations as well as your own. Every round ends with lava spreading after everyone has resolved their journey.",

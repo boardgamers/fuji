@@ -85,7 +85,7 @@ try {
 		assert.equal(await page.locator(".dev-toolbar, .expedition-chat").count(), 0);
 		await guide.getByRole("button", { name: "Continue", exact: true }).click();
 		await step(2);
-		await guide.getByRole("button", { name: "Show me", exact: true }).click();
+		await guide.getByRole("button", { name: "Show area", exact: true }).click();
 		await page.locator('[data-tutorial="tile:1,3"]').click();
 		await step(3);
 		await guide.getByRole("button", { name: "Continue", exact: true }).click();
@@ -94,14 +94,14 @@ try {
 		await step(5);
 		await page.reload();
 		await step(5);
-		await guide.getByRole("button", { name: "Show me", exact: true }).click();
+		await guide.getByRole("button", { name: "Show area", exact: true }).click();
 		for (const index of [3, 4, 5]) await page.locator(".personal .dice-row .die").nth(index).click();
 		await page.getByRole("button", { name: /Reroll 3 dice/ }).click();
 		await step(6);
 		await page.reload();
 		await step(6);
 		assert.match(await guide.innerText(), /pink 5/);
-		await guide.getByRole("button", { name: "Show me", exact: true }).click();
+		await guide.getByRole("button", { name: "Show area", exact: true }).click();
 		await page.locator(".personal .die.bgs-tutorial-highlight").click();
 		await page.getByRole("button", { name: "Set selected die aside", exact: true }).click();
 		await step(7);
@@ -256,7 +256,7 @@ try {
 		assert.equal(frames[0].lava, frames.at(-1).lava, "Victory needs no further lava wave");
 		assert.match(await guide.innerText(), /whole team wins immediately/);
 		const bounds = await guide
-			.locator(".bgs-tutorial-playback button")
+			.locator(".bgs-tutorial-playback button:visible")
 			.evaluateAll((buttons) => buttons.map((b) => b.getBoundingClientRect().top));
 		assert.equal(new Set(bounds).size, 1, "Playback controls stay on one row");
 		assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);

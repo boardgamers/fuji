@@ -108,7 +108,8 @@ export const equipmentLesson: TutorialOptions<State, Move> = {
 	],
 	completion: {
 		title: "Equipment helps the whole team",
-		text: "You moved without losing stamina, and Ren used your loan to reach his destination. Everyone has moved, the lava has spread and your die has returned for the new round. A card can improve your own dice, help a teammate, or both. Check its timing before using it: for example, Torch works during planning, whereas Shovel and Map work during equipment. An arm injury prevents equipment use.",
+		hint: "Torch works during planning; Shovel and Map during equipment. An arm injury prevents equipment use.",
+		text: "You moved without losing stamina, and your loan helped Ren move. The lava has spread and your die has returned. Equipment can help you or a teammate; check when each card can be used.",
 		target: "journal",
 	},
 };
@@ -209,7 +210,7 @@ export const terrainLesson: TutorialOptions<State, Move> = {
 	],
 	completion: {
 		title: "Your Rope is ready",
-		text: "You collected a Rope on arrival. New equipment must wait until the next round: your teammates have now moved and the lava has spread, so that round has begun and your Rope is available. The equipment token is gone, but the printed reroll arrow can help again on a later visit.",
+		text: "You collected a Rope on arrival. It becomes usable next round, which has now begun. The equipment token is gone; the printed reroll arrow can help again on a later visit.",
 		target: "equipment:rope",
 	},
 };

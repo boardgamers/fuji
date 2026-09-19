@@ -954,10 +954,6 @@ h3 {
 	.expedition {
 		padding: 17px 14px 0;
 	}
-	.round-status .separator,
-	.round-status > span:last-child {
-		display: none;
-	}
 	.team {
 		padding: 17px 0;
 		gap: 8px;
@@ -1119,7 +1115,7 @@ h3 {
 	}
 }
 
-/* The viewer fills its iframe; branding and supporting content live in dialogs. */
+/* The viewer fills its iframe. */
 .expedition {
 	max-width: none;
 	min-height: 100dvh;
@@ -1822,6 +1818,10 @@ button.difficulty-label:focus-visible {
 .difficulty-preview {
 	text-transform: none;
 	letter-spacing: normal;
+	white-space: normal;
+}
+.difficulty-preview:popover-open {
+	display: block;
 }
 
 .revise-choice {
@@ -1849,4 +1849,173 @@ button.difficulty-label:focus-visible {
 .revise-choice:disabled {
 	opacity: 0.45;
 	cursor: default;
+}
+
+.game-tools {
+	min-height: 62px;
+	gap: 24px;
+	flex-wrap: nowrap;
+	border-bottom: 1px solid #9bbaa52b;
+	padding-bottom: 8px;
+}
+.game-brand {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: none;
+}
+.fuji-mark {
+	width: 43px;
+	height: 38px;
+	color: var(--gold);
+}
+.game-brand h1 {
+	font:
+		32px/1 Georgia,
+		"Times New Roman",
+		serif;
+	letter-spacing: -1px;
+	color: #f4efd9;
+}
+.game-brand h1 > span {
+	color: var(--gold);
+}
+.game-brand p {
+	font-size: 9px;
+	line-height: 1.5;
+	color: var(--muted);
+	letter-spacing: 0.25px;
+	white-space: nowrap;
+	margin-top: 4px;
+}
+.game-tools .round-status {
+	margin: 0 0 0 auto;
+	flex-wrap: nowrap;
+	white-space: nowrap;
+	gap: 9px;
+	font-size: 10px;
+}
+.phase-status {
+	text-transform: capitalize;
+	color: var(--muted);
+}
+.game-tools .status-short {
+	display: none;
+}
+.game-utilities {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex: none;
+}
+.utility-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	border: 1px solid #a0b39b28;
+	border-radius: 50%;
+	background: #c7ddc508;
+	color: #c9d3b7;
+	position: relative;
+}
+.utility-button:hover {
+	color: #fff1bd;
+	background: #c7ddc51a;
+	border-color: #a0b39b65;
+}
+.utility-button svg {
+	width: 19px;
+	height: 19px;
+}
+.utility-count {
+	position: absolute;
+	right: -5px;
+	top: -5px;
+	min-width: 17px;
+	border-radius: 20px;
+	background: var(--gold);
+	color: var(--ink);
+	padding: 1px 4px;
+	font-size: 10px;
+	font-weight: 700;
+}
+.game-tools .playback-skip.idle {
+	display: none;
+}
+@media (max-width: 1100px) {
+	.game-tools {
+		gap: 16px;
+	}
+	.game-tools .phase-status {
+		display: none;
+	}
+	.game-tools .playtest-menu summary {
+		font-size: 0;
+		width: 22px;
+		text-align: center;
+		list-style: none;
+	}
+	.game-tools .playtest-menu summary::after {
+		content: "⋯";
+		font-size: 20px;
+	}
+}
+@media (max-width: 650px) {
+	.game-tools {
+		min-height: 54px;
+		gap: 10px;
+		padding-bottom: 6px;
+	}
+	.game-brand {
+		gap: 6px;
+	}
+	.game-brand .fuji-mark,
+	.game-brand .designer-credit,
+	.game-brand .publisher-suffix {
+		display: none;
+	}
+	.game-brand h1 {
+		font-size: 27px;
+	}
+	.game-brand p {
+		font-size: 8px;
+		margin-top: 2px;
+	}
+	.game-tools .round-status {
+		gap: 6px;
+		font-size: 10px;
+		letter-spacing: 0;
+	}
+	.game-tools .status-full {
+		display: none;
+	}
+	.game-tools .status-short {
+		display: inline;
+	}
+	.game-tools .difficulty-label {
+		padding-left: 6px;
+	}
+	.game-utilities {
+		gap: 4px;
+	}
+	.utility-button {
+		width: 30px;
+		height: 30px;
+	}
+}
+@media (max-width: 360px) {
+	.game-tools {
+		gap: 6px;
+	}
+	.game-tools .round-status {
+		gap: 3px;
+	}
+	.game-tools .difficulty-label {
+		padding-left: 3px;
+	}
+	.game-utilities {
+		gap: 2px;
+	}
 }

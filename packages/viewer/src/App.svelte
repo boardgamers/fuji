@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { equipmentPopover } from "./lib/equipmentPopover";
 	import ChatPanel from "./lib/ChatPanel.svelte";
-	import { untrack } from "svelte";
+	import { untrack, onMount } from "svelte";
 	import {
 		DICE,
 		terrain,
@@ -42,6 +42,7 @@
 	import TravelGuide from "./lib/TravelGuide.svelte";
 	import StaminaGuide from "./lib/StaminaGuide.svelte";
 	import VictoryPetals from "./lib/VictoryPetals.svelte";
+	import UtilityIcon from "./lib/UtilityIcon.svelte";
 	let { store }: { store: Store } = $props();
 	const s = $derived(store.scene ?? store.state);
 	const actingSeats = $derived(
@@ -69,6 +70,24 @@
 	let help = $state(false);
 	let journal = $state(true);
 	let socialTab = $state("chat");
+	let fullscreen = $state(false);
+	onMount(() => {
+		const update = () => {
+			fullscreen = !!document.fullscreenElement;
+		};
+		update();
+		document.addEventListener("fullscreenchange", update);
+		return () => document.removeEventListener("fullscreenchange", update);
+	});
+	async function toggleFullscreen() {
+		try {
+			if (document.fullscreenElement) await document.exitFullscreen();
+			else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+			else throw new Error("Fullscreen is not available in this browser.");
+		} catch (error) {
+			store.error = error instanceof Error ? error.message : "Fullscreen could not be opened.";
+		}
+	}
 	$effect(() => {
 		store.chat.setPlayer(seat);
 	});
@@ -428,11 +447,36 @@
 {#if s}
 	<VictoryPetals won={s.outcome === "won"} animating={store.animating} />
 	<main class="expedition">
-		<div class="game-tools">
+		<header class="game-tools">
+			<div class="game-brand" title="Fuji · Wolfgang Warsch · Feuerland Spiele">
+				<svg class="fuji-mark" viewBox="0 0 44 36" fill="none" aria-hidden="true"
+					><circle cx="33" cy="8" r="5" fill="currentColor" opacity=".45" /><path
+						d="m3 32 17-27 21 27H3Z"
+						fill="currentColor"
+						opacity=".16"
+					/><path
+						d="m3 32 17-27 21 27M13 16l6 3 5-3 5 2"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/></svg
+				>
+				<div>
+					<h1>Fuji<span>.</span></h1>
+					<p>
+						<span class="designer-credit">Wolfgang Warsch ·{" "}</span>Feuerland<span class="publisher-suffix"
+							>{" "}Spiele</span
+						>
+					</p>
+				</div>
+			</div>
 			<div class="round-status">
-				<span class="live-dot"></span><span
-					>{s.phase === "setup" ? "THE EXPEDITION" : `ROUND ${String(s.round).padStart(2, "0")}`}</span
-				><span class="separator">/</span><span
+				<span class="round-label" title={s.phase === "setup" ? "Preparation" : `Round ${s.round}`}
+					><span class="status-full">{s.phase === "setup" ? "Preparation" : `Round ${s.round}`}</span><span
+						class="status-short">{s.phase === "setup" ? "Setup" : `R${s.round}`}</span
+					></span
+				><span class="phase-status"
 					>{s.outcome
 						? "Journey complete"
 						: s.phase === "reroll"
@@ -441,46 +485,71 @@
 								? "Preparation"
 								: s.phase}</span
 				>
-				<span class="difficulty-label">Scenario {s.scenario ?? 1}</span>
+				<span class="difficulty-label" title={`Scenario ${s.scenario ?? 1}`}
+					><span class="status-full">Scenario{" "}</span><span class="status-short">S</span>{s.scenario ?? 1}</span
+				>
 				<button
 					type="button"
 					class="difficulty-label"
 					use:equipmentPopover
-					aria-label={`Difficulty level ${s.difficulty}: stamina costs`}>Level {s.difficulty}</button
+					aria-label={`Difficulty level ${s.difficulty}: stamina costs`}
+					><span class="status-full">Level{" "}</span><span class="status-short">L</span>{s.difficulty}</button
 				>
 				<span class="equipment-preview difficulty-preview" popover="auto">
 					<strong>Difficulty level {s.difficulty} of 4</strong>
 					<StaminaGuide difficulty={s.difficulty} expanded />
 				</span>
 			</div>
-			{#if store.chatState.enabled}<button class="text-button" onclick={openChat}
-					>Chat{store.chatState.unreadIds.length ? ` · ${store.chatState.unreadIds.length}` : ""}</button
-				>{/if}
-			<button class="text-button" onclick={() => (help = true)} aria-label="Open playing guide">Help</button>
-			<button
-				class="text-button"
-				onclick={() => {
-					journal = true;
-					socialTab = "journal";
-					requestAnimationFrame(() =>
-						document
-							.querySelector(
-								window.innerWidth <= 850 && store.chatState.enabled
-									? ".mobile-journal .inline-journal"
-									: ".inline-journal"
-							)
-							?.scrollIntoView({ behavior: "smooth", block: "nearest" })
-					);
-				}}>Journal</button
-			>
-			<button
-				class="text-button playback-skip"
-				class:idle={!store.animating}
-				disabled={!store.animating}
-				aria-label="Skip to latest"
-				title="Skip to latest"
-				onclick={() => store.skipPresentation()}>»</button
-			>
+			<nav class="game-utilities" aria-label="Game options">
+				{#if store.chatState.enabled}<button
+						class="utility-button"
+						onclick={openChat}
+						title="Chat"
+						aria-label={store.chatState.unreadIds.length ? `Chat · ${store.chatState.unreadIds.length} unread` : "Chat"}
+						><UtilityIcon name="chat" />{#if store.chatState.unreadIds.length}<span class="utility-count"
+								>{store.chatState.unreadIds.length}</span
+							>{/if}</button
+					>{/if}
+				<button
+					class="utility-button"
+					title="Journal"
+					aria-label="Journal"
+					onclick={() => {
+						journal = true;
+						socialTab = "journal";
+						requestAnimationFrame(() =>
+							document
+								.querySelector(
+									window.innerWidth <= 850 && store.chatState.enabled
+										? ".mobile-journal .inline-journal"
+										: ".inline-journal"
+								)
+								?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+						);
+					}}><UtilityIcon name="journal" /></button
+				>
+				<button
+					class="utility-button"
+					onclick={() => (help = true)}
+					title="Playing guide"
+					aria-label="Open playing guide"><UtilityIcon name="help" /></button
+				>
+				<button
+					class="utility-button"
+					onclick={toggleFullscreen}
+					title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+					aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+					aria-pressed={fullscreen}><UtilityIcon name={fullscreen ? "exit-fullscreen" : "fullscreen"} /></button
+				>
+				<button
+					class="text-button playback-skip"
+					class:idle={!store.animating}
+					disabled={!store.animating}
+					aria-label="Skip to latest"
+					title="Skip to latest"
+					onclick={() => store.skipPresentation()}>»</button
+				>
+			</nav>
 			{#if store.local}<details class="playtest-menu">
 					<summary>Playtest tools</summary>
 					<div class="dev-toolbar">
@@ -543,7 +612,7 @@
 						>
 					</div>
 				</details>{/if}
-		</div>
+		</header>
 		{#if me && !s.outcome}<div class="mobile-dock">
 				<div>
 					<span class="eyebrow">{s.phase}</span><strong

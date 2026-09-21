@@ -25,6 +25,7 @@ registerViewer<View, Move>(
 				store.seat = index;
 			},
 			onPreferences(preferences) {
+				store.analysis = preferences.analysis === true;
 				store.colorblind = preferences.colorblind === true;
 				store.setSound(preferences.sound !== false);
 			},

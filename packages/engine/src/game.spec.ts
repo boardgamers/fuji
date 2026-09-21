@@ -1602,3 +1602,27 @@ test("Map records the transferred face privately for lender and recipient", () =
 	assert.deepEqual(stripSecret(s, 0).log.at(-1)!.dice, [die]);
 	assert.equal(stripSecret(s, 0).players[1]!.dice.find((d) => d.id === die.id)!.face, 0);
 });
+
+test("analysis uses public log boundaries and keeps player-specific views playable", async () => {
+	const wrapper = await import("../wrapper.js");
+	let state = initGame(3, {}, "analysis-log");
+	const snapshots: State[] = [];
+	for (let i = 0; i < 35 && !state.outcome; i++) {
+		const active = wrapper.currentPlayer(state);
+		const seat = Array.isArray(active) ? active[0]! : active!;
+		const before = state.log.length;
+		state = await wrapper.moveAI(state, seat);
+		if (state.log.length > before) snapshots.push(structuredClone(state));
+	}
+	const original = structuredClone(state);
+	for (const expected of snapshots.slice(1, 5)) {
+		const copy = wrapper.createAnalysis(state, { to: expected.log.length, sourceEnded: true });
+		assert.deepEqual(copy.log, expected.log);
+		assert.equal(copy.counter, expected.counter);
+		const actor = wrapper.currentPlayer(copy);
+		const seat = Array.isArray(actor) ? actor[0]! : actor!;
+		assert.ok(wrapper.stripSecret(copy, seat).players[seat]);
+		assert.ok((await wrapper.moveAI(copy, seat)).history.length > copy.history.length);
+	}
+	assert.deepEqual(state, original);
+});

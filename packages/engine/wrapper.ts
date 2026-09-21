@@ -53,3 +53,13 @@ export function messages(data: State): { messages: string[]; data: State } {
 	delete next.chatMessages;
 	return { messages, data: next };
 }
+
+export function createAnalysis(s: State, { to }: { to: number; sourceEnded: boolean }): State {
+	if (!Number.isInteger(to) || to < 0 || to > s.log.length) throw Error("Invalid history position.");
+	const copy = to === s.log.length ? replayGame(s) : replayGame(s, undefined, to);
+	copy.players.forEach((player, seat) => {
+		player.name = s.players[seat]!.name;
+	});
+	delete copy.chatMessages;
+	return copy;
+}

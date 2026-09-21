@@ -1200,11 +1200,12 @@ export function setPlayerName(s: State, seat: number, name: string): State {
 	next.history.push({ player: seat, move: { action: "$name", name } });
 	return next;
 }
-export function replay(s: State, to?: number): State {
+export function replay(s: State, to?: number, logTo?: number): State {
 	// Saves predating skill assignment used the fixed roster.
 	let state = initGame(s.players.length, { skillAssignment: "fixed", ...s.initOptions }, s.seed);
 	state.initOptions = structuredClone(s.initOptions);
 	for (const e of s.history.slice(0, to ?? s.history.length)) {
+		if (logTo !== undefined && state.log.length >= logTo) break;
 		if (e.move.action === "$planning") {
 			restorePlanning(state, e.move.snapshot as unknown as PlanningSnapshot);
 			state.history.push(structuredClone(e));
@@ -1213,6 +1214,6 @@ export function replay(s: State, to?: number): State {
 		else if (e.move.action === "$name") state = setPlayerName(state, e.player, e.move.name as string);
 		else state = applyMove(state, e.move, e.player);
 	}
-	if (to === undefined && s.planningSnapshot) restorePlanning(state, s.planningSnapshot);
+	if (to === undefined && logTo === undefined && s.planningSnapshot) restorePlanning(state, s.planningSnapshot);
 	return state;
 }

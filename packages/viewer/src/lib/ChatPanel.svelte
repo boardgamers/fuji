@@ -1,9 +1,19 @@
 <script lang="ts">
-	import { chatDateSeparators } from "@boardgamers/protocol/chat";
+	import { chatDateSeparators, chatTranslationTitle } from "@boardgamers/protocol/chat";
 	import type { Store } from "./store.svelte";
 	import { bindChatComposer, bindChatViewport, type ChatSuggestions } from "@boardgamers/protocol/chat/dom";
 	let { store }: { store: Store } = $props();
 	const chat = $derived(store.chatState);
+	const labels = $derived(
+		chat.translationLabels ?? {
+			translate: "Translate",
+			translating: "Translating…",
+			translated: "Translated",
+			original: "Show original",
+			retry: "Retry",
+			error: "Translation unavailable",
+		}
+	);
 	const dates = $derived(chatDateSeparators(chat.messages));
 	let composer: HTMLInputElement | undefined = $state();
 	let list: HTMLDivElement | undefined = $state();
@@ -47,7 +57,7 @@
 	});
 </script>
 
-{#if chat.enabled}
+{#if store.chatAvailable}
 	<section class="expedition-chat" aria-label="Expedition chat">
 		<header>
 			<h2>Expedition chat</h2>
@@ -65,6 +75,10 @@
 				<div bind:this={contents}>
 					{#if !chat.messages.length}<p class="empty">Plan your escape together.</p>{/if}
 					{#each chat.messages as message, i (message._id ?? i)}
+						{@const translation = message._id ? chat.translations[message._id] : undefined}
+						{@const displayed = translation?.shown
+							? { text: translation.text ?? message.text, segments: translation.segments }
+							: message}
 						{@const day = dates[i]}
 						{#if day}<div class="chat-day"><time datetime={day.dateTime}>{day.label}</time></div>{/if}
 						<article data-message-id={message._id} class:system={message.type === "system"}>
@@ -93,7 +107,7 @@
 								</div>
 							{/if}
 							<p>
-								{#each message.segments ?? [{ kind: "text" as const, text: message.text }] as segment}
+								{#each displayed.segments ?? [{ kind: "text" as const, text: displayed.text }] as segment}
 									{#if segment.kind === "link" && safeLink(segment.url)}<a
 											href={segment.url}
 											target="_blank"
@@ -113,6 +127,23 @@
 									{:else}{segment.text}{/if}
 								{/each}
 							</p>
+
+							{#if message._id && message.type === "text" && chat.translationTarget}
+								<button
+									type="button"
+									class="chat-translate"
+									disabled={!!translation?.pending}
+									title={chatTranslationTitle(translation?.language ?? message.language, chat.translationTarget)}
+									onclick={() => store.chat.toggleTranslation(message._id!)}
+									>{translation?.pending
+										? labels.translating
+										: translation?.shown
+											? `${labels.translated} · ${labels.original}`
+											: translation?.error
+												? `${labels.error} · ${labels.retry}`
+												: labels.translate}</button
+								>
+							{/if}
 						</article>
 					{/each}
 				</div>
@@ -142,6 +173,22 @@
 {/if}
 
 <style>
+	.chat-translate {
+		min-height: 24px;
+		padding: 2px 4px;
+		margin-left: 4px;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 11px;
+		text-decoration: underline;
+		cursor: pointer;
+	}
+	.chat-translate:disabled {
+		opacity: 0.65;
+		cursor: wait;
+	}
 	.chat-day {
 		display: flex;
 		align-items: center;

@@ -501,7 +501,7 @@
 				</span>
 			</div>
 			<nav class="game-utilities" aria-label="Game options">
-				{#if store.chatState.enabled}<button
+				{#if store.chatAvailable}<button
 						class="utility-button"
 						onclick={openChat}
 						title="Chat"
@@ -520,7 +520,7 @@
 						requestAnimationFrame(() =>
 							document
 								.querySelector(
-									window.innerWidth <= 850 && store.chatState.enabled
+									window.innerWidth <= 850 && store.chatAvailable
 										? ".mobile-journal .inline-journal"
 										: ".inline-journal"
 								)
@@ -632,7 +632,7 @@
 						(s.phase === "equipment" && me.ready && !canReopenChoice(s, seat!)) ||
 						(s.phase === "eruption" && seat !== 0)}>{mobileLabel} →</button
 				>
-				{#if store.chatState.enabled && store.chatState.unreadIds.length}<button class="dock-chat" onclick={openChat}
+				{#if store.chatAvailable && store.chatState.unreadIds.length}<button class="dock-chat" onclick={openChat}
 						>Chat{store.chatState.unreadIds.length ? ` · ${store.chatState.unreadIds.length}` : ""}</button
 					>{/if}
 			</div>{/if}
@@ -881,11 +881,11 @@
 							</div>{/if}
 					{/if}
 				</section>
-				<div class:desktop-journal={store.chatState.enabled}>{@render journalPanel("desktop")}</div>
+				<div class:desktop-journal={store.chatAvailable}>{@render journalPanel("desktop")}</div>
 			</div>
 			<aside class="journey">
 				<div class="social-panel" data-tab={socialTab}>
-					{#if store.chatState.enabled}<nav class="social-tabs" aria-label="Chat and journal">
+					{#if store.chatAvailable}<nav class="social-tabs" aria-label="Chat and journal">
 							<button
 								class:active={socialTab === "chat"}
 								onclick={() => {
@@ -902,7 +902,7 @@
 							>
 						</nav>{/if}
 					<ChatPanel {store} />
-					{#if store.chatState.enabled}<div class="mobile-journal">{@render journalPanel("mobile")}</div>{/if}
+					{#if store.chatAvailable}<div class="mobile-journal">{@render journalPanel("mobile")}</div>{/if}
 				</div>
 				<div class="journey-actions">
 					<h2 class="sr-only">{nextAction}</h2>

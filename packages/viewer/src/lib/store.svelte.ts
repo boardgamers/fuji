@@ -2,8 +2,10 @@ import { ChatController } from "@boardgamers/protocol/chat";
 import { SoundDesign, type SoundCue } from "./sound";
 import type { View, Move } from "fuji-engine";
 export class Store {
+	analysis = $state(false);
 	chat = new ChatController();
 	chatState = $state.raw(this.chat.snapshot);
+	chatAvailable = $derived(this.chatState.enabled && !this.analysis);
 	private unsubscribeChat = this.chat.subscribe((snapshot) => {
 		this.chatState = snapshot;
 	});

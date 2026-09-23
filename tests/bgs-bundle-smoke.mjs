@@ -151,14 +151,14 @@ import path from "node:path";
 	);
 	if ((await page.locator(".revealed-team .die:not(.hidden)").count()) !== 6) throw Error("Radio not rendered");
 	if (await page.locator(".die-caption").count()) throw Error("Color labels should be off by default");
-	await page.evaluate(() => window.bridge.emit("preferences", { colorblind: true }));
+	await page.evaluate(() => window.bridge.emit("preferences", { colorBlind: true }));
 	await page.waitForSelector(".die-caption");
 	await page.getByRole("button", { name: "Open playing guide" }).click();
 	await page.getByRole("checkbox", { name: "Show color labels (colorblind support)" }).uncheck();
 	const preference = await page.evaluate(
 		() => window.captured.findLast((e) => e.name === "update:preference")?.payload
 	);
-	if (preference?.name !== "colorblind" || preference.value !== false) throw Error("Wrong preference uplink");
+	if (preference?.name !== "colorBlind" || preference.value !== false) throw Error("Wrong preference uplink");
 	if (await page.locator(".die-caption").count()) throw Error("Color labels did not turn off");
 	await page.keyboard.press("Escape");
 	if ((await page.locator(".village-marker").count()) !== 5) throw Error("Every village location needs a marker");

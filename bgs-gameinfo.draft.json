@@ -105,7 +105,7 @@
 	],
 	"preferences": [
 		{
-			"name": "colorblind",
+			"name": "colorBlind",
 			"label": "Show color labels (colorblind support)",
 			"type": "checkbox",
 			"default": false

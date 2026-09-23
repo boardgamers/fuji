@@ -83,7 +83,7 @@ export class Store {
 	savePreference: (name: string, value: boolean) => void = () => {};
 	setColorblind(value: boolean) {
 		this.colorblind = value;
-		this.savePreference("colorblind", value);
+		this.savePreference("colorBlind", value);
 	}
 	send: (move: Move) => void = () => {};
 	selectSeat: (seat: number) => void = () => {};

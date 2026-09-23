@@ -39,7 +39,7 @@ Fuji has a shared win/loss. The wrapper gives all players the same ranking and r
 
 ## Viewer preferences
 
-`colorblind` is a boolean UI preference, false by default. The viewer reads the platform `preferences` event and emits `update:preference` with `{ name: "colorblind", value: boolean }` when changed in Help. It adds color names to dice and color initials to map requirement symbols without changing game state. The local harness persists the same setting in localStorage. The draft registration declares the checkbox for the platform sidebar.
+`colorBlind` is the platform’s shared color-blind preference, false by default. It is stored on the BGS account and used across supported games. The viewer reads the platform `preferences` event and emits `update:preference` with `{ name: "colorBlind", value: boolean }` when changed in Help. It adds color names to dice and color initials to map requirement symbols without changing game state. The local harness persists the same setting in localStorage. The draft registration declares the checkbox so the platform shows its shared control. Incoming preference updates must not write back to the host.
 
 ## Automatic movement resolution
 

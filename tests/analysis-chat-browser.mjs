@@ -1,3 +1,4 @@
+import { checkHostPresentation } from "./host-presentation-smoke.mjs";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { fileURLToPath } from "node:url";
@@ -61,6 +62,8 @@ try {
 			await page.screenshot({ path: `/tmp/${game}-analysis-${width}.png`, fullPage: true });
 			assert.deepEqual(errors, []);
 			console.log(`${game} ${width}: translation/original/analysis passed`);
+			await checkHostPresentation(page, "e", `/tmp/fuji-board-thumbnail-${width}.png`);
+			assert.deepEqual(errors, []);
 			await page.close();
 		}
 	}

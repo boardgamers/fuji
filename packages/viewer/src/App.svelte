@@ -652,6 +652,7 @@
 						<button
 							type="button"
 							class="teammate-name"
+							data-bgs-player={i}
 							onclick={() => (store.local ? store.selectSeat(i) : store.clickPlayer(i))}
 							>{p.name}{#if seat === i}<small>YOU</small>{/if}</button
 						><span class="role-name" title=""

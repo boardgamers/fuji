@@ -71,7 +71,7 @@ for (const width of [390, 1400]) {
 	assert.equal(await p.locator("article script").count(), 0);
 	assert.equal(await p.getByText(/Waiting for Full Name to choose an injury/).count(), 1);
 	assert.equal(await p.getByText(/Gatherer.*decide/).count(), 0);
-	assert.equal(await p.getByText("Scenario 7", { exact: true }).isVisible(), true);
+	assert.equal(await p.locator('.difficulty-label[title="Scenario 7"]').isVisible(), true);
 	assert.equal(await p.getByRole("button", { name: "Difficulty level 2: stamina costs" }).isVisible(), true);
 	await p.evaluate(() =>
 		e.emit("chat:appended", [

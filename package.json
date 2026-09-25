@@ -6,11 +6,12 @@
 		"dev": "pnpm --filter fuji-engine build && pnpm --filter fuji-viewer dev",
 		"build": "pnpm --filter fuji-engine build && pnpm --filter fuji-viewer build",
 		"test": "pnpm --filter fuji-engine test",
-		"check": "pnpm fmt:check && pnpm build && pnpm --filter fuji-viewer check && pnpm test && pnpm --filter fuji-viewer test:tutorial",
+		"check": "pnpm test:locales && pnpm fmt:check && pnpm build && pnpm --filter fuji-viewer check && pnpm test && pnpm --filter fuji-viewer test:tutorial",
 		"fmt": "oxfmt",
 		"fmt:check": "oxfmt --check",
 		"simulate": "pnpm --filter fuji-engine build && node scripts/simulate.mjs",
-		"test:browser": "node tests/browser-smoke.mjs && node tests/bgs-bundle-smoke.mjs && node tests/presentation-smoke.mjs && node tests/chat-smoke.mjs && node tests/mobile-readiness-smoke.mjs && node tests/chat-tabs-smoke.mjs && node tests/chat-mentions-smoke.mjs && node tests/protocol-lifecycle-smoke.mjs && node tests/tutorial-browser.mjs && node tests/analysis-chat-browser.mjs"
+		"test:browser": "node tests/browser-smoke.mjs && node tests/bgs-bundle-smoke.mjs && node tests/presentation-smoke.mjs && node tests/chat-smoke.mjs && node tests/mobile-readiness-smoke.mjs && node tests/chat-tabs-smoke.mjs && node tests/chat-mentions-smoke.mjs && node tests/protocol-lifecycle-smoke.mjs && node tests/tutorial-browser.mjs && node tests/analysis-chat-browser.mjs",
+		"test:locales": "node scripts/check-locales.mjs packages/viewer/src/localization && node --test scripts/localization.test.mjs"
 	},
 	"devDependencies": {
 		"oxfmt": "0.61.0",

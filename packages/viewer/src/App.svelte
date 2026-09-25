@@ -448,7 +448,7 @@
 	<VictoryPetals won={s.outcome === "won"} animating={store.animating} />
 	<main class="expedition">
 		<header class="game-tools">
-			<div class="game-brand" title="Fuji · Wolfgang Warsch · Feuerland Spiele">
+			<div class="game-brand" translate="no" title="Fuji · Wolfgang Warsch · Feuerland Spiele">
 				<svg class="fuji-mark" viewBox="0 0 44 36" fill="none" aria-hidden="true"
 					><circle cx="33" cy="8" r="5" fill="currentColor" opacity=".45" /><path
 						d="m3 32 17-27 21 27H3Z"

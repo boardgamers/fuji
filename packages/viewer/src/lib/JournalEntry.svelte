@@ -28,7 +28,9 @@
 		<span class="route-requirement"
 			><RequirementDisplay requirement={terrain(r.cells.at(-1)!.terrain).requirement} {colorblind} /></span
 		>
-		<span title="Movement distance">{r.cells.length - 1} step{r.cells.length === 2 ? "" : "s"}</span>
+		<span title="Movement distance"
+			>{r.cells.length === 2 ? `${r.cells.length - 1} step` : `${r.cells.length - 1} steps`}</span
+		>
 		<span class="route-rerolls" title={`${r.rerolls} rerolls available on this route`}
 			><PhaseIcon phase={1} />{r.rerolls}</span
 		>

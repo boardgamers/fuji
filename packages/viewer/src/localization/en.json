@@ -1264,5 +1264,14 @@
 	"✓ Ready. Waiting for the team.": "✓ Ready. Waiting for the team.",
 	"✓ Your dice are kept. Waiting for the team.": "✓ Your dice are kept. Waiting for the team.",
 	"✓ Your journey is resolved.": "✓ Your journey is resolved.",
-	"✓ Your route is set. Waiting for the team.": "✓ Your route is set. Waiting for the team."
+	"✓ Your route is set. Waiting for the team.": "✓ Your route is set. Waiting for the team.",
+	"Use {p0} bar · total {p1}": "Use {p0} bar · total {p1}",
+	"Use {p0} bars · total {p1}": "Use {p0} bars · total {p1}",
+	"{p0} reroll remaining": "{p0} reroll remaining",
+	"{p0} power bar": "{p0} power bar",
+	"{p0} step": "{p0} step",
+	"{p0} steps": "{p0} steps",
+	"Eruption: entering or crossing triggers {p0} extra eruption. One-time trigger.": "Eruption: entering or crossing triggers {p0} extra eruption. One-time trigger.",
+	"Eruption: entering or crossing triggers {p0} extra eruptions. One-time trigger.": "Eruption: entering or crossing triggers {p0} extra eruptions. One-time trigger.",
+	"{p0} · {p1}": "{p0} · {p1}"
 }

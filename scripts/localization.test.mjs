@@ -61,3 +61,21 @@ test("decorative arrows and attached currency values keep their meaning", () => 
 	assert.equal(t.translate("Draw →"), "Tekenen →");
 	assert.equal(t.translate("Your cash: $20"), "Je geld: $20");
 });
+
+test("Fuji tutorial headings beat generic fragments and plurals stay whole", async () => {
+	const locales = {};
+	for (const lang of ["en", "fr", "zh-TW", "vi"]) {
+		locales[lang] = JSON.parse(
+			await readFile(new URL(`../packages/viewer/src/localization/${lang}.json`, import.meta.url), "utf8")
+		);
+	}
+	const fr = createTranslator(locales, "fr");
+	assert.equal(fr.translate("1/3 · Your first journey"), `1/3 · ${locales.fr["Your first journey"]}`);
+	assert.equal(fr.translate("2 steps"), "2 cases");
+	assert.equal(
+		fr.translate("Eruption: entering or crossing triggers 2 extra eruptions. One-time trigger."),
+		"Éruption : entrer ou traverser déclenche 2 éruptions supplémentaires. Une seule fois."
+	);
+	const zh = createTranslator(locales, "zh-TW");
+	assert.equal(zh.translate("Choose 2 of your 3 equipment cards to keep."), "從你的 3 張裝備卡中選擇 2 張保留。");
+});

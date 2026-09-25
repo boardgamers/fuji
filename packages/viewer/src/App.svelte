@@ -825,7 +825,9 @@
 									>
 								{:else}
 									<div class="reroll-choice">
-										<strong>{me.rerolls} reroll{me.rerolls === 1 ? "" : "s"} remaining</strong>
+										<strong
+											>{me.rerolls === 1 ? `${me.rerolls} reroll remaining` : `${me.rerolls} rerolls remaining`}</strong
+										>
 										{#if me.rerolls}<p>Select any dice, then reroll them together.</p>
 											<button
 												class="primary"
@@ -873,7 +875,7 @@
 										? "Your skill is unavailable due to amnesia."
 										: SKILLS[me.skill].description}</span
 								>{#if me.powerBars}<span class="power-bars"
-										>{me.powerBars} power bar{me.powerBars === 1 ? "" : "s"}</span
+										>{me.powerBars === 1 ? `${me.powerBars} power bar` : `${me.powerBars} power bars`}</span
 									>{/if}
 							</div>
 						{/if}
@@ -1192,7 +1194,9 @@
 											class="secondary"
 											disabled={store.waiting}
 											onclick={() => store.dispatch({ action: "help", count })}
-											>Use {count} bar{count > 1 ? "s" : ""} · total {result.own + count}</button
+											>{count === 1
+												? `Use ${count} bar · total ${result.own + count}`
+												: `Use ${count} bars · total ${result.own + count}`}</button
 										>{/each}
 								</div>
 								<button
@@ -1396,9 +1400,9 @@
 								{#if focus?.equipment}<span>Equipment: finish your move here to draw a card, usable next round.</span
 									>{/if}
 								{#if focus?.eruption}<span
-										>Eruption: entering or crossing triggers {focus.eruption} extra eruption{focus.eruption === 1
-											? ""
-											: "s"}. One-time trigger.</span
+										>{focus.eruption === 1
+											? `Eruption: entering or crossing triggers ${focus.eruption} extra eruption. One-time trigger.`
+											: `Eruption: entering or crossing triggers ${focus.eruption} extra eruptions. One-time trigger.`}</span
 									>{/if}
 								{#if focus && threatened(s).includes(focus.id)}<span>The next eruption will cover this location.</span
 									>{/if}

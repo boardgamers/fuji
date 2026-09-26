@@ -79,3 +79,23 @@ test("Fuji tutorial headings beat generic fragments and plurals stay whole", asy
 	const zh = createTranslator(locales, "zh-TW");
 	assert.equal(zh.translate("Choose 2 of your 3 equipment cards to keep."), "從你的 3 張裝備卡中選擇 2 張保留。");
 });
+
+test("Persian uses regional tags and keeps dynamic game values and names intact", async () => {
+	assert.equal(resolveLocale("fa-IR"), "fa");
+	assert.equal(resolveLocale("FA_IR"), "fa");
+	const fa = JSON.parse(
+		await readFile(new URL("../packages/viewer/src/localization/fa.json", import.meta.url), "utf8")
+	);
+	const t = createTranslator({ fa }, "fa-IR");
+	t.setNames(["Map"]);
+	assert.equal(t.translate("Map gave Rope to Ren."), "Map وسیلهٔ طناب را به Ren داد.");
+	assert.equal(t.translate("Use 2 bars · total 18"), "مصرف 2 خوراکی · مجموع 18");
+	assert.equal(
+		t.translate("Scenario 3 · Level 2. Everyone must reach a house-marked location."),
+		"سناریوی 3 · سطح 2. همه باید به مکانی با نشان خانه برسند."
+	);
+	assert.equal(t.translate("translate(120,0)"), "translate(120,0)");
+	assert.equal(t.translate("Map"), "Map");
+	t.setLocale("en");
+	assert.equal(t.translate("Use 2 bars · total 18"), "Use 2 bars · total 18");
+});

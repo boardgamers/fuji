@@ -1,0 +1,41 @@
+/* Keep physical map coordinates and left-to-right dice indices stable. */
+.expedition:lang(fa),
+.landscape:lang(fa),
+.map-scroll:lang(fa),
+.expedition svg:lang(fa),
+.dice-row:lang(fa),
+.mini-dice:lang(fa),
+.comparison-dice:lang(fa),
+.die:lang(fa) {
+	direction: ltr;
+}
+
+.bgs-tutorial-guide:lang(fa),
+.expedition p:lang(fa),
+.expedition h1:lang(fa),
+.expedition h2:lang(fa),
+.expedition h3:lang(fa),
+.expedition button:not(.die):lang(fa),
+.expedition legend:lang(fa),
+.instruction:lang(fa),
+.location-detail:lang(fa),
+.equipment-description:lang(fa),
+.equipment-preview:lang(fa),
+.journal-entry:lang(fa),
+.journal-header:lang(fa),
+.modal:lang(fa) {
+	direction: rtl;
+	text-align: start;
+}
+
+.bgs-tutorial-body p:lang(fa),
+.journal-entry:lang(fa),
+.instruction:lang(fa) {
+	unicode-bidi: plaintext;
+}
+
+/* Persian status labels need to wrap inside compact teammate cards. */
+.ready-label:lang(fa) {
+	white-space: normal;
+	overflow-wrap: anywhere;
+}

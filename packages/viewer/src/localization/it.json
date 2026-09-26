@@ -1273,5 +1273,19 @@
 	"{p0} steps": "{p0} caselle",
 	"Eruption: entering or crossing triggers {p0} extra eruption. One-time trigger.": "Eruzione: entrare o passare qui provoca {p0} eruzione aggiuntiva. Si attiva una sola volta.",
 	"Eruption: entering or crossing triggers {p0} extra eruptions. One-time trigger.": "Eruzione: entrare o passare qui provoca {p0} eruzioni aggiuntive. Si attiva una sola volta.",
-	"{p0} · {p1}": "{p0} · {p1}"
+	"{p0} · {p1}": "{p0} · {p1}",
+	"Change dice": "Change dice",
+	"Keep dice": "Keep dice",
+	"Set die aside · free": "Set die aside · free",
+	"Select 1 die to set aside": "Select 1 die to set aside",
+	"✓ Die set aside": "✓ Die set aside",
+	"Select dice ↑": "Select dice ↑",
+	"Choose on map ↑": "Choose on map ↑",
+	"Zoom in on the map": "Zoom in on the map",
+	"Show the whole map": "Show the whole map",
+	"+{p0} bar if kept": "+{p0} bar if kept",
+	"+{p0} bars if kept": "+{p0} bars if kept",
+	"· gain {p0} bar": "· gain {p0} bar",
+	"{p0} · +{p1} bar if kept": "{p0} · +{p1} bar if kept",
+	"{p0} · +{p1} bars if kept": "{p0} · +{p1} bars if kept"
 }

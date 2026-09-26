@@ -94,6 +94,26 @@ try {
 	);
 	await page.waitForTimeout(650);
 	assert.equal(await page.evaluate(() => window.events.filter((e) => e.name === "chat:read").length), receipts + 1);
+
+	await page.getByRole("button", { name: "Collapse chat" }).click();
+	await page.evaluate(() => {
+		window.restoredReceipts = [];
+		bridge.on("chat:read", (payload) => restoredReceipts.push(payload));
+		bridge.emit("chat:state", { canSend: true, readState: { userId: "self", lastReadAt: 500000 } });
+		bridge.emit("chat:messages", [
+			{ _id: "000001f40000000000000001", type: "text", authorId: "other", text: "Already read" },
+			{ _id: "000001f50000000000000001", type: "text", authorId: "other", text: "Unread after reload" },
+			{ _id: "000001f60000000000000001", type: "text", authorId: "self", text: "My own message" },
+			{ _id: "000001f70000000000000001", type: "system", text: "Game started" },
+		]);
+	});
+	await page.waitForFunction(() => document.querySelector(".utility-count")?.textContent === "1");
+	await page.waitForTimeout(650);
+	assert.equal(await page.evaluate(() => restoredReceipts.length), 0, "collapsed chat preserves unread history");
+	await page.getByRole("button", { name: "Expand chat" }).click();
+	await page.locator(".chat-messages").scrollIntoViewIfNeeded();
+	await page.waitForFunction(() => restoredReceipts.length > 0);
+	assert.equal(await page.locator(".utility-count").count(), 0, "opening chat clears restored unread");
 	await page.screenshot({ path: "work/chat-desktop.png" });
 	await page.evaluate(() => window.bridge.emit("chat:disabled", true));
 	assert.equal(await page.getByRole("textbox", { name: "Chat message" }).count(), 0);

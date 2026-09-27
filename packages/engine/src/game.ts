@@ -155,6 +155,7 @@ function phase(s: State, next: State["phase"]) {
 	s.phase = next;
 	for (const turn of turnProgress(s)) turn.credited = false;
 	for (const p of s.players) {
+		if (p.radio) diceEvent(s, `${p.name} revealed their dice`, p.dice);
 		p.ready = false;
 		p.radio = false;
 	}
@@ -581,6 +582,7 @@ function execute(s: State, m: Move, seat: number) {
 	if (!p) throw Error("Invalid player.");
 	if (s.pending) {
 		const pending = s.pending;
+		let loan: Die | undefined;
 		const source = pending.equipment ? equipment(pending.equipment).name : "equipment";
 		let responseText =
 			pending.kind === "lend"
@@ -598,6 +600,7 @@ function execute(s: State, m: Move, seat: number) {
 				p.dice = p.dice.filter((x) => x !== d);
 				s.players[pending.receiver!]!.dice.push(d);
 				responseText = `lent 1 die to ${s.players[pending.receiver!]!.name} until the end of the round`;
+				loan = structuredClone(d);
 				pending.players = [];
 			} else {
 				roll(s, dice);
@@ -608,6 +611,10 @@ function execute(s: State, m: Move, seat: number) {
 		} else throw Error("Resolve the equipment effect first.");
 		event(s, `${p.name} ${responseText}.`, "equipment");
 		if (pending.kind === "reroll") s.log.at(-1)!.sound = "dice";
+		if (loan) {
+			s.log.at(-1)!.dice = [loan];
+			s.log.at(-1)!.diceVisibleTo = [seat, pending.receiver!];
+		}
 		finishPending(s);
 		return;
 	}
@@ -1228,6 +1235,18 @@ export function createAnalysisScenario(data: State, { player, seed }: { player?:
 		EQUIPMENT.map((c) => c.id).filter((id) => !used.has(id))
 	).slice(0, deckCount);
 	if (s.phase !== "setup") {
+		// Logs retain private loan snapshots for their two participants. A later
+		// hidden roll/turn has no public die IDs, so conservatively forget old faces.
+		const known = new Map<string, number>();
+		for (const entry of s.log) {
+			if (entry.round !== s.round) continue;
+			if (entry.sound === "dice" || (entry.type === "equipment" && / · turned \d+ (?:die|dice)\./.test(entry.text)))
+				known.clear();
+			for (const die of [...(entry.dice ?? []), ...(entry.setAside ?? [])]) known.set(die.id, die.face);
+		}
+		for (const die of [...s.players.flatMap((p) => p.dice), ...s.ghost]) {
+			if (die.face === 0 && known.has(die.id)) die.face = known.get(die.id)!;
+		}
 		for (const p of s.players)
 			roll(
 				s,

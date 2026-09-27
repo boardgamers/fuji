@@ -1661,3 +1661,58 @@ test("analysis setup keeps unrolled dice and simulated positions can progress", 
 	}
 	assert.ok(s.round > 1 || s.outcome);
 });
+
+test("analysis keeps a lender's known face across sampling without reading the recipient's secret", async () => {
+	const { createAnalysisScenario } = await import("../wrapper.js");
+	for (const kind of ["map", "lighter"]) {
+		let s = withPhase();
+		const die = structuredClone(s.players[0]!.dice[0]!);
+		if (kind === "map") s = equip(s, 0, "map", { target: 1, ids: [die.id] });
+		else {
+			s = equip(s, 1, "lighter", { target: 0 });
+			s = applyMove(s, { action: "respond", ids: [die.id] }, 0);
+		}
+		assert.deepEqual(stripSecret(s, 0).log.at(-1)!.dice, [die]);
+		assert.equal(stripSecret(s, 2).log.at(-1)!.dice, undefined);
+		const changed = structuredClone(s);
+		changed.players[1]!.dice.find((d) => d.id === die.id)!.face = (die.face % 6) + 1;
+		changed.seed = "different secret";
+		const a = createAnalysisScenario(s, { player: 0, seed: "fake" });
+		assert.deepEqual(a, createAnalysisScenario(changed, { player: 0, seed: "fake" }));
+		assert.equal(a.players[1]!.dice.find((d) => d.id === die.id)!.face, die.face);
+		const again = createAnalysisScenario(a, { player: 0, seed: "another fake" });
+		assert.equal(again.players[1]!.dice.find((d) => d.id === die.id)!.face, die.face);
+		for (const equipment of ["water", "shovel"]) {
+			let turned = equip(s, 1, equipment, { target: 1, ids: [die.id], face: 6 });
+			if (equipment === "water") turned = applyMove(turned, { action: "respond", ids: [die.id] }, 1);
+			const results = new Set(
+				Array.from(
+					{ length: 20 },
+					(_, i) =>
+						createAnalysisScenario(turned, { player: 0, seed: `sample-${i}` }).players[1]!.dice.find(
+							(d) => d.id === die.id
+						)!.face
+				)
+			);
+			assert.ok(results.size > 1, `${equipment} invalidates the old loan snapshot`);
+		}
+	}
+});
+
+test("analysis remembers publicly revealed Radio dice after the phase ends", async () => {
+	const { createAnalysisScenario } = await import("../wrapper.js");
+	let s = withPhase("planning");
+	s = equip(s, 1, "radio");
+	const known = structuredClone(s.players[1]!.dice);
+	for (let seat = 0; seat < s.players.length; seat++) {
+		const path = Object.values(paths(s, seat)).find(
+			(path) => !s.players.some((p, j) => j !== seat && p.ready && p.path.at(-1) === path.at(-1))
+		)!;
+		s = applyMove(s, { action: "plan", path }, seat);
+		s = applyMove(s, { action: "ready" }, seat);
+	}
+	assert.equal(s.phase, "reroll");
+	assert.equal(s.players[1]!.radio, false);
+	const scenario = createAnalysisScenario(s, { player: 0, seed: "radio-simulation" });
+	assert.deepEqual(scenario.players[1]!.dice, known);
+});

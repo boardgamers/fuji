@@ -1645,3 +1645,19 @@ test("ongoing analysis rebuilds hidden dice and future draws without source secr
 	assert.equal(result.deck.length, source.deck.length);
 	assert.deepEqual(result.history, []);
 });
+
+test("analysis setup keeps unrolled dice and simulated positions can progress", async () => {
+	const wrapper = await import("../wrapper.js");
+	const setup = initGame(3, {}, "setup");
+	const sandbox = wrapper.createAnalysisScenario(setup, { seed: "fresh" });
+	assert.deepEqual(
+		sandbox.players.map((p) => p.dice),
+		setup.players.map((p) => p.dice)
+	);
+	let s = wrapper.createAnalysisScenario(prepared(2), { player: 0, seed: "fresh" });
+	for (let i = 0; i < 100 && !s.outcome; i++) {
+		const current = wrapper.currentPlayer(s);
+		s = wrapper.moveAI(s, Array.isArray(current) ? current[0]! : current!);
+	}
+	assert.ok(s.round > 1 || s.outcome);
+});

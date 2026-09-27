@@ -1227,14 +1227,17 @@ export function createAnalysisScenario(data: State, { player, seed }: { player?:
 		s,
 		EQUIPMENT.map((c) => c.id).filter((id) => !used.has(id))
 	).slice(0, deckCount);
-	for (const p of s.players)
+	if (s.phase !== "setup") {
+		for (const p of s.players)
+			roll(
+				s,
+				p.dice.filter((d) => d.face === 0)
+			);
 		roll(
 			s,
-			p.dice.filter((d) => d.face === 0)
+			s.ghost.filter((d) => d.face === 0)
 		);
-	roll(
-		s,
-		s.ghost.filter((d) => d.face === 0)
-	);
+	}
+
 	return s;
 }

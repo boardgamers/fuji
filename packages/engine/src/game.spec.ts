@@ -1626,3 +1626,22 @@ test("analysis uses public log boundaries and keeps player-specific views playab
 	}
 	assert.deepEqual(state, original);
 });
+
+test("ongoing analysis rebuilds hidden dice and future draws without source secrets", async () => {
+	const wrapper = await import("../wrapper.js");
+	const source = prepared();
+	const before = structuredClone(source);
+	const changed = structuredClone(source);
+	changed.seed = "other-secret";
+	changed.counter += 100;
+	changed.deck.reverse();
+	for (const p of changed.players.slice(1)) for (const d of p.dice) d.face = (d.face % 6) + 1;
+	changed.history = [{ player: 1, move: { secret: "private" } }];
+	changed.chatMessages = ["private"];
+	const result = wrapper.createAnalysisScenario(source, { player: 0, seed: "simulation" });
+	assert.deepEqual(result, wrapper.createAnalysisScenario(changed, { player: 0, seed: "simulation" }));
+	assert.deepEqual(source, before);
+	assert.deepEqual(result.players[0]!.dice, source.players[0]!.dice);
+	assert.equal(result.deck.length, source.deck.length);
+	assert.deepEqual(result.history, []);
+});

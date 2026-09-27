@@ -1217,3 +1217,24 @@ export function replay(s: State, to?: number, logTo?: number): State {
 	if (to === undefined && logTo === undefined && s.planningSnapshot) restorePlanning(state, s.planningSnapshot);
 	return state;
 }
+
+/** Start a manual sandbox from only the requesting seat's visible information. */
+export function createAnalysisScenario(data: State, { player, seed }: { player?: number; seed: string }): State {
+	const { deckCount, ...visible } = stripSecret(data, player);
+	const s: State = { ...visible, seed, counter: 0, deck: [], history: [], initOptions: {} };
+	const used = new Set([...s.discard, ...s.players.flatMap((p) => p.cards.map((c) => c.id))]);
+	s.deck = shuffle(
+		s,
+		EQUIPMENT.map((c) => c.id).filter((id) => !used.has(id))
+	).slice(0, deckCount);
+	for (const p of s.players)
+		roll(
+			s,
+			p.dice.filter((d) => d.face === 0)
+		);
+	roll(
+		s,
+		s.ghost.filter((d) => d.face === 0)
+	);
+	return s;
+}

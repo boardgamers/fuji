@@ -63,3 +63,5 @@ export function createAnalysis(s: State, { to }: { to: number; sourceEnded: bool
 	delete copy.chatMessages;
 	return copy;
 }
+
+export { createAnalysisScenario } from "./src/game.js";

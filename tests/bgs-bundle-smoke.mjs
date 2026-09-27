@@ -213,7 +213,7 @@ import path from "node:path";
 		throw Error("Reroll matching badges must stay tied to the chosen destination");
 	await page.screenshot({ path: "work/browser/fuji-matching-dice.png", fullPage: true });
 	await page.locator(".personal .die").first().click();
-	const aside = page.getByRole("button", { name: "Set selected die aside" });
+	const aside = page.getByRole("button", { name: "Set die aside · free" });
 	if (!(await aside.isEnabled())) throw Error("Buddy must be usable with zero rerolls");
 	await aside.click();
 	if ((await page.evaluate(() => window.captured.findLast((e) => e.name === "move")?.payload.action)) !== "buddy")

@@ -97,10 +97,11 @@
 }
 .tutorial-session [data-tutorial] {
 	scroll-margin-top: calc(var(--tutorial-height) + 75px);
-	scroll-margin-bottom: 20px;
+	scroll-margin-bottom: 80px;
 }
 .tutorial-session .mobile-dock {
-	top: var(--tutorial-height);
+	top: auto;
+	bottom: 0;
 }
 @media (max-width: 850px) {
 	.tutorial-guide-host {

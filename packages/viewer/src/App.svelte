@@ -68,7 +68,8 @@
 	let keep = $state<string[]>([]);
 	let drop = $state("");
 	let help = $state(false);
-	let journal = $state(true);
+	let journal = $state(false);
+	let teamExpanded = $state(false);
 	let socialTab = $state("chat");
 	let fullscreen = $state(false);
 	onMount(() => {
@@ -325,7 +326,7 @@
 			return;
 		}
 		if (s.phase === "reroll") {
-			document.querySelector(".reroll-actions")?.scrollIntoView({ behavior: "smooth", block: "center" });
+			store.dispatch({ action: me.ready ? "unready" : "finishRerolls" });
 			return;
 		}
 		if (s.phase === "equipment") {
@@ -351,7 +352,9 @@
 							? "Change route"
 							: "Ready to travel"
 						: s.phase === "reroll"
-							? "Dice actions"
+							? me.ready
+								? "Change dice"
+								: "Keep dice"
 							: s.phase === "equipment"
 								? me.ready
 									? "Change equipment"
@@ -447,7 +450,7 @@
 {#if s}
 	<VictoryPetals won={s.outcome === "won"} animating={store.animating} />
 	<main class="expedition">
-		<header class="game-tools">
+		<header class="game-tools" class:details-open={teamExpanded}>
 			<div class="game-brand" translate="no" title="Fuji · Wolfgang Warsch · Feuerland Spiele">
 				<svg class="fuji-mark" viewBox="0 0 44 36" fill="none" aria-hidden="true"
 					><circle cx="33" cy="8" r="5" fill="currentColor" opacity=".45" /><path
@@ -501,6 +504,13 @@
 				</span>
 			</div>
 			<nav class="game-utilities" aria-label="Game options">
+				<button
+					class="utility-button team-toggle"
+					aria-label="Your expedition"
+					title="Your expedition"
+					aria-expanded={teamExpanded}
+					onclick={() => (teamExpanded = !teamExpanded)}>☷</button
+				>
 				{#if store.chatAvailable}<button
 						class="utility-button"
 						onclick={openChat}
@@ -619,16 +629,16 @@
 						>{s.phase === "planning"
 							? `${destination?.name ?? ""} · ${destination ? total(me, destination.id) : 0}`
 							: s.phase === "reroll"
-								? `${me.rerolls} rerolls remaining`
+								? `${localTotal} · ${hasSkill(me, "gatherer") && me.rerolls && me.powerBars < 3 ? `+${Math.min(me.rerolls, 3 - me.powerBars)} ${Math.min(me.rerolls, 3 - me.powerBars) === 1 ? "bar" : "bars"} if kept` : (destination?.name ?? "")}`
 								: me.name}</strong
 					>
 				</div>
 				<button
-					data-tutorial={s.phase === "movement" ? "resolve" : "confirm"}
+					data-tutorial={s.phase === "movement" ? "resolve" : s.phase === "reroll" ? "finish-rerolls" : "confirm"}
 					onclick={mobileAction}
 					disabled={store.waiting ||
 						(s.phase === "planning" && !me.ready && !!reserved[currentRoute.at(-1)!]) ||
-						(s.phase === "reroll" && me.ready) ||
+						(s.phase === "reroll" && me.ready && !canReopenChoice(s, seat!)) ||
 						(s.phase === "equipment" && me.ready && !canReopenChoice(s, seat!)) ||
 						(s.phase === "eruption" && seat !== 0)}>{mobileLabel} →</button
 				>
@@ -636,7 +646,7 @@
 						>Chat{store.chatState.unreadIds.length ? ` · ${store.chatState.unreadIds.length}` : ""}</button
 					>{/if}
 			</div>{/if}
-		<section class="team" aria-label="Your expedition">
+		<section class="team" class:expanded={teamExpanded} aria-label="Your expedition">
 			{#each s.players as p, i}
 				<article
 					class="teammate"
@@ -812,23 +822,30 @@
 									<strong>{localTotal}</strong><span>Matching dice total<br />{diceTerrain.name}</span>
 								</div>{/if}
 						</div>
-						{#if ["planning", "reroll", "equipment"].includes(s.phase)}<p class="dice-conflict-guide">
-								Player numbers mark dice that also count against that teammate’s destination.
-								{#if s.phase === "planning"}Dashed markers are provisional; solid markers are confirmed.{/if}
-							</p>{/if}
+						{#if ["planning", "reroll", "equipment"].includes(s.phase)}<details class="dice-conflict-guide">
+								<summary aria-label="Your dice" title="Your dice"
+									><span class="dice-guide-label">Your dice</span><span class="dice-guide-icon" aria-hidden="true"
+										>ⓘ</span
+									></summary
+								>
+								<p>
+									Player numbers mark dice that also count against that teammate’s destination.
+									{#if s.phase === "planning"}Dashed markers are provisional; solid markers are confirmed.{/if}
+								</p>
+							</details>{/if}
 						{#if s.phase === "reroll"}<section class="reroll-actions" aria-label="Dice actions">
 								{#if me.ready}<p class="confirmed">✓ Your dice are kept. Waiting for the team.</p>
 									<button
-										class="revise-choice"
+										class="revise-choice desktop-phase-confirm"
 										onclick={() => store.dispatch({ action: "unready" })}
 										disabled={store.waiting || !canReopenChoice(s, seat!)}>Change my dice choices</button
 									>
 								{:else}
-									<div class="reroll-choice">
+									<div class="reroll-choice normal-reroll">
 										<strong
 											>{me.rerolls === 1 ? `${me.rerolls} reroll remaining` : `${me.rerolls} rerolls remaining`}</strong
 										>
-										{#if me.rerolls}<p>Select any dice, then reroll them together.</p>
+										{#if me.rerolls}<p class="reroll-hint">Select any dice, then reroll them together.</p>
 											<button
 												class="primary"
 												disabled={!dice.length || store.waiting}
@@ -844,18 +861,20 @@
 											</p>{/if}
 									</div>
 									{#if hasSkill(me, "buddy")}<div class="reroll-choice buddy-choice">
-											<strong>Buddy · optional</strong>
-											{#if me.buddyUsed}<p>Die set aside: visible to everyone, excluded from comparisons this round.</p>
-											{:else}<p>
-													Set one die aside without spending a reroll. It becomes public and does not count this round.
+											<details class="buddy-help">
+												<summary>Buddy <span aria-hidden="true">ⓘ</span></summary>
+												<p>
+													Optionally set one die aside without spending a reroll. It becomes public and does not count
+													in comparisons this round.
 												</p>
-												<button
+											</details>
+											{#if me.buddyUsed}<span class="buddy-status">✓ Die set aside</span>
+											{:else}<button
 													class="secondary"
 													disabled={dice.length !== 1 || store.waiting}
-													onclick={() => store.dispatch({ action: "buddy", ids: dice })}>Set selected die aside</button
-												>
-												{#if dice.length !== 1}<span class="muted small">Select exactly one die above.</span>{/if}
-											{/if}
+													onclick={() => store.dispatch({ action: "buddy", ids: dice })}
+													>{dice.length === 1 ? "Set die aside · free" : "Select 1 die to set aside"}</button
+												>{/if}
 										</div>{/if}
 									<button
 										class="primary finish-dice"
@@ -863,7 +882,7 @@
 										data-tutorial="finish-rerolls"
 										onclick={() => store.dispatch({ action: "finishRerolls" })}
 										>Done with my dice{hasSkill(me, "gatherer") && me.rerolls
-											? ` · gain ${Math.min(me.rerolls, 3 - me.powerBars)} bars`
+											? ` · gain ${Math.min(me.rerolls, 3 - me.powerBars)} ${Math.min(me.rerolls, 3 - me.powerBars) === 1 ? "bar" : "bars"}`
 											: ""}<span aria-hidden="true">→</span></button
 									>
 								{/if}
@@ -887,7 +906,7 @@
 				<div class:desktop-journal={store.chatAvailable}>{@render journalPanel("desktop")}</div>
 			</div>
 			<aside class="journey">
-				<div class="social-panel" data-tab={socialTab}>
+				<div class="social-panel" class:empty-social={!store.chatAvailable} data-tab={socialTab}>
 					{#if store.chatAvailable}<nav class="social-tabs" aria-label="Chat and journal">
 							<button
 								class:active={socialTab === "chat"}
@@ -1054,16 +1073,20 @@
 										? "Choose exactly one die to reroll."
 										: "Select any dice to reroll. You may also stop."}
 							</p>
-							<button
-								class="primary"
-								disabled={store.waiting ||
-									(s.pending.required && dice.length !== 1) ||
-									(s.pending.kind === "lend" && dice.length !== 1)}
-								onclick={() => store.dispatch({ action: "respond", ids: dice })}
-								>{s.pending.kind === "lend" ? "Lend selected die" : "Reroll selected dice"}</button
-							>{#if !s.pending.required}<button class="secondary" onclick={() => store.dispatch({ action: "decline" })}
-									>{s.pending.kind === "lend" ? "Decline" : "Finish rerolls"}</button
-								>{/if}
+							<div class="response-actions">
+								<button
+									class="primary"
+									disabled={store.waiting ||
+										(s.pending.required && dice.length !== 1) ||
+										(s.pending.kind === "lend" && dice.length !== 1)}
+									onclick={() => store.dispatch({ action: "respond", ids: dice })}
+									>{s.pending.kind === "lend" ? "Lend selected die" : "Reroll selected dice"}</button
+								>{#if !s.pending.required}<button
+										class="secondary"
+										onclick={() => store.dispatch({ action: "decline" })}
+										>{s.pending.kind === "lend" ? "Decline" : "Finish rerolls"}</button
+									>{/if}
+							</div>
 						{:else}<p class="instruction">
 								Waiting for {s.pending.players.map((i) => s.players[i]!.name).join(", ")} to resolve an equipment effect.
 							</p>{/if}
@@ -1086,6 +1109,13 @@
 								<div>
 									<span class="eyebrow">YOUR DESTINATION</span>
 									<h3>{destination.name}</h3>
+									{#if destination.reroll}<span>↻ +1 reroll when chosen as your destination.</span>{/if}
+									{#if cell(s, currentRoute.at(-1)!).equipment}<span
+											>Equipment: finish your move here to draw a card, usable next round.</span
+										>{/if}
+									{#if destination.kind === "village"}<span
+											>Village: any house-marked location counts toward the team’s escape.</span
+										>{/if}
 									<RequirementDisplay requirement={destination.requirement} colorblind={store.colorblind} />
 								</div>
 							</div>
@@ -1104,28 +1134,31 @@
 								{reserved[currentRoute.at(-1)!]} has reserved this destination. Choose another location.
 							</p>{/if}
 						{#if !me.ready}<button
-								class="primary"
+								class="primary desktop-travel-confirm"
 								disabled={store.waiting || !!reserved[currentRoute.at(-1)!]}
 								data-tutorial="confirm"
 								onclick={confirmTravel}>Ready to travel <span>→</span></button
 							>{:else}<p class="confirmed">✓ Your route is set. Waiting for the team.</p>
-							<button class="revise-choice" onclick={() => store.dispatch({ action: "plan", path: me.path })}
-								>Change my route</button
+							<button
+								class="revise-choice desktop-phase-confirm"
+								onclick={() => store.dispatch({ action: "plan", path: me.path })}>Change my route</button
 							>{/if}
 					{:else if s.phase === "reroll"}
-						<p class="instruction">Reroll in silence. Your dice actions are below the map.</p>
+						<p class="instruction desktop-reroll-instruction">
+							Reroll in silence. Your dice actions are below the map.
+						</p>
 					{:else if s.phase === "equipment"}
 						<p class="instruction">
 							Discuss equipment with your teammates. Your dice are still private and your destination is locked.
 						</p>
 						{#if !me.ready}<button
-								class="primary"
+								class="primary desktop-phase-confirm"
 								data-tutorial="confirm"
 								onclick={() => store.dispatch({ action: "ready" })}
 								disabled={store.waiting}>Ready to reveal <span>→</span></button
 							>{:else}<p class="confirmed">✓ Ready. Waiting for the team.</p>
 							<button
-								class="revise-choice"
+								class="revise-choice desktop-phase-confirm"
 								onclick={() => store.dispatch({ action: "unready" })}
 								disabled={store.waiting || !canReopenChoice(s, seat!)}>Change my choice</button
 							>{/if}
@@ -1141,7 +1174,7 @@
 							</p>
 							{#if !me.resolved}<button
 									data-tutorial="resolve"
-									class="primary"
+									class="primary desktop-phase-confirm"
 									onclick={() => store.dispatch({ action: "beginMovement" })}>Resolve my journey <span>→</span></button
 								>{:else}<p class="confirmed">✓ Your journey is resolved.</p>{/if}
 						{:else if resolvingPlayer && result}{@const criterion = terrain(
@@ -1217,7 +1250,7 @@
 						<div class="eruption-count"><strong>{danger.length}</strong><span>locations threatened</span></div>
 						<button
 							data-tutorial="erupt"
-							class="primary ember"
+							class="primary ember desktop-phase-confirm"
 							disabled={seat !== 0}
 							onclick={() => store.dispatch({ action: "erupt" })}
 							>{seat === 0 ? "Let the lava advance" : "Waiting for the expedition leader"} <span>→</span></button
@@ -1265,7 +1298,6 @@
 									(c) => c.id === tool
 								)!}{@const info = EQUIPMENT.find((e) => e.id === tool)!}
 								<div class="tool-form">
-									{#if tool !== "knife"}<p>{info.description}</p>{/if}
 									{#if tool === "knife"}<fieldset class="visible-choices equipment-copy">
 											<legend>Copy equipment</legend>
 											{#each copyOptions as option}<button
@@ -1317,6 +1349,12 @@
 													: actionTool === "torch"
 														? "one or more dice to reroll"
 														: "the dice"} below the map. {dice.length} selected.
+											<button
+												class="text-button"
+												onclick={() =>
+													document.querySelector(".personal")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+												>Select dice ↑</button
+											>
 										</p>{/if}
 									{#if actionTool === "shovel" && shovelDie}<fieldset class="visible-choices">
 											<legend>New value</legend>
@@ -1338,7 +1376,12 @@
 													? `: ${tilePicks.map((id) => terrain(cell(s, id).terrain).name).join(" + ")}`
 													: ""}.</span
 											>
-											{#if actionTool === "binoculars" && tileHint}<span role="status">{tileHint}</span>{/if}
+											{#if actionTool === "binoculars" && tileHint}<span role="status">{tileHint}</span>{/if}<button
+												class="text-button"
+												onclick={() =>
+													document.querySelector(".landscape")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+												>Choose on map ↑</button
+											>
 										</p>{/if}
 									<button
 										class="secondary"
@@ -1384,16 +1427,19 @@
 							{/if}
 						</section>
 					{/if}
-					{#if focusTerrain && s.phase !== "setup"}<div class="location-detail">
+					{#if s.phase !== "setup" && reserved[focusId]}<p class="instruction">
+							Reserved by {reserved[focusId]}. Choose another destination; you may still pass through.
+						</p>{/if}
+					{#if focusTerrain && s.phase !== "setup" && !(s.phase === "planning" && destination && focusId === currentRoute.at(-1))}<div
+							class="location-detail"
+						>
 							<span class="eyebrow">INSPECTING THE TRAIL</span><strong>{focusTerrain.name}</strong>
 							<img
 								class="inspected-art"
 								src={art("land", focusTerrain.id)}
 								alt={focusTerrain.name}
 							/><RequirementDisplay requirement={focusTerrain.requirement} colorblind={store.colorblind} />
-							{#if reserved[focusId]}<span
-									>Reserved by {reserved[focusId]}. Choose another destination; you may still pass through.</span
-								>{/if}
+
 							{#if focus?.lava}<span>Lava: cannot enter or cross.</span>
 							{:else}
 								{#if focusTerrain.reroll}<span>↻ +1 reroll when chosen as your destination.</span>{/if}

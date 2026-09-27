@@ -373,7 +373,7 @@
 	.chat-messages {
 		height: clamp(140px, 22vh, 250px);
 		overflow: auto;
-		overscroll-behavior: contain;
+		overscroll-behavior: auto;
 		overflow-anchor: none;
 		margin: 14px 0;
 	}

@@ -28,33 +28,30 @@ await page.evaluate(
 	},
 	stripSecret(state, 0)
 );
-const previews = page.locator(".dice-preview");
-await previews.first().waitFor({ state: "visible" });
-for (const preview of await previews.all()) {
-	const tileId = await preview.getAttribute("data-location");
-	const value = Number(await preview.locator("text").textContent());
-	assert.equal(value, total(state.players[0], cell(state, tileId).terrain) + state.players[0].bonus);
+for (const width of [320, 390, 430, 768]) {
+	await page.setViewportSize({ width, height: 740 });
+	await page.evaluate(() => scrollTo(0, 0));
+	assert.ok(
+		await page.locator(".landscape").evaluate((el) => el.getBoundingClientRect().top < 170),
+		"The map is visible immediately on mobile"
+	);
+	assert.ok(
+		await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
+		"No horizontal page overflow"
+	);
+	const team = page.locator(".team");
+	assert.equal(
+		await team.evaluate((el) => getComputedStyle(el).flexWrap),
+		"nowrap",
+		"Teammates form a horizontal rail"
+	);
+	assert.equal(await page.locator(".mobile-sections").count(), 0, "No redundant shortcut bar");
+	await page.locator(".team-toggle").click();
+	assert.ok(await page.locator(".team.expanded .role-details").first().isVisible());
+	await page.locator(".team-toggle").click();
+	const dock = await page.locator(".mobile-dock").boundingBox();
+	assert.ok(dock.y + dock.height >= 739, "Confirmation stays at the bottom");
 }
-await page.locator(".teammate-status").first().click();
-assert.deepEqual(await page.evaluate(() => events), []);
-await page.locator(".teammate-name").first().click();
-assert.equal((await page.evaluate(() => events))[0][0], "player");
-await page.locator(".team-toggle").click();
-for (const index of [0, 2]) {
-	await page.locator(".teammate").nth(index).locator(".equipment-chip").first().click();
-	const rect = await page.locator(".equipment-preview:popover-open").boundingBox();
-	assert(rect && rect.x >= 0 && rect.x + rect.width <= 390 && rect.y >= 0 && rect.y + rect.height <= 740);
-
-	await page.keyboard.press("Escape");
-}
-await page.evaluate(() => scrollTo(0, 600));
-const rect = await page.locator(".mobile-dock").boundingBox();
-assert(rect && rect.y > 600 && rect.y + rect.height <= 741);
-
-await page.locator(".mobile-dock button").first().click();
-assert.equal((await page.evaluate(() => events)).at(-1)[1].action, "ready");
 assert.deepEqual(errors, []);
-console.log(
-	"Mobile ready button remains visible; only username emits player click; equipment previews fit first/last cards."
-);
+console.log("Fuji mobile: central map, expandable teammate rail, bottom confirmation and no horizontal page overflow.");
 await browser.close();

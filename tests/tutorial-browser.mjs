@@ -103,11 +103,12 @@ try {
 		assert.match(await guide.innerText(), /pink 5/);
 		await guide.getByRole("button", { name: "Show area", exact: true }).click();
 		await page.locator(".personal .die.bgs-tutorial-highlight").click();
-		await page.getByRole("button", { name: "Set selected die aside", exact: true }).click();
+		await page.getByRole("button", { name: "Set die aside · free", exact: true }).click();
 		await step(7);
 		await page.locator('[data-tutorial="confirm"]:visible').first().click();
 		await step(8);
 		assert.equal(await page.locator("details.revealed-log").count(), 0);
+		await page.getByRole("button", { name: "Expand journal", exact: true }).first().click();
 		assert.ok((await page.locator(".revealed-log .die").count()) > 0);
 		await finishRound(page);
 		await page.waitForFunction(
@@ -202,6 +203,8 @@ try {
 						"Each wave appears before completion"
 					);
 				}
+				const expandJournal = page.getByRole("button", { name: "Expand journal", exact: true }).first();
+				if (await expandJournal.isVisible()) await expandJournal.click();
 				assert.match(await page.locator('[data-tutorial="journal"]').innerText(), /Mika was caught by the lava/);
 			}
 			await guide.getByText("Chapter complete", { exact: true }).waitFor();

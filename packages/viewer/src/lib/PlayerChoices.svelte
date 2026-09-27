@@ -45,7 +45,7 @@
 	.player-choices {
 		border: 0;
 		padding: 0;
-		margin: 14px 0;
+		margin: 8px 0;
 		min-width: 0;
 	}
 	legend {
@@ -54,15 +54,17 @@
 		margin-bottom: 8px;
 	}
 	.choices {
-		display: grid;
-		gap: 7px;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
 	}
 	button {
 		display: flex;
 		align-items: center;
-		gap: 10px;
-		width: 100%;
-		min-height: 48px;
+		gap: 6px;
+		flex: 1 1 130px;
+		min-width: 0;
+		min-height: 44px;
 		padding: 6px 10px;
 		text-align: left;
 		background: #102b25;
@@ -80,8 +82,8 @@
 		background: #29483a;
 	}
 	img {
-		width: 28px;
-		height: 36px;
+		width: 22px;
+		height: 28px;
 		object-fit: cover;
 	}
 	span {

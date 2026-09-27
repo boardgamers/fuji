@@ -1427,7 +1427,7 @@ h3 {
 	max-height: 300px;
 	margin: 0;
 	padding: 0 18px 18px;
-	overscroll-behavior: contain;
+	overscroll-behavior: auto;
 }
 
 .auto-teammates {
@@ -2017,5 +2017,701 @@ button.difficulty-label:focus-visible {
 	}
 	.game-utilities {
 		gap: 2px;
+	}
+}
+
+.mobile-sections {
+	display: none;
+}
+.dice-conflict-guide summary {
+	cursor: pointer;
+}
+@media (max-width: 850px) {
+	.team {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		gap: 8px;
+		padding-bottom: 8px;
+		scroll-snap-type: x proximity;
+	}
+	.teammate {
+		flex: 0 0 180px;
+		min-width: 0;
+		padding: 8px;
+		scroll-snap-align: start;
+	}
+	.world-column {
+		display: contents;
+	}
+	.game-layout {
+		gap: 10px;
+	}
+	.personal {
+		grid-row: 1;
+		padding: 10px 12px;
+	}
+	.landscape {
+		grid-row: 2;
+		min-width: 0;
+		scroll-margin-top: 70px;
+	}
+	.journey-actions {
+		grid-row: 3;
+		scroll-margin-top: 70px;
+	}
+	.journey > .social-panel {
+		grid-row: 4;
+	}
+	.personal {
+		scroll-margin-top: 70px;
+	}
+	.personal-title h2 {
+		font-size: 16px;
+		margin: 2px 0;
+	}
+	.personal-title .eyebrow {
+		display: none;
+	}
+	.dice-row {
+		padding: 8px 0;
+		gap: 6px;
+	}
+	.dice-total {
+		padding: 0;
+	}
+	.dice-conflict-guide {
+		margin: 4px 0;
+	}
+	.skill-line {
+		padding-top: 6px;
+		font-size: 11px;
+	}
+	.inspected-art {
+		max-height: 140px;
+		object-fit: contain;
+	}
+	.mobile-sections {
+		display: flex;
+		gap: 6px;
+		padding-bottom: 6px;
+	}
+	.mobile-sections button {
+		flex: 1;
+		min-height: 40px;
+		border: 1px solid var(--line);
+		background: #193329;
+		color: var(--text);
+		border-radius: 5px;
+	}
+	.social-panel {
+		min-width: 0;
+	}
+}
+
+@media (max-width: 850px) {
+	.teammate {
+		gap: 5px;
+	}
+	.teammate-status {
+		gap: 4px;
+		font-size: 12px;
+	}
+	.teammate .portrait {
+		width: 26px;
+		height: 34px;
+	}
+	.dice-total {
+		margin-top: 0;
+	}
+	.dice-total strong {
+		font-size: 22px;
+	}
+	.journey-actions {
+		padding-top: 6px;
+	}
+	.phase-track {
+		margin-bottom: 10px;
+		padding-top: 6px;
+	}
+	.journey-actions .instruction {
+		margin: 8px 0;
+	}
+	.journey-stats {
+		margin: 10px 0;
+		padding: 8px 0;
+	}
+	.destination {
+		margin-top: 10px;
+	}
+	.destination img {
+		width: 44px;
+		height: 50px;
+	}
+	.destination h3 {
+		margin: 3px 0;
+	}
+}
+
+/* Mobile: the map is the workspace; details remain available without stacked navigation. */
+.team-toggle {
+	display: none;
+}
+@media (max-width: 850px) {
+	.expedition {
+		padding-bottom: 85px;
+	}
+	.game-tools {
+		gap: 6px;
+		flex-wrap: nowrap;
+		min-height: 44px;
+	}
+	.game-brand p,
+	.game-brand .fuji-mark {
+		display: none;
+	}
+	.game-brand h1 {
+		font-size: 20px;
+	}
+	.game-tools .round-status {
+		gap: 4px;
+		flex-wrap: wrap;
+	}
+	.game-tools:not(.details-open) .difficulty-label {
+		display: none;
+	}
+	.team-toggle {
+		display: inline-flex;
+	}
+	.game-utilities {
+		gap: 2px;
+	}
+	.game-tools .utility-button {
+		width: 32px;
+		height: 40px;
+		min-width: 32px;
+	}
+	.team {
+		margin: 4px 0 8px;
+		padding: 0 0 4px;
+		gap: 6px;
+	}
+	.team:not(.expanded) .teammate {
+		flex: 1 0 125px;
+		display: grid;
+		grid-template-columns: 22px 1fr;
+		gap: 2px 5px;
+		padding: 5px 7px;
+	}
+	.team:not(.expanded) .portrait {
+		width: 22px;
+		height: 28px;
+		grid-row: 1 / 3;
+	}
+	.team:not(.expanded) .teammate-info {
+		min-width: 0;
+	}
+	.team:not(.expanded) .teammate-name {
+		font-size: 11px;
+	}
+	.team:not(.expanded) .role-details,
+	.team:not(.expanded) .teammate-equipment,
+	.team:not(.expanded) .stamina-track {
+		display: none;
+	}
+	.team:not(.expanded) .role-name {
+		margin: 0;
+	}
+	.team:not(.expanded) .teammate-status {
+		display: flex;
+		grid-column: 2;
+		width: auto;
+		gap: 6px;
+		font-size: 11px;
+	}
+	.team:not(.expanded) .teammate-status small {
+		display: none;
+	}
+	.mobile-dock {
+		position: fixed;
+		top: auto;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		margin: 0;
+		padding: 6px 10px max(6px, env(safe-area-inset-bottom));
+	}
+	.mobile-dock > div {
+		gap: 2px;
+	}
+	.landscape {
+		grid-row: 1;
+		scroll-margin-top: 8px;
+	}
+	.personal {
+		grid-row: 2;
+		margin-top: 0;
+		padding: 7px 9px;
+		scroll-margin-top: 8px;
+	}
+	.personal-title {
+		justify-content: flex-start;
+		padding: 0;
+		min-height: 0;
+	}
+	.personal-title > div {
+		display: none;
+	}
+	.privacy-tag {
+		font-size: 10px;
+		padding: 0;
+		border: 0;
+	}
+	.personal .skill-line {
+		display: none;
+	}
+	.personal .dice-row {
+		gap: 4px;
+		padding: 6px 0 3px;
+	}
+	.personal .dice-row .die {
+		width: 42px;
+		height: 46px;
+		padding: 3px;
+	}
+	.personal .dice-total {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		width: auto;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+	.personal .dice-total strong {
+		font-size: 22px;
+	}
+	.personal .dice-total span {
+		font-size: 10px;
+	}
+	.personal .dice-conflict-guide {
+		font-size: 11px;
+		margin: 2px 0 0;
+	}
+	.phase-track {
+		display: none;
+	}
+	.journey-actions {
+		scroll-margin-top: 8px;
+	}
+}
+
+@media (max-width: 850px) {
+	.team:not(.expanded) .teammate {
+		grid-template-columns: 20px 1fr;
+		grid-template-rows: auto auto;
+		align-content: center;
+		min-height: 54px;
+	}
+	.team:not(.expanded) .portrait {
+		grid-row: 1;
+		width: 20px;
+		height: 24px;
+	}
+	.team:not(.expanded) .teammate-name {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
+	}
+	.team:not(.expanded) .teammate-status {
+		grid-column: 1 / -1;
+		flex-wrap: nowrap;
+		justify-content: space-between;
+	}
+	.team:not(.expanded) .teammate-status > span {
+		white-space: nowrap;
+	}
+	.personal .privacy-tag {
+		max-width: none;
+		white-space: nowrap;
+	}
+	.personal .dice-total {
+		flex-basis: 100%;
+	}
+	.personal .dice-total br {
+		display: initial;
+	}
+}
+
+.dice-guide-icon {
+	display: none;
+}
+@media (max-width: 850px) {
+	.personal {
+		position: relative;
+	}
+	.personal .dice-total {
+		display: none;
+	} /* Destination total stays in the persistent action bar. */
+	.dice-guide-label {
+		display: none;
+	}
+	.dice-guide-icon {
+		display: inline;
+	}
+	.personal .dice-conflict-guide {
+		margin: 0;
+	}
+	.personal .dice-conflict-guide summary {
+		position: absolute;
+		top: 2px;
+		right: 4px;
+		width: 30px;
+		min-height: 26px;
+		display: grid;
+		place-items: center;
+		font-size: 17px;
+		list-style: none;
+	}
+	.personal .dice-conflict-guide summary::-webkit-details-marker {
+		display: none;
+	}
+}
+
+@media (max-width: 850px) {
+	.personal .dice-row {
+		min-height: 60px;
+	}
+}
+
+@media (max-width: 850px) {
+	.desktop-travel-confirm {
+		display: none;
+	}
+	.destination > div > span:not(.eyebrow) {
+		display: block;
+		font-size: 12px;
+		margin-top: 4px;
+	}
+}
+
+/* Keep planning information together without dashboard-sized counters on phones. */
+@media (max-width: 850px) {
+	.location-detail {
+		display: none;
+	}
+	.journey-actions .instruction {
+		font-size: 12px;
+		line-height: 1.45;
+		margin: 4px 0 8px;
+	}
+	.destination {
+		margin-top: 6px;
+		gap: 9px;
+	}
+	.destination .eyebrow {
+		display: none;
+	}
+	.destination h3 {
+		font-size: 18px;
+		margin: 0 0 3px;
+	}
+	.journey-stats {
+		justify-content: flex-start;
+		gap: 18px;
+		border: 0;
+		margin: 6px 0 8px;
+		padding: 0;
+	}
+	.journey-stats div {
+		flex-direction: row;
+		align-items: baseline;
+		gap: 4px;
+	}
+	.journey-stats strong {
+		font-weight: 600;
+		font-family: inherit;
+		font-size: 14px;
+	}
+	.journey-stats span {
+		font-size: 12px;
+	}
+	.journey-stats div:last-child {
+		display: none;
+	}
+	.equipment-section {
+		margin-top: 10px;
+		padding-top: 8px;
+	}
+	.equipment-section .section-title h3 {
+		margin: 0;
+		font-size: 13px;
+	}
+	.equipment-list {
+		margin-top: 6px;
+		gap: 5px;
+	}
+	.equipment-list > button {
+		padding: 6px 8px;
+		gap: 8px;
+		min-height: 44px;
+	}
+	.equipment-list img {
+		width: 30px;
+		height: 36px;
+	}
+	.equipment-list .equipment-description {
+		font-size: 12px;
+		line-height: 1.35;
+		margin: 2px 0;
+	}
+	.equipment-list small {
+		margin-top: 2px;
+	}
+	.social-panel .journal {
+		margin-top: 8px;
+		padding-top: 0;
+	}
+	.journal-header {
+		padding: 4px 10px;
+		min-height: 44px;
+	}
+	.journal-header h2 {
+		font-size: 15px;
+	}
+	.journal-header button {
+		min-width: 44px;
+		min-height: 44px;
+	}
+}
+
+@media (max-width: 850px) {
+	.social-panel.empty-social {
+		display: none;
+	}
+	.inline-journal,
+	.social-panel .inline-journal {
+		margin-top: 0;
+	}
+	.journal-header {
+		min-height: 44px;
+		padding: 0 10px;
+	}
+	.journal-header button {
+		box-sizing: border-box;
+		height: 44px;
+		padding: 0;
+	}
+	.expedition {
+		padding-bottom: calc(64px + env(safe-area-inset-bottom));
+	}
+}
+
+@media (max-width: 850px) {
+	.reroll-actions {
+		margin-top: 6px;
+		padding-top: 6px;
+		gap: 8px;
+	}
+	.reroll-actions .normal-reroll {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		align-items: center;
+		gap: 4px 8px;
+		flex-basis: 100%;
+	}
+	.normal-reroll strong {
+		font-size: 12px;
+	}
+	.normal-reroll .reroll-hint {
+		display: none;
+	}
+	.normal-reroll p {
+		grid-column: 1 / -1;
+		margin: 0;
+		font-size: 12px;
+	}
+	.normal-reroll .primary {
+		min-height: 44px;
+		padding: 8px 10px;
+		width: auto;
+		font-size: 12px;
+	}
+	.finish-dice,
+	.desktop-reroll-instruction {
+		display: none;
+	}
+	.reroll-actions .buddy-choice {
+		gap: 4px;
+	}
+	.buddy-choice p {
+		margin: 0;
+		font-size: 12px;
+	}
+}
+
+/* Shared dice controls: keep the action beside its remaining-use count. */
+.desktop-reroll-instruction {
+	display: none;
+}
+@media (min-width: 851px) {
+	.reroll-actions {
+		margin-top: 12px;
+		padding-top: 12px;
+		gap: 12px;
+	}
+	.reroll-actions .normal-reroll {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		align-items: center;
+		gap: 4px 12px;
+	}
+	.normal-reroll > strong {
+		grid-column: 1;
+	}
+	.normal-reroll > p {
+		grid-column: 1;
+		margin: 0;
+	}
+	.normal-reroll > button {
+		grid-column: 2;
+		grid-row: 1 / 3;
+		min-height: 44px;
+		width: auto;
+		padding: 10px 14px;
+	}
+	.finish-dice {
+		margin-top: 0;
+		min-height: 44px;
+		padding: 10px 14px;
+	}
+}
+
+.reroll-actions .buddy-choice {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 4px 8px;
+	flex-basis: 100%;
+}
+.buddy-help {
+	display: contents;
+}
+.buddy-help summary {
+	grid-column: 1;
+	grid-row: 1;
+	cursor: pointer;
+	color: var(--gold);
+	font-size: 13px;
+	padding: 12px 0;
+	list-style: none;
+}
+.buddy-help summary::-webkit-details-marker {
+	display: none;
+}
+.buddy-help summary span {
+	margin-left: 4px;
+	font-weight: normal;
+}
+.buddy-help p {
+	grid-column: 1 / -1;
+	grid-row: 2;
+	font-size: 12px;
+	line-height: 1.45;
+	margin: 0;
+}
+.buddy-choice > button,
+.buddy-choice > .buddy-status {
+	grid-column: 2;
+	grid-row: 1;
+}
+.buddy-choice > button {
+	width: auto;
+	min-height: 44px;
+	padding: 8px 10px;
+	font-size: 12px;
+}
+.buddy-status {
+	font-size: 12px;
+	color: #bfd0bb;
+}
+
+.response-actions,
+.powerbar-options {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.response-actions > button,
+.powerbar-options > button {
+	flex: 1 1 130px;
+	width: auto;
+	min-height: 44px;
+	margin: 0;
+	padding: 8px 10px;
+}
+.tool-form {
+	margin-top: 8px;
+	padding: 10px;
+}
+.tool-form > p {
+	margin: 6px 0;
+}
+.equipment-transfer {
+	margin-top: 10px;
+	padding-top: 8px;
+}
+.equipment-transfer summary {
+	min-height: 44px;
+	display: flex;
+	align-items: center;
+}
+@media (max-width: 850px) {
+	.desktop-phase-confirm {
+		display: none;
+	}
+	.skill-choices,
+	.injury-options {
+		gap: 6px;
+	}
+	.skill-choices button,
+	.injury-options button {
+		padding: 8px 10px;
+		gap: 4px;
+	}
+	.skill-choices span,
+	.injury-options span {
+		font-size: 12px;
+		line-height: 1.4;
+	}
+	.starting-dice-options {
+		gap: 6px;
+	}
+	.starting-dice-options button {
+		padding: 6px 8px;
+	}
+	.starting-dice p {
+		font-size: 12px;
+		margin: 6px 0;
+	}
+	.visible-choices {
+		margin: 8px 0;
+		padding: 8px;
+	}
+	.comparison > .comparison-player {
+		gap: 4px;
+		padding: 6px 0;
+	}
+	.comparison-dice {
+		gap: 4px;
+	}
+	.eruption-count {
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
+		margin: 8px 0;
+	}
+	.eruption-count strong {
+		font-size: 20px;
 	}
 }

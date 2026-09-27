@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { tick } from "svelte";
+	let overview = $state(false);
+	let mapScroll: HTMLDivElement;
 	import {
 		terrain,
 		total,
@@ -15,7 +18,7 @@
 	import RequirementSymbols from "./RequirementSymbols.svelte";
 	import { art } from "./assets";
 	let {
-		state,
+		state: game,
 		avatars = [],
 		colorblind = false,
 		seat,
@@ -45,47 +48,57 @@
 	} = $props();
 	const impactPlayers = $derived(
 		previewImpacts && seat !== undefined
-			? neighbors(state, seat).filter((i) => {
-					const p = state.players[i]!;
-					return state.phase !== "planning" || p.path.length > 1 || p.ready;
+			? neighbors(game, seat).filter((i) => {
+					const p = game.players[i]!;
+					return game.phase !== "planning" || p.path.length > 1 || p.ready;
 				})
 			: []
 	);
-	const opposite = $derived(state.players.length === 4 && seat !== undefined ? (seat + 2) % 4 : -1);
-	const danger = $derived(threatened(state));
-	const mapWidth = $derived(116 + Math.max(...state.board.map((c) => c.x)) * 100);
+	const opposite = $derived(game.players.length === 4 && seat !== undefined ? (seat + 2) % 4 : -1);
+	const danger = $derived(threatened(game));
+	const mapWidth = $derived(116 + Math.max(...game.board.map((c) => c.x)) * 100);
 	// Empty rectangles in the seven production layouts, including four-player tiles.
 	const layout = $derived(
 		(
 			{
-				1: { guide: [14, 519, 385], counter: [state.players.length === 4 ? 714 : 614, 108] },
-				2: { guide: [14, 603, 485], counter: [714, state.players.length === 4 ? 184 : 268] },
+				1: { guide: [14, 519, 385], counter: [game.players.length === 4 ? 714 : 614, 108] },
+				2: { guide: [14, 603, 485], counter: [714, game.players.length === 4 ? 184 : 268] },
 				3: { guide: [14, 519, 485], counter: [614, 435] },
 				4: { guide: [514, 435, 185], counter: [714, 16] },
 				5: { guide: [414, 519, 185], counter: [14, 184] },
 				6: { guide: [14, 351, 285], counter: [14, 519] },
 				7: { guide: [214, 267, 285], counter: [14, 268] },
 			} as Record<number, { guide: number[]; counter: number[] }>
-		)[state.scenario ?? 1]!
+		)[game.scenario ?? 1]!
 	);
 	const guideX = $derived(layout.guide[0]!);
 	const guideY = $derived(layout.guide[1]!);
 	const guideWidth = $derived(layout.guide[2]!);
-	const guideHeight = $derived(guideWidth < 200 ? 184 : guideWidth < 300 ? 148 : state.difficulty >= 3 ? 106 : 86);
-	const mapHeight = $derived(Math.max(100 + Math.max(...state.board.map((c) => c.y)) * 84, guideY + guideHeight + 5));
-	const x = (id: string) => 58 + cell(state, id).x * 100;
-	const y = (id: string) => 54 + cell(state, id).y * 84;
+	const guideHeight = $derived(guideWidth < 200 ? 184 : guideWidth < 300 ? 148 : game.difficulty >= 3 ? 106 : 86);
+	const mapHeight = $derived(Math.max(100 + Math.max(...game.board.map((c) => c.y)) * 84, guideY + guideHeight + 5));
+	const x = (id: string) => 58 + cell(game, id).x * 100;
+	const y = (id: string) => 54 + cell(game, id).y * 84;
 	const edges = $derived(
-		state.board.flatMap((a) =>
-			state.board.filter((b) => distance(a, b) === 1 && (b.x > a.x || b.y > a.y)).map((b) => ({ a, b }))
+		game.board.flatMap((a) =>
+			game.board.filter((b) => distance(a, b) === 1 && (b.x > a.x || b.y > a.y)).map((b) => ({ a, b }))
 		)
 	);
-	const ownColor = $derived(seat === undefined ? "#f1d584" : CHARACTER_COLORS[state.players[seat]!.character]);
+	$effect(() => {
+		const position = seat === undefined ? undefined : game.players[seat]?.position;
+		const compact = overview;
+		if (position)
+			void tick().then(() => {
+				if (!mapScroll || compact) return;
+				const svg = mapScroll.querySelector("svg");
+				if (svg) mapScroll.scrollLeft = (x(position) * svg.clientWidth) / mapWidth - mapScroll.clientWidth / 2;
+			});
+	});
+	const ownColor = $derived(seat === undefined ? "#f1d584" : CHARACTER_COLORS[game.players[seat]!.character]);
 	// Stable parallel lanes keep shared segments visible, including opposite directions.
 	const destinationMarker = (id: string, player: number) => {
-		const c = cell(state, id);
+		const c = cell(game, id);
 		const data = terrain(c.terrain);
-		const targets = state.players.flatMap((p, i) =>
+		const targets = game.players.flatMap((p, i) =>
 			!p.resolved && (p.path.length > 1 || p.ready) && p.path.at(-1) === id ? [i] : []
 		);
 		const obstacles = [
@@ -110,7 +123,7 @@
 		return `translate(${x(id) + offset[0]!},${y(id) + offset[1]!})`;
 	};
 	const routePoints = (path: string[], player: number) => {
-		const offset = (player - (state.players.length - 1) / 2) * 8;
+		const offset = (player - (game.players.length - 1) / 2) * 8;
 		return path.map((id) => `${x(id) + offset},${y(id) + offset}`).join(" ");
 	};
 </script>
@@ -121,11 +134,18 @@
 	style:--route-color={ownColor}
 	style:--landscape-art={`url(${art("land", 21)})`}
 >
-	<div class="map-scroll">
+	<button
+		class="map-zoom"
+		aria-label={overview ? "Zoom in on the map" : "Show the whole map"}
+		title={overview ? "Zoom in on the map" : "Show the whole map"}
+		aria-pressed={overview}
+		onclick={() => (overview = !overview)}>{overview ? "+" : "−"}</button
+	>
+	<div class="map-scroll" class:overview bind:this={mapScroll}>
 		<svg
 			viewBox={`0 0 ${mapWidth} ${mapHeight}`}
 			class="map"
-			aria-label={`Scenario ${state.scenario ?? 1}, difficulty ${state.difficulty}. Choose a location to inspect or plan a journey.`}
+			aria-label={`Scenario ${game.scenario ?? 1}, difficulty ${game.difficulty}. Choose a location to inspect or plan a journey.`}
 		>
 			<defs>
 				<radialGradient id="feather"
@@ -151,13 +171,13 @@
 					class="trail"
 					class:burnt={a.lava || b.lava}
 				/>{/each}
-			{#each state.board as c (c.id)}
-				{@const peers = impactPlayers.filter((i) => state.players[i]!.path.at(-1) === c.id)}
+			{#each game.board as c (c.id)}
+				{@const peers = impactPlayers.filter((i) => game.players[i]!.path.at(-1) === c.id)}
 				{@const data = terrain(c.terrain)}
 				<g
 					class="location"
 					data-tutorial={`tile:${c.id}`}
-					class:inactive={state.phase === "setup"}
+					class:inactive={game.phase === "setup"}
 					class:reserved={!!reserved[c.id]}
 					class:reachable={reachable.includes(c.id)}
 					class:out-of-range={selectionReasons
@@ -167,8 +187,8 @@
 					class:lava={c.lava}
 					class:village={data.kind === "village"}
 					role="button"
-					aria-disabled={state.phase === "setup"}
-					tabindex={state.phase === "setup" ? -1 : 0}
+					aria-disabled={game.phase === "setup"}
+					tabindex={game.phase === "setup" ? -1 : 0}
 					aria-label={`${data.name}${!selectionReasons && reserved[c.id] ? `, reserved by ${reserved[c.id]}: choose another destination` : ""}${selectionReasons ? `, ${selectionReasons[c.id] || "available to swap, any distance"}` : reachable.length ? (reachable.includes(c.id) ? ", within movement range" : ", outside movement range") : ""}${data.kind === "village" ? ", village destination" : ""}, ${requirementLabel(data.requirement)}${c.lava ? ", covered in lava" : ""}${c.equipment && !c.lava ? ", equipment: finish here to draw a card usable next round" : ""}${c.eruption && !c.lava ? `, crossing or entering triggers ${c.eruption} extra eruption(s)` : ""}${danger.includes(c.id) ? ", threatened by the next eruption" : ""}`}
 					onclick={() => onclick(c.id)}
 					onkeydown={(e) => {
@@ -178,10 +198,10 @@
 						}
 					}}
 					onmouseenter={() => {
-						if (state.phase !== "setup") oninspect(c.id);
+						if (game.phase !== "setup") oninspect(c.id);
 					}}
 					onfocus={() => {
-						if (state.phase !== "setup") oninspect(c.id);
+						if (game.phase !== "setup") oninspect(c.id);
 					}}
 					onmouseleave={() => oninspect("")}
 					onblur={() => oninspect("")}
@@ -255,23 +275,23 @@
 
 					{#if seat !== undefined && peers.length && !c.lava}
 						{#each peers as playerIndex, index}
-							{@const player = state.players[playerIndex]!}
-							{@const value = total(state.players[seat]!, c.terrain)}
+							{@const player = game.players[playerIndex]!}
+							{@const value = total(game.players[seat]!, c.terrain)}
 							{@const cx = x(c.id) + (index - (peers.length - 1) / 2) * 43}
 							<g
 								class="dice-preview impact-preview"
-								class:provisional={state.phase === "planning" && !player.ready}
+								class:provisional={game.phase === "planning" && !player.ready}
 								data-location={c.id}
 								data-player={playerIndex}
 								style:--impact-color={CHARACTER_COLORS[player.character]}
-								aria-label={`Your dice total against ${player.name}: ${value}. ${state.phase !== "planning" || player.ready ? "Confirmed" : "Provisional"} destination.`}
+								aria-label={`Your dice total against ${player.name}: ${value}. ${game.phase !== "planning" || player.ready ? "Confirmed" : "Provisional"} destination.`}
 							>
 								<rect x={cx - 20} y={y(c.id) - 13} width="40" height="26" rx="6" />
 								<text x={cx} y={y(c.id) + 6}>{value}</text>
 							</g>
 						{/each}
 					{:else if previewTotals && seat !== undefined && reachable.includes(c.id) && !reserved[c.id] && !c.lava}
-						{@const value = total(state.players[seat]!, c.terrain) + state.players[seat]!.bonus}
+						{@const value = total(game.players[seat]!, c.terrain) + game.players[seat]!.bonus}
 						<g class="dice-preview" data-location={c.id} aria-label={`Your current dice total: ${value}`}>
 							<title>Your current matching dice total, including bonuses. Rerolls may change it.</title>
 							<rect x={x(c.id) - 20} y={y(c.id) - 13} width="40" height="26" rx="6" />
@@ -283,22 +303,22 @@
 						>{/if}
 				</g>
 			{/each}
-			{#if ["planning", "reroll", "equipment", "movement"].includes(state.phase)}
-				{#each state.players as p, i}
+			{#if ["planning", "reroll", "equipment", "movement"].includes(game.phase)}
+				{#each game.players as p, i}
 					{#if !p.resolved && (p.path.length > 1 || p.ready)}
 						{@const destination = p.path.at(-1)!}
 						<g
 							class="teammate-route"
 							class:opposite={i === opposite}
 							data-player={i}
-							aria-label={`${p.name}: ${terrain(cell(state, destination).terrain).name}${p.ready ? ", ready" : ", planned"}`}
+							aria-label={`${p.name}: ${terrain(cell(game, destination).terrain).name}${p.ready ? ", ready" : ", planned"}`}
 						>
 							{#if p.path.length > 1}
 								<polyline points={routePoints(p.path, i)} class="route-shadow" />
 								<polyline
 									points={routePoints(p.path, i)}
 									class="shared-route-line"
-									class:provisional={state.phase === "planning" && !p.ready}
+									class:provisional={game.phase === "planning" && !p.ready}
 									stroke={CHARACTER_COLORS[p.character]}
 								/>
 							{/if}
@@ -309,8 +329,8 @@
 					{/if}
 				{/each}
 			{/if}
-			{#each state.players as p, i (i)}
-				{#if i === seat && p.ready && state.phase === "planning" && p.path.length}
+			{#each game.players as p, i (i)}
+				{#if i === seat && p.ready && game.phase === "planning" && p.path.length}
 					<circle
 						cx={x(p.path.at(-1)!)}
 						cy={y(p.path.at(-1)!)}
@@ -321,7 +341,7 @@
 						stroke-dasharray="3 5"
 					/>
 				{/if}
-				{@const occupants = state.players.map((q, j) => (q.position === p.position ? j : -1)).filter((j) => j >= 0)}
+				{@const occupants = game.players.map((q, j) => (q.position === p.position ? j : -1)).filter((j) => j >= 0)}
 				{@const offset = (occupants.indexOf(i) - (occupants.length - 1) / 2) * 27}
 				<g
 					class="traveler"
@@ -352,8 +372,8 @@
 				<div
 					xmlns="http://www.w3.org/1999/xhtml"
 					class="legend-end"
-					title={`Scenario ${String(state.scenario ?? 1).padStart(2, "0")} · Level ${state.difficulty}. Everyone must reach a house-marked location.`}
-					aria-label={`${state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length} of ${state.players.length} players in the village`}
+					title={`Scenario ${String(game.scenario ?? 1).padStart(2, "0")} · Level ${game.difficulty}. Everyone must reach a house-marked location.`}
+					aria-label={`${game.players.filter((p) => terrain(cell(game, p.position).terrain).kind === "village").length} of ${game.players.length} players in the village`}
 				>
 					<svg
 						viewBox="0 0 24 24"
@@ -364,8 +384,8 @@
 						stroke-width="1.7"
 						aria-hidden="true"><path d="m2 11 10-9 10 9M5 9v12h14V9M10 21v-7h4v7" /></svg
 					>
-					{state.players.filter((p) => terrain(cell(state, p.position).terrain).kind === "village").length}/{state
-						.players.length}
+					{game.players.filter((p) => terrain(cell(game, p.position).terrain).kind === "village").length}/{game.players
+						.length}
 				</div>
 			</foreignObject>
 			<foreignObject x={guideX} y={guideY} width={guideWidth} height={guideHeight} class="map-guides">
@@ -373,7 +393,7 @@
 					<div class="scene-legend">
 						<span><i class="legend-line"></i>Route</span><span><i class="legend-danger"></i>Next eruption</span>
 					</div>
-					<TravelGuide difficulty={state.difficulty} embedded />
+					<TravelGuide difficulty={game.difficulty} embedded />
 				</div>
 			</foreignObject>
 		</svg>
@@ -381,6 +401,9 @@
 </div>
 
 <style>
+	.map-zoom {
+		display: none;
+	}
 	.dice-preview {
 		display: block;
 		pointer-events: none;
@@ -648,11 +671,28 @@
 		}
 	}
 	@media (max-width: 650px) {
+		.map-zoom {
+			display: block;
+			position: absolute;
+			right: 6px;
+			top: 6px;
+			z-index: 2;
+			width: 40px;
+			height: 40px;
+			border-radius: 6px;
+			border: 1px solid #ddc985;
+			background: #163b32;
+			color: #ffe6a1;
+			font-size: 24px;
+		}
+		.map-scroll.overview .map {
+			min-width: 0;
+		}
 		.map-scroll {
 			overflow-x: auto;
 		}
 		.map {
-			min-width: 610px;
+			min-width: 640px;
 			height: auto;
 		}
 		.scene-legend {

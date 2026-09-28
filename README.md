@@ -6,6 +6,10 @@ This is a **private playtest alpha**, not a publisher-approved final adaptation.
 
 Canonical source: [codeberg.org/boardgamers/fuji](https://codeberg.org/boardgamers/fuji).
 
+## Play online at
+
+[boardgamers.space](https://boardgamers.space/boardgame/fuji)
+
 ## Run
 
 Requires Node 24+ and pnpm 11.

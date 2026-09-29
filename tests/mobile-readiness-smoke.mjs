@@ -1,3 +1,5 @@
+import { serveAssets } from "./asset-server.mjs";
+const assetBase = await serveAssets("packages/viewer/dist");
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
 const root = process.cwd() + "/";
@@ -15,8 +17,8 @@ const page = await browser.newPage({ viewport: { width: 390, height: 740 }, isMo
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 await page.setContent('<meta name="viewport" content="width=device-width, initial-scale=1"><div id="app"></div>');
-await page.addStyleTag({ path: root + "packages/viewer/dist/fuji-viewer.css" });
-await page.addScriptTag({ path: root + "packages/viewer/dist/fuji-viewer.iife.js" });
+await page.addStyleTag({ url: assetBase + "/fuji-viewer.css" });
+await page.addScriptTag({ url: assetBase + "/fuji-viewer.iife.js" });
 await page.evaluate(
 	(s) => {
 		window.events = [];
@@ -42,6 +44,7 @@ assert.equal((await page.evaluate(() => events))[0][0], "player");
 await page.locator(".team-toggle").click();
 for (const index of [0, 2]) {
 	await page.locator(".teammate").nth(index).locator(".equipment-chip").first().click();
+	await page.locator(".equipment-preview:popover-open").waitFor();
 	const rect = await page.locator(".equipment-preview:popover-open").boundingBox();
 	assert(rect && rect.x >= 0 && rect.x + rect.width <= 390 && rect.y >= 0 && rect.y + rect.height <= 740);
 

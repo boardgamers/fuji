@@ -69,3 +69,5 @@ If Chromium is already installed in a non-default location, set `FUJI_CHROMIUM_E
 Private release: build with `pnpm check`, pack the engine with `pnpm --filter fuji-engine pack --pack-destination ../..`, then run `BGS_TOKEN_FILE=/path/to/token node scripts/publish-private.mjs`. The script registers private version 1, uploads bundles and rules, and grants Spock and AlphaZero access. It refuses to overwrite an existing game without review.
 
 Run `FUJI_ALL_SCENARIOS=1 pnpm simulate` for 1,050 seeded expeditions across all seven maps.
+
+Viewer releases: see [uploading the complete viewer build](docs/viewer-publishing.md).

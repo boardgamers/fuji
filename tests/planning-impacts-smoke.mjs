@@ -1,3 +1,5 @@
+import { serveAssets } from "./asset-server.mjs";
+const assetBase = await serveAssets("packages/viewer/dist");
 import { chromium } from "playwright";
 import { initGame, stripSecret, total, paths, terrain } from "../packages/engine/dist/index.js";
 import assert from "node:assert/strict";
@@ -27,8 +29,8 @@ for (const ready of [false, true]) {
 	const errors = [];
 	p.on("pageerror", (e) => errors.push(e.message));
 	await p.setContent('<div id="app"></div>');
-	await p.addStyleTag({ path: root + "/packages/viewer/dist/fuji-viewer.css" });
-	await p.addScriptTag({ path: root + "/packages/viewer/dist/fuji-viewer.iife.js" });
+	await p.addStyleTag({ url: assetBase + "/fuji-viewer.css" });
+	await p.addScriptTag({ url: assetBase + "/fuji-viewer.iife.js" });
 	await p.evaluate(
 		(s) => {
 			window.e = fuji.launch("#app");

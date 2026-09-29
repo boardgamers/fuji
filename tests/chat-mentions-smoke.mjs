@@ -1,3 +1,5 @@
+import { serveAssets } from "./asset-server.mjs";
+const assetBase = await serveAssets("packages/viewer/dist");
 import { chromium } from "playwright";
 import { initGame, stripSecret } from "../packages/engine/dist/index.js";
 import assert from "node:assert/strict";
@@ -8,8 +10,8 @@ for (const width of [390, 1400]) {
 	const errors = [];
 	p.on("pageerror", (e) => errors.push(e.message));
 	await p.setContent('<div id="app"></div>');
-	await p.addStyleTag({ path: root + "/packages/viewer/dist/fuji-viewer.css" });
-	await p.addScriptTag({ path: root + "/packages/viewer/dist/fuji-viewer.iife.js" });
+	await p.addStyleTag({ url: assetBase + "/fuji-viewer.css" });
+	await p.addScriptTag({ url: assetBase + "/fuji-viewer.iife.js" });
 	const s = initGame(3, { skillAssignment: "fixed", scenario: 7, difficulty: 2 }, "mention-preview");
 	s.phase = "movement";
 	s.activeResolution = 1;

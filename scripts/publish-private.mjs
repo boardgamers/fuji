@@ -1,3 +1,4 @@
+import { uploadViewerFiles } from "./viewer-files.mjs";
 // Private BGS release. Credentials are read from a file, never logged or embedded.
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
@@ -32,24 +33,26 @@ await request(version, "PUT", {
 });
 console.log("Registered private Fuji v1.");
 await request(version + "/engine", "POST", readFileSync(`fuji-engine-${draft.engine.package.version}.tgz`), true);
-const js = await request(
-	version + "/viewer/file?filename=fuji-viewer.iife.js",
-	"POST",
-	readFileSync("packages/viewer/dist/fuji-viewer.iife.js"),
-	true
+const files = await uploadViewerFiles(
+	"packages/viewer/dist",
+	"fuji-viewer.iife.js",
+	["fuji-viewer.css"],
+	(query, bytes) => request(version + "/viewer/file?" + query, "POST", bytes, true)
 );
-const css = await request(
-	version + "/viewer/file?filename=fuji-viewer.css",
-	"POST",
-	readFileSync("packages/viewer/dist/fuji-viewer.css"),
-	true
-);
+const js = { url: files.url },
+	css = { url: files.stylesheets[0] };
 const current = await request(version);
 await request(version, "PUT", {
 	...current,
 	alias: current.alias ?? null,
 	public: false,
-	viewer: { ...draft.viewer, chat: true, url: js.url, dependencies: { scripts: [], stylesheets: [css.url] } },
+	viewer: {
+		...draft.viewer,
+		chat: true,
+		url: js.url,
+		scriptBytes: files.scriptBytes,
+		dependencies: { scripts: [], stylesheets: [css.url] },
+	},
 });
 await request("/admin/page/fuji:rules/en", "PUT", {
 	title: "Fuji: how to play",

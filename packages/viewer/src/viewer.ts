@@ -26,6 +26,7 @@ registerViewer<View, Move>(
 				return thumbnail.render(target.querySelector("svg.map"), size, "#142f29");
 			},
 			async onState(state) {
+				await localization.ready;
 				localization.setState(state);
 				store.receive(state);
 				replaceLog(state.log.map((entry) => entry.text));
@@ -34,8 +35,10 @@ registerViewer<View, Move>(
 			onPlayer({ index }) {
 				store.seat = index;
 			},
-			onPreferences(preferences) {
-				localization.setLocale(preferences.locale);
+			async onPreferences(preferences) {
+				if (!(await localization.setLocale(preferences.locale))) {
+					return;
+				}
 				store.analysis = preferences.analysis === true;
 				store.colorblind = preferences.colorBlind === true;
 				store.setSound(preferences.sound !== false);

@@ -1,3 +1,5 @@
+import { serveAssets } from "./asset-server.mjs";
+const assetBase = await serveAssets("packages/viewer/dist");
 import { checkHostPresentation } from "./host-presentation-smoke.mjs";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
@@ -18,8 +20,8 @@ try {
 				'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app"></div></body></html>'
 			);
 			const prefix = game === "fuji" ? root + "/packages/viewer/dist/fuji-viewer" : root + "/dist/viewer";
-			await page.addStyleTag({ path: prefix + ".css" });
-			await page.addScriptTag({ path: prefix + (game === "fuji" ? ".iife.js" : ".js") });
+			await page.addStyleTag({ url: assetBase + "/fuji-viewer.css" });
+			await page.addScriptTag({ url: assetBase + "/fuji-viewer.iife.js" });
 			await page.evaluate(
 				({ state, game }) => {
 					window.e = (game === "fuji" ? fuji : primordialSoup).launch("#app");

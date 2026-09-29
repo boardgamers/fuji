@@ -1,3 +1,5 @@
+import { serveAssets } from "./asset-server.mjs";
+const assetBase = await serveAssets("packages/viewer/dist");
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { initGame, stripSecret } from "../packages/engine/dist/index.js";
@@ -7,8 +9,8 @@ try {
 	const errors = [];
 	page.on("pageerror", (error) => errors.push(error.message));
 	await page.setContent('<div id="app"></div>');
-	await page.addStyleTag({ path: "packages/viewer/dist/fuji-viewer.css" });
-	await page.addScriptTag({ path: "packages/viewer/dist/fuji-viewer.iife.js" });
+	await page.addStyleTag({ url: assetBase + "/fuji-viewer.css" });
+	await page.addScriptTag({ url: assetBase + "/fuji-viewer.iife.js" });
 	const state = stripSecret(initGame(3, {}, "protocol-lifecycle"), 0);
 	await page.evaluate((state) => {
 		window.old = fuji.launch("#app");

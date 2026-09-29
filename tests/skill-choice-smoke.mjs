@@ -1,3 +1,5 @@
+import { serveAssets } from "./asset-server.mjs";
+const assetBase = await serveAssets("packages/viewer/dist");
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
 import { initGame, stripSecret, applyMove } from "../packages/engine/dist/index.js";
@@ -5,8 +7,8 @@ const browser = await chromium.launch({ executablePath: process.env.FUJI_CHROMIU
 try {
 	const page = await browser.newPage();
 	await page.setContent('<div id="app"></div>');
-	await page.addStyleTag({ path: "packages/viewer/dist/fuji-viewer.css" });
-	await page.addScriptTag({ path: "packages/viewer/dist/fuji-viewer.iife.js" });
+	await page.addStyleTag({ url: assetBase + "/fuji-viewer.css" });
+	await page.addScriptTag({ url: assetBase + "/fuji-viewer.iife.js" });
 	let state = initGame(3, { skillAssignment: "choose" }, "skill-ui");
 	await page.evaluate(
 		(view) => {

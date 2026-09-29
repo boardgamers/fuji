@@ -48,10 +48,18 @@ async function finishRound(page) {
 }
 
 const server = createServer(async (req, res) => {
-	if (req.url === "/fuji-viewer.iife.js" || req.url === "/fuji-viewer.css") {
+	if (/^\/[a-zA-Z0-9_.-]+\.(js|css|json|webp|mp3)$/.test(req.url)) {
 		res.setHeader(
 			"content-type",
-			req.url.endsWith("css") ? "text/css; charset=utf-8" : "text/javascript; charset=utf-8"
+			req.url.endsWith("css")
+				? "text/css; charset=utf-8"
+				: req.url.endsWith("js")
+					? "text/javascript; charset=utf-8"
+					: req.url.endsWith("json")
+						? "application/json"
+						: req.url.endsWith("webp")
+							? "image/webp"
+							: "audio/mpeg"
 		);
 		res.end(await readFile(new URL(`../packages/viewer/dist${req.url}`, import.meta.url)));
 	} else {

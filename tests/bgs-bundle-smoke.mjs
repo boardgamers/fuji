@@ -1,3 +1,5 @@
+import { serveAssets } from "./asset-server.mjs";
+const assetBase = await serveAssets("packages/viewer/dist");
 import { chromium } from "playwright";
 import path from "node:path";
 (async () => {
@@ -12,8 +14,8 @@ import path from "node:path";
 	const errors = [];
 	page.on("pageerror", (e) => errors.push(e.message));
 	await page.setContent('<html><head></head><body><div id="app"></div></body></html>');
-	await page.addStyleTag({ path: root + "/packages/viewer/dist/fuji-viewer.css" });
-	await page.addScriptTag({ path: root + "/packages/viewer/dist/fuji-viewer.iife.js" });
+	await page.addStyleTag({ url: assetBase + "/fuji-viewer.css" });
+	await page.addScriptTag({ url: assetBase + "/fuji-viewer.iife.js" });
 	await page.evaluate((view) => {
 		window.captured = [];
 		window.bridge = window.fuji.launch("#app");

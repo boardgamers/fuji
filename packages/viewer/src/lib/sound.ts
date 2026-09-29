@@ -1,4 +1,4 @@
-import diceRollUrl from "../assets/dice-roll.mp3?url";
+import diceRollUrl from "../assets/dice-roll.mp3?url&no-inline";
 export type SoundCue = "step" | "lava" | "dice" | "gear";
 
 // Recorded dice and synthesized foley. No background loop or game RNG usage.

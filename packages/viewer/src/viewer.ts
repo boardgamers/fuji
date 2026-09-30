@@ -40,6 +40,7 @@ registerViewer<View, Move>(
 					return;
 				}
 				store.analysis = preferences.analysis === true;
+				store.chatNotifications = preferences.chatNotifications !== false;
 				store.colorblind = preferences.colorBlind === true;
 				store.setSound(preferences.sound !== false);
 			},

@@ -3,6 +3,7 @@ import { SoundDesign, type SoundCue } from "./sound";
 import type { View, Move } from "fuji-engine";
 export class Store {
 	analysis = $state(false);
+	chatNotifications = $state(true);
 	chat = new ChatController();
 	chatState = $state.raw(this.chat.snapshot);
 	chatAvailable = $derived(this.chatState.enabled && !this.analysis);

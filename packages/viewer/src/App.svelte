@@ -642,7 +642,9 @@
 						(s.phase === "equipment" && me.ready && !canReopenChoice(s, seat!)) ||
 						(s.phase === "eruption" && seat !== 0)}>{mobileLabel} →</button
 				>
-				{#if store.chatAvailable && store.chatState.unreadIds.length}<button class="dock-chat" onclick={openChat}
+				{#if store.chatAvailable && store.chatNotifications && store.chatState.unreadIds.length}<button
+						class="dock-chat"
+						onclick={openChat}
 						>Chat{store.chatState.unreadIds.length ? ` · ${store.chatState.unreadIds.length}` : ""}</button
 					>{/if}
 			</div>{/if}

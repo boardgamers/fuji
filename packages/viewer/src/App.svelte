@@ -666,7 +666,12 @@
 							class="teammate-name"
 							data-bgs-player={i}
 							onclick={() => (store.local ? store.selectSeat(i) : store.clickPlayer(i))}
-							>{p.name}{#if seat === i}<small>YOU</small>{/if}</button
+							>{p.name}{#if store.appearance.players?.[i]?.pro && store.appearance.supporterBadge}<img
+									class="supporter-badge"
+									src={store.appearance.supporterBadge.url}
+									alt={store.appearance.supporterBadge.label}
+									title={store.appearance.supporterBadge.label}
+								/>{/if}{#if seat === i}<small>YOU</small>{/if}</button
 						><span class="role-name" title=""
 							><button
 								type="button"

@@ -2,6 +2,7 @@ import { ChatController } from "@boardgamers/protocol/chat";
 import { SoundDesign, type SoundCue } from "./sound";
 import type { View, Move } from "fuji-engine";
 export class Store {
+	appearance = $state<{ players?: { pro?: boolean }[]; supporterBadge?: { url: string; label: string } }>({});
 	analysis = $state(false);
 	chatNotifications = $state(true);
 	chat = new ChatController();

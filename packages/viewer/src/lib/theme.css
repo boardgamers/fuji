@@ -137,6 +137,13 @@ h3 {
 	min-width: 0;
 	flex: 1;
 }
+.teammate-name .supporter-badge {
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+	vertical-align: -2px;
+	margin-left: 4px;
+}
 .teammate-name {
 	font-size: 13px;
 	display: flex;

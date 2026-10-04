@@ -39,6 +39,7 @@ registerViewer<View, Move>(
 				if (!(await localization.setLocale(preferences.locale))) {
 					return;
 				}
+				store.appearance = (preferences.bgs ?? {}) as typeof store.appearance;
 				store.analysis = preferences.analysis === true;
 				store.chatNotifications = preferences.chatNotifications !== false;
 				store.colorblind = preferences.colorBlind === true;

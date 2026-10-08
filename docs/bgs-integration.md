@@ -45,6 +45,8 @@ Fuji has a shared win/loss. The wrapper gives all players the same ranking and r
 
 When a single human plays with bots, BGS sends `undo:available` (protocol 0.10.0). While it is true, the header shows **Undo my move** to the seated player, except in analysis and while a move awaits the next state. The control emits `undo`; BGS then sends the earlier state. The viewer stops playback and discards local selections when a state goes backwards. The local harness offers the same control after each move made from the interface.
 
+BGS records the log length before each of that player's saved moves and calls `replay(data, { to })` with it; admin replays also pass log positions. The wrapper replays up to the first point where the journal reaches `to`, then reapplies later name changes and drops. Chat announcements of replayed moves are not queued again. Live route and readiness edits, and preparation choices before the last player is ready, add no journal entry. Undoing one therefore reopens the choices made since the latest journal entry, for every player; the bots choose again. `replay(data)` without a position still restores the complete game.
+
 ## Automatic movement resolution
 
 Starting a movement resolves it immediately when no Gatherer has usable bars. Otherwise only the Gatherer(s) are active: each submits one `help` action with `count` from zero to their remaining stock. The last decision applies movement, eruption triggers and stamina automatically. Injury choices still belong to the injured player. The journal snapshots revealed and matching dice with text fallbacks for the platform log. Start a new local game when testing this flow; historical development saves using manual resolution are not migrated.

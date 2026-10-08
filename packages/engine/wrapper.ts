@@ -7,6 +7,7 @@ import {
 	dropGamePlayer,
 	setPlayerName,
 	replay as replayGame,
+	rewind,
 } from "./src/game.js";
 import type { State } from "./src/types.js";
 export { stripSecret };
@@ -41,7 +42,8 @@ export const logLength = (s: State) => s.log.length;
 export const logSlice = (s: State, o: { player?: number; start: number; end?: number }) => ({
 	log: s.log.slice(o.start, o.end).map((e) => ({ ...e, simple: e.text })),
 });
-export const replay = (s: State, o?: { to?: number }) => replayGame(s, o?.to);
+// BGS positions are public log lengths (undo against bots, admin replays): see rewind.
+export const replay = (s: State, o?: { to?: number }) => (o?.to === undefined ? replayGame(s) : rewind(s, o.to));
 export function setPlayerMetaData(s: State, seat: number, meta: { name: string }) {
 	return setPlayerName(s, seat, meta.name);
 }

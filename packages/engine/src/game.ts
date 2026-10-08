@@ -1224,6 +1224,23 @@ export function replay(s: State, to?: number, logTo?: number): State {
 	if (to === undefined && logTo === undefined && s.planningSnapshot) restorePlanning(state, s.planningSnapshot);
 	return state;
 }
+/**
+ * Go back to a public log position, as BGS does to undo a move against bots: replay up to the
+ * first point where the journal has `logTo` entries. Choices that add no journal entry after it
+ * (live route and readiness edits, preparation before the last player is ready) are not
+ * restored, so undoing one reopens those choices for every player. Names and drops recorded
+ * later still apply. Chat announcements of replayed moves were delivered and are not queued again.
+ */
+export function rewind(s: State, logTo: number): State {
+	if (!Number.isInteger(logTo) || logTo < 0 || logTo > s.log.length) throw Error("Invalid history position.");
+	let state = replay(s, undefined, logTo);
+	for (const e of s.history.slice(state.history.length)) {
+		if (e.move.action === "$name") state = setPlayerName(state, e.player, e.move.name as string);
+		else if (e.move.action === "$drop") state = dropGamePlayer(state, e.player);
+	}
+	delete state.chatMessages;
+	return state;
+}
 
 /** Start a manual sandbox from only the requesting seat's visible information. */
 export function createAnalysisScenario(data: State, { player, seed }: { player?: number; seed: string }): State {

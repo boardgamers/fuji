@@ -41,6 +41,9 @@ try {
 } catch {
 	game = initGame(3, {}, "first-light");
 }
+// Like BGS in games against bots: undo returns to the game before the last move made
+// from the interface, discarding teammate actions played after it.
+const undoPoints: State[] = [];
 let teammateTimer: ReturnType<typeof setTimeout> | undefined;
 store.autoTeammates = localStorage.getItem("fuji-auto-teammates") === "true";
 function availableSeats() {
@@ -77,6 +80,7 @@ if (import.meta.hot)
 	});
 function publish() {
 	localStorage.setItem("fuji-dev-v1", JSON.stringify(game));
+	store.undoAvailable = undoPoints.length > 0;
 	store.receive(stripSecret(game, store.seat));
 	store.chat.setState({
 		canSend: true,
@@ -89,7 +93,17 @@ function publish() {
 	scheduleTeammate();
 }
 store.send = (move) => {
+	const previous = game;
 	game = applyMove(game, move, store.seat!);
+	undoPoints.push(previous);
+	undoPoints.splice(0, undoPoints.length - 100);
+	publish();
+};
+store.undo = () => {
+	const previous = undoPoints.pop();
+	if (!previous) return;
+	game = previous;
+	store.error = "";
 	publish();
 };
 store.selectSeat = (seat) => {
@@ -99,6 +113,7 @@ store.selectSeat = (seat) => {
 };
 store.restart = (players, seed, difficulty, scenario = 1, skillAssignment = "random") => {
 	game = initGame(players, { difficulty, scenario, skillAssignment }, seed);
+	undoPoints.length = 0;
 	store.seat = 0;
 	store.chat.replace([]);
 	store.chat.setDraft("");

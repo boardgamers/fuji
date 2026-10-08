@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { name }: { name: "chat" | "help" | "journal" | "fullscreen" | "exit-fullscreen" } = $props();
+	let { name }: { name: "chat" | "help" | "journal" | "fullscreen" | "exit-fullscreen" | "undo" } = $props();
 </script>
 
 <svg
@@ -19,6 +19,9 @@
 		<path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4m0 3v.1" />
 	{:else if name === "journal"}
 		<path d="M5 3h14v18H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM7 3v18m4-13h5m-5 4h5m-5 4h3" />
+	{:else if name === "undo"}
+		<path d="M9 3.5 4 8.5l5 5" />
+		<path d="M4 8.5h10.5a6 6 0 0 1 0 12H10" />
 	{:else if name === "exit-fullscreen"}
 		<path d="M3 8h5V3m8 0v5h5M3 16h5v5m8 0v-5h5" />
 	{:else}

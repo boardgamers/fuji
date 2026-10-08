@@ -88,6 +88,12 @@ export class Store {
 		this.savePreference("colorBlind", value);
 	}
 	send: (move: Move) => void = () => {};
+	// BGS lets the only human of a game against bots take back their last saved move;
+	// it then sends the earlier state.
+	undoAvailable = $state(false);
+	undo: () => void = () => {};
+	/** Counts earlier states received (an undo), so local drafts can be discarded. */
+	rewinds = $state(0);
 	selectSeat: (seat: number) => void = () => {};
 	restart: (players: number, seed: string, difficulty: number, scenario?: number, skillAssignment?: string) => void =
 		() => {};
@@ -105,12 +111,9 @@ export class Store {
 	}
 	receive(s: View) {
 		const previous = this.received;
-		const reset =
-			!previous ||
-			this.receivedSeat !== this.seat ||
-			s.revision < previous.revision ||
-			s.log.length < previous.log.length ||
-			document.hidden;
+		const rewound = !!previous && (s.revision < previous.revision || s.log.length < previous.log.length);
+		const reset = !previous || this.receivedSeat !== this.seat || rewound || document.hidden;
+		if (rewound) this.rewinds++;
 		this.received = s;
 		this.receivedSeat = this.seat;
 		this.state = s;

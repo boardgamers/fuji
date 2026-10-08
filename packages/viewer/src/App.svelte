@@ -54,6 +54,10 @@
 	);
 	const seat = $derived(store.seat);
 	const me = $derived(seat === undefined ? undefined : s?.players[seat]);
+	// Offered by BGS in games against bots; hidden for spectators, in analysis and while a move is pending.
+	const canUndo = $derived(
+		store.undoAvailable && seat !== undefined && !store.analysis && !store.waiting && !s?.outcome
+	);
 	let inspected = $state("");
 	let dangerousRoute = $state("");
 	let acceptedLavaRisk = $state("");
@@ -237,7 +241,10 @@
 	let decision = "";
 	let decisionScreen = "";
 	$effect(() => {
+		// After an undo, selections made on the later state are discarded.
+		const rewinds = store.rewinds;
 		const context = JSON.stringify([
+			rewinds,
 			seat,
 			s?.round,
 			s?.phase,
@@ -249,7 +256,7 @@
 		]);
 		const player = me;
 		untrack(() => {
-			const screen = `${seat}:${s?.round}:${s?.phase}`;
+			const screen = `${rewinds}:${seat}:${s?.round}:${s?.phase}`;
 			if (screen !== decisionScreen) {
 				decisionScreen = screen;
 				dangerousRoute = "";
@@ -504,6 +511,12 @@
 				</span>
 			</div>
 			<nav class="game-utilities" aria-label="Game options">
+				{#if canUndo}<button
+						class="utility-button undo-move"
+						title="Undo my move"
+						aria-label="Undo my move"
+						onclick={() => store.undo()}><UtilityIcon name="undo" /></button
+					>{/if}
 				<button
 					class="utility-button team-toggle"
 					aria-label="Your expedition"

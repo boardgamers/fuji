@@ -41,6 +41,10 @@ Fuji has a shared win/loss. The wrapper gives all players the same ranking and r
 
 `colorBlind` is the platform’s shared color-blind preference, false by default. It is stored on the BGS account and used across supported games. The viewer reads the platform `preferences` event and emits `update:preference` with `{ name: "colorBlind", value: boolean }` when changed in Help. It adds color names to dice and color initials to map requirement symbols without changing game state. The local harness persists the same setting in localStorage. The draft registration declares the checkbox so the platform shows its shared control. Incoming preference updates must not write back to the host.
 
+## Undo against bots
+
+When a single human plays with bots, BGS sends `undo:available` (protocol 0.10.0). While it is true, the header shows **Undo my move** to the seated player, except in analysis and while a move awaits the next state. The control emits `undo`; BGS then sends the earlier state. The viewer stops playback and discards local selections when a state goes backwards. The local harness offers the same control after each move made from the interface.
+
 ## Automatic movement resolution
 
 Starting a movement resolves it immediately when no Gatherer has usable bars. Otherwise only the Gatherer(s) are active: each submits one `help` action with `count` from zero to their remaining stock. The last decision applies movement, eruption triggers and stamina automatically. Injury choices still belong to the injured player. The journal snapshots revealed and matching dice with text fallbacks for the platform log. Start a new local game when testing this flow; historical development saves using manual resolution are not migrated.

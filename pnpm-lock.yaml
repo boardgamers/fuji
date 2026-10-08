@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  '@boardgamers/protocol@0.6.1': 4ec4a210cf846eebd6d902b2952c029dbcde5ed288f88dba1f9362a8a9caa953
-
 importers:
 
   .:
@@ -37,8 +34,8 @@ importers:
   packages/viewer:
     dependencies:
       '@boardgamers/protocol':
-        specifier: 0.6.1
-        version: 0.6.1(patch_hash=4ec4a210cf846eebd6d902b2952c029dbcde5ed288f88dba1f9362a8a9caa953)
+        specifier: 0.10.0
+        version: 0.10.0
       fuji-engine:
         specifier: workspace:*
         version: link:../engine
@@ -64,8 +61,8 @@ importers:
 
 packages:
 
-  '@boardgamers/protocol@0.6.1':
-    resolution: {integrity: sha512-/SdqqYrRUNizjGqQygR4kxTZqCOqWfj190Uj/YHI8i0pD4eNXGofZJd2QhkB63n0iSRHMvJJRJReadof151wBg==}
+  '@boardgamers/protocol@0.10.0':
+    resolution: {integrity: sha512-U+nOK8xeQANvjzwacHirBW+ItDf9AOmHLtkoyTI/XYFCOpL6lPsEgCbmcxnmkXv2a1/lgtVN3WpSERHUqkQkXw==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -634,7 +631,7 @@ packages:
 
 snapshots:
 
-  '@boardgamers/protocol@0.6.1(patch_hash=4ec4a210cf846eebd6d902b2952c029dbcde5ed288f88dba1f9362a8a9caa953)':
+  '@boardgamers/protocol@0.10.0':
     dependencies:
       zod: 4.6.2
 

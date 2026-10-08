@@ -1287,5 +1287,6 @@
 	"+{p0} bars if kept": "+{p0} bars if kept",
 	"· gain {p0} bar": "· gain {p0} bar",
 	"{p0} · +{p1} bar if kept": "{p0} · +{p1} bar if kept",
-	"{p0} · +{p1} bars if kept": "{p0} · +{p1} bars if kept"
+	"{p0} · +{p1} bars if kept": "{p0} · +{p1} bars if kept",
+	"Undo my move": "Отменить ход"
 }

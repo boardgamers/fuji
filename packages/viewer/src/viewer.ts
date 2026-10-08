@@ -10,11 +10,12 @@ import { mountTutorial } from "./tutorial";
 
 registerViewer<View, Move>(
 	"fuji",
-	({ target, move, openPlayer, hoverPlayer, leavePlayer, updatePreference, replaceLog }) => {
+	({ target, move, openPlayer, hoverPlayer, leavePlayer, updatePreference, replaceLog, undo }) => {
 		const store = new Store();
 		store.send = move;
 		store.clickPlayer = openPlayer;
 		store.savePreference = updatePreference;
+		store.undo = undo;
 		const app = mount(App, { target, props: { store } });
 		const removeCards = installPlayerCards(target, { hoverPlayer, leavePlayer });
 		const thumbnail = createBoardThumbnail(target);
@@ -47,6 +48,9 @@ registerViewer<View, Move>(
 			},
 			onAvatars(avatars) {
 				store.avatars = avatars;
+			},
+			onUndoAvailable(available) {
+				store.undoAvailable = available;
 			},
 			onError(error) {
 				store.error = error instanceof Error ? error.message : String(error);

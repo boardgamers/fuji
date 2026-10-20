@@ -16,7 +16,23 @@ const server = createServer(async (req, res) => {
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const browser = await chromium.launch({ headless: true, executablePath: process.env.FUJI_CHROMIUM_EXECUTABLE });
 try {
-	for (const locale of ["fr", "de", "nl", "da", "it", "ro", "pt-BR", "pl", "ru", "el", "hi", "ko", "zh-TW", "vi"]) {
+	for (const locale of [
+		"fr",
+		"de",
+		"nl",
+		"da",
+		"it",
+		"ro",
+		"pt-BR",
+		"pl",
+		"ru",
+		"el",
+		"hi",
+		"ko",
+		"zh-TW",
+		"zh-CN",
+		"vi",
+	]) {
 		const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 		const errors = [];
 		page.on("pageerror", (e) => errors.push(e.message));

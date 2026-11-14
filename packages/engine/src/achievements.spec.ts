@@ -18,10 +18,10 @@ function finish(players: number, scenario: number | "random", difficulty: number
 const win = finish(2, 1, 1, "achievement-0");
 const ids = (state: State) => wrapper.achievements(state)[0]!.earned;
 
-test("revision 1 manifest and optional hooks use the official published protocol", () => {
+test("revision 2 manifest and optional hooks use the official published protocol", () => {
 	const manifest = wrapper.achievementDefinitions();
 	achievementManifestSchema.parse(manifest);
-	assert.equal(manifest.revision, 1);
+	assert.equal(manifest.revision, 2);
 	assert.equal(manifest.achievements.length, 16);
 	assert.equal(new Set(manifest.achievements.map((a) => a.id)).size, 16);
 	for (const { id } of manifest.achievements) assert.match(id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);

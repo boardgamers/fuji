@@ -56,7 +56,13 @@ const feats: Feat[] = [
 ];
 
 export function achievementDefinitions(): AchievementManifest {
-	return { revision: 1, achievements: feats.map(({ qualifies: _, ...definition }) => ({ ...definition })) };
+	return {
+		revision: 2,
+		achievements: feats.map(({ qualifies: _, ...definition }) => ({
+			...definition,
+			icon: { type: "asset", key: `achievement-${definition.id}` },
+		})),
+	};
 }
 
 /** Only authoritative final state is inspected; never infer feats from private rolls or log prose.

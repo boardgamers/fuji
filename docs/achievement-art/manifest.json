@@ -1,0 +1,170 @@
+{
+	"game": "fuji",
+	"engineVersion": "0.1.14",
+	"manifestRevision": 2,
+	"dimensions": [512, 512],
+	"generatorSha256": "4360cf6e8e7c127a180cc8745b212f30789dfdec29551c21d76d3b065d39c8cb",
+	"dataSha256": "28adef1ea58da6dc3f227e1072bf6cb9dc2d6ce7aa82e3a2c9252fe2fa5a2024",
+	"assets": [
+		{
+			"id": "escape-together",
+			"key": "achievement-escape-together",
+			"svg": "achievement-escape-together.svg",
+			"png": "achievement-escape-together.png",
+			"sourceSha256": "bd7397fe0851d8b2ad1a09112db2da340b2f4cd0d5f79774dfe33475274506f7",
+			"pngSha256": "c6c42b8450cee3fc874dac0fed0da5b1029aea4407564016179f85366524cb54",
+			"provenance": "Original expedition geometry authored in scripts/generate-achievement-art.mjs; no external art.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "scenario-1-escape",
+			"key": "achievement-scenario-1-escape",
+			"svg": "achievement-scenario-1-escape.svg",
+			"png": "achievement-scenario-1-escape.png",
+			"sourceSha256": "3111d29c9cca913909a7fd9c14229c4fb25fd209ead6f4c7919cd4dbdc0f8caa",
+			"pngSha256": "ef4895bd7741d2e1f123c280d8af5f459975da04a16cee1a5826c0b5f1b97bb5",
+			"provenance": "Original geometric rendering of SCENARIOS[0] coordinates in packages/engine/src/data.ts; no source illustrations copied.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "scenario-2-escape",
+			"key": "achievement-scenario-2-escape",
+			"svg": "achievement-scenario-2-escape.svg",
+			"png": "achievement-scenario-2-escape.png",
+			"sourceSha256": "2371b2c86bb744124c75a30ffa2fa520aeee273e0995635fedefc6ad6574a44a",
+			"pngSha256": "6084fac0f91719973d693f234fd4ee8e07e9db6bb34b43fa049ceec7842fa948",
+			"provenance": "Original geometric rendering of SCENARIOS[1] coordinates in packages/engine/src/data.ts; no source illustrations copied.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "scenario-3-escape",
+			"key": "achievement-scenario-3-escape",
+			"svg": "achievement-scenario-3-escape.svg",
+			"png": "achievement-scenario-3-escape.png",
+			"sourceSha256": "404af88b30d24264a9196bf7254a8ec9bbc3e4658262055eb57db296b5ef9b0e",
+			"pngSha256": "dd44a2589ad57df3c9e05b833e052041cbde2e6d8ecaa9841ec97f360332d7e2",
+			"provenance": "Original geometric rendering of SCENARIOS[2] coordinates in packages/engine/src/data.ts; no source illustrations copied.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "scenario-4-escape",
+			"key": "achievement-scenario-4-escape",
+			"svg": "achievement-scenario-4-escape.svg",
+			"png": "achievement-scenario-4-escape.png",
+			"sourceSha256": "1147582305d62192dff3eb601a5cdf70156c60c7ba693bbf3f19ac6658519b5d",
+			"pngSha256": "344da14d0d8abcd34f9cf5a9b95c433511c86f626d381379f36e8bf9517ddb64",
+			"provenance": "Original geometric rendering of SCENARIOS[3] coordinates in packages/engine/src/data.ts; no source illustrations copied.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "scenario-5-escape",
+			"key": "achievement-scenario-5-escape",
+			"svg": "achievement-scenario-5-escape.svg",
+			"png": "achievement-scenario-5-escape.png",
+			"sourceSha256": "6f72bd7c5932833c16060825b6e4544793f47792e34643062fc47758f5c897f2",
+			"pngSha256": "e1897a68f85c7af25587f6e1688dc494b3f68045cd180dc614e9e2e94c2c5e52",
+			"provenance": "Original geometric rendering of SCENARIOS[4] coordinates in packages/engine/src/data.ts; no source illustrations copied.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "scenario-6-escape",
+			"key": "achievement-scenario-6-escape",
+			"svg": "achievement-scenario-6-escape.svg",
+			"png": "achievement-scenario-6-escape.png",
+			"sourceSha256": "5a81f11eba1609eb9cd2ef54d86bc5fd9b355e17a51658211549416d1a64fe40",
+			"pngSha256": "5605f8d4755dedcb356b112752f5924c122b653cd95ee528f7a64ada10ef7b47",
+			"provenance": "Original geometric rendering of SCENARIOS[5] coordinates in packages/engine/src/data.ts; no source illustrations copied.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "scenario-7-escape",
+			"key": "achievement-scenario-7-escape",
+			"svg": "achievement-scenario-7-escape.svg",
+			"png": "achievement-scenario-7-escape.png",
+			"sourceSha256": "3052f4d0023f7a5dd3360df30a61f0655fbb96cfd0a66349ff61a1c65c0ac6ea",
+			"pngSha256": "cf1346e797df22cf1f9053c054307da94257b0c4f5499d0efc9d340624b07f7d",
+			"provenance": "Original geometric rendering of SCENARIOS[6] coordinates in packages/engine/src/data.ts; no source illustrations copied.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "difficulty-2-escape",
+			"key": "achievement-difficulty-2-escape",
+			"svg": "achievement-difficulty-2-escape.svg",
+			"png": "achievement-difficulty-2-escape.png",
+			"sourceSha256": "5785f24c625fffc833c2571686599f60cfcb318229960a470a7d1c5d93ede308",
+			"pngSha256": "73413dc391b261d1da8de42498c848fb1596039078c1d0ff4dd2121e90e280c1",
+			"provenance": "Original expedition geometry authored in scripts/generate-achievement-art.mjs; no external art.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "difficulty-3-escape",
+			"key": "achievement-difficulty-3-escape",
+			"svg": "achievement-difficulty-3-escape.svg",
+			"png": "achievement-difficulty-3-escape.png",
+			"sourceSha256": "8600445d6e0c7baf1a6565c6004198313ca6c0f8b6f7d4361567cec9f2ab77b4",
+			"pngSha256": "2e6f82b093d08fb4d3e954599e0ae6780703650a769c37b65b2e70a669c03fae",
+			"provenance": "Original expedition geometry authored in scripts/generate-achievement-art.mjs; no external art.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "difficulty-4-escape",
+			"key": "achievement-difficulty-4-escape",
+			"svg": "achievement-difficulty-4-escape.svg",
+			"png": "achievement-difficulty-4-escape.png",
+			"sourceSha256": "bb0ca68105cf96b7b6643dea4f9b5ff481945b9542ccdcb8026ffa4c0b818568",
+			"pngSha256": "b9ccea3b99ee3ec45fc44783fe26cfdc0e4f8abe9cd44b33d16dbd231082dc40",
+			"provenance": "Original expedition geometry authored in scripts/generate-achievement-art.mjs; no external art.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "strength-to-spare",
+			"key": "achievement-strength-to-spare",
+			"svg": "achievement-strength-to-spare.svg",
+			"png": "achievement-strength-to-spare.png",
+			"sourceSha256": "552e10d5df72ce49df46be5ebd50365b3301939e2de04dda028652b4701df50f",
+			"pngSha256": "d948332d0c7cde6510817c7986eba57f566155608af31931462a63b44e6dff73",
+			"provenance": "Original expedition geometry authored in scripts/generate-achievement-art.mjs; no external art.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "unscathed-team",
+			"key": "achievement-unscathed-team",
+			"svg": "achievement-unscathed-team.svg",
+			"png": "achievement-unscathed-team.png",
+			"sourceSha256": "f0ae232e1c688204c974a06a92c2c5165d1d4239af1cf75421d063efd7d40a5f",
+			"pngSha256": "9f1ba21b0c08c7828652bce89c66a819cec60752a26ffb0dbc951cef869ca540",
+			"provenance": "Original expedition geometry authored in scripts/generate-achievement-art.mjs; no external art.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "narrow-escape",
+			"key": "achievement-narrow-escape",
+			"svg": "achievement-narrow-escape.svg",
+			"png": "achievement-narrow-escape.png",
+			"sourceSha256": "5d4be42f9d14d21666d395a8cb260c29c73aabfdcc307af89f3ee69d88fa0e5b",
+			"pngSha256": "853b8e662b8fb4ff4e30392590f5bb69f4cca059147a8e6afa443f080d89113d",
+			"provenance": "Original expedition geometry authored in scripts/generate-achievement-art.mjs; no external art.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "well-equipped",
+			"key": "achievement-well-equipped",
+			"svg": "achievement-well-equipped.svg",
+			"png": "achievement-well-equipped.png",
+			"sourceSha256": "ccb18b52b4f8d0e1a12bd9fdf04f5a8fcfacd9f14685931b3c91927760f44880",
+			"pngSha256": "f2862c17250a5baf72eceea10780bfa8888b3b810ef5a189e41377f5f2792091",
+			"provenance": "Original expedition geometry authored in scripts/generate-achievement-art.mjs; no external art.",
+			"license": "AGPL-3.0-only"
+		},
+		{
+			"id": "four-to-safety",
+			"key": "achievement-four-to-safety",
+			"svg": "achievement-four-to-safety.svg",
+			"png": "achievement-four-to-safety.png",
+			"sourceSha256": "420fbf191b6af6ae58d31acea0aa12e3d70371ecdc153c70a89d21ab2ae0064a",
+			"pngSha256": "fbf3193f1e1e20fd76a4ed84954ce11f526533a8367b723f256ef3c0e33f5ac2",
+			"provenance": "Original expedition geometry authored in scripts/generate-achievement-art.mjs; no external art.",
+			"license": "AGPL-3.0-only"
+		}
+	]
+}

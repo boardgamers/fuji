@@ -1,0 +1,427 @@
+{
+	"schema": 1,
+	"game": "fuji",
+	"status": "activated-and-verified",
+	"sourceCommit": "98035e6eac79cd6a9db4eff47bd05a7031f7bcde",
+	"envelopeSha256": "576dca2cfe5666f5c93538c88fe505ad112270ccdbfff5b6ee73fe80ed5ce8d4",
+	"privateReceiptSha256": "d15718b9555712857a4670526096353b9e867ccebee0187cc911d580d85f075f",
+	"assets": {
+		"achievement-difficulty-2-escape": {
+			"sourceSha256": "73413dc391b261d1da8de42498c848fb1596039078c1d0ff4dd2121e90e280c1",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-difficulty-2-escape/9b90934a6b837427/achievement-difficulty-2-escape.webp",
+			"sha256": "9b90934a6b837427a6c0a9b11f278baeaf795cd2cb50399dced4541b9fbd8161",
+			"size": 14806,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:11.669Z",
+			"metadataPreserved": true
+		},
+		"achievement-difficulty-3-escape": {
+			"sourceSha256": "2e6f82b093d08fb4d3e954599e0ae6780703650a769c37b65b2e70a669c03fae",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-difficulty-3-escape/44bfc5fb2bac0216/achievement-difficulty-3-escape.webp",
+			"sha256": "44bfc5fb2bac02160f0bb5398ca620a2214fa1524ccab11b2aeb476cc4855dfe",
+			"size": 15436,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:11.701Z",
+			"metadataPreserved": true
+		},
+		"achievement-difficulty-4-escape": {
+			"sourceSha256": "b9ccea3b99ee3ec45fc44783fe26cfdc0e4f8abe9cd44b33d16dbd231082dc40",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-difficulty-4-escape/972eea4c39918c24/achievement-difficulty-4-escape.webp",
+			"sha256": "972eea4c39918c2491be05969e1b59eeebd7fe04650c4d55d005ddcbce980047",
+			"size": 16104,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:11.733Z",
+			"metadataPreserved": true
+		},
+		"achievement-escape-together": {
+			"sourceSha256": "c6c42b8450cee3fc874dac0fed0da5b1029aea4407564016179f85366524cb54",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-escape-together/40a1a0a0cd5b244a/achievement-escape-together.webp",
+			"sha256": "40a1a0a0cd5b244ab96a9f444d7f15713aa4b09be0acba635cc8bd719c71620b",
+			"size": 15760,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:11.762Z",
+			"metadataPreserved": true
+		},
+		"achievement-four-to-safety": {
+			"sourceSha256": "fbf3193f1e1e20fd76a4ed84954ce11f526533a8367b723f256ef3c0e33f5ac2",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-four-to-safety/7889c778699440f8/achievement-four-to-safety.webp",
+			"sha256": "7889c778699440f8116383166bb9f256d6779e7e8f5f2b030970dcc77e6ebbaf",
+			"size": 14832,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:11.791Z",
+			"metadataPreserved": true
+		},
+		"achievement-narrow-escape": {
+			"sourceSha256": "853b8e662b8fb4ff4e30392590f5bb69f4cca059147a8e6afa443f080d89113d",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-narrow-escape/7e696b0a5d801843/achievement-narrow-escape.webp",
+			"sha256": "7e696b0a5d8018433a0213c0fe2781d637f3298451f5bb5d3fa2d55b996467c4",
+			"size": 13808,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:11.825Z",
+			"metadataPreserved": true
+		},
+		"achievement-scenario-1-escape": {
+			"sourceSha256": "ef4895bd7741d2e1f123c280d8af5f459975da04a16cee1a5826c0b5f1b97bb5",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-scenario-1-escape/c02c86987edb6fc5/achievement-scenario-1-escape.webp",
+			"sha256": "c02c86987edb6fc5614e383ecf811728e685573c3f878b98477661ec0b2d9ef3",
+			"size": 16698,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:12.200Z",
+			"metadataPreserved": true
+		},
+		"achievement-scenario-2-escape": {
+			"sourceSha256": "6084fac0f91719973d693f234fd4ee8e07e9db6bb34b43fa049ceec7842fa948",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-scenario-2-escape/1b14ba6a14127eee/achievement-scenario-2-escape.webp",
+			"sha256": "1b14ba6a14127eee876046963049a03004e9f09c9f0863ebe00e9eb3affd284e",
+			"size": 17050,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:12.233Z",
+			"metadataPreserved": true
+		},
+		"achievement-scenario-3-escape": {
+			"sourceSha256": "dd44a2589ad57df3c9e05b833e052041cbde2e6d8ecaa9841ec97f360332d7e2",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-scenario-3-escape/3d75cf24810479e1/achievement-scenario-3-escape.webp",
+			"sha256": "3d75cf24810479e1bbc078c27ed25d92c67fb07388357a717432322936271916",
+			"size": 17156,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:12.273Z",
+			"metadataPreserved": true
+		},
+		"achievement-scenario-4-escape": {
+			"sourceSha256": "344da14d0d8abcd34f9cf5a9b95c433511c86f626d381379f36e8bf9517ddb64",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-scenario-4-escape/856c258da6f7062b/achievement-scenario-4-escape.webp",
+			"sha256": "856c258da6f7062b7f1ba54c28977977994fb3cee2296ba65c11ee4e365ef872",
+			"size": 16560,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:12.302Z",
+			"metadataPreserved": true
+		},
+		"achievement-scenario-5-escape": {
+			"sourceSha256": "e1897a68f85c7af25587f6e1688dc494b3f68045cd180dc614e9e2e94c2c5e52",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-scenario-5-escape/0d1c264ac3e4bec9/achievement-scenario-5-escape.webp",
+			"sha256": "0d1c264ac3e4bec92005dbae57e13ec637ff54f3c0fa4cd0cd8d710bf35f2833",
+			"size": 17530,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:12.333Z",
+			"metadataPreserved": true
+		},
+		"achievement-scenario-6-escape": {
+			"sourceSha256": "5605f8d4755dedcb356b112752f5924c122b653cd95ee528f7a64ada10ef7b47",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-scenario-6-escape/6d9101f300280867/achievement-scenario-6-escape.webp",
+			"sha256": "6d9101f3002808674ea1cec1cd97fa82c9580d8219d9483f5ce6382011a36b96",
+			"size": 16784,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:12.362Z",
+			"metadataPreserved": true
+		},
+		"achievement-scenario-7-escape": {
+			"sourceSha256": "cf1346e797df22cf1f9053c054307da94257b0c4f5499d0efc9d340624b07f7d",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-scenario-7-escape/29f9ce6ca725bb99/achievement-scenario-7-escape.webp",
+			"sha256": "29f9ce6ca725bb99cdbebd12bd79416d321830b4ba33c22a5fb666a38ee47aa1",
+			"size": 16672,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:12.392Z",
+			"metadataPreserved": true
+		},
+		"achievement-strength-to-spare": {
+			"sourceSha256": "d948332d0c7cde6510817c7986eba57f566155608af31931462a63b44e6dff73",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-strength-to-spare/a7e1d2f123dc1744/achievement-strength-to-spare.webp",
+			"sha256": "a7e1d2f123dc17442465fd2bd19df5b4fedafa0d254bdfe4d7b318770730a965",
+			"size": 14232,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:12.421Z",
+			"metadataPreserved": true
+		},
+		"achievement-unscathed-team": {
+			"sourceSha256": "9f1ba21b0c08c7828652bce89c66a819cec60752a26ffb0dbc951cef869ca540",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-unscathed-team/e54a4ddbc7d5ce5c/achievement-unscathed-team.webp",
+			"sha256": "e54a4ddbc7d5ce5c976c9db611f95640efe5d08cd3181ba6bb52cedcd6c4857d",
+			"size": 17454,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:12.457Z",
+			"metadataPreserved": true
+		},
+		"achievement-well-equipped": {
+			"sourceSha256": "f2862c17250a5baf72eceea10780bfa8888b3b810ef5a189e41377f5f2792091",
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/achievements/fuji/achievement-well-equipped/4ad59be88a5863de/achievement-well-equipped.webp",
+			"sha256": "4ad59be88a5863def81ca1c2fb0286f447466cbdbf9e4d4245928da6b9ba4cd4",
+			"size": 16166,
+			"format": "webp",
+			"width": 512,
+			"height": 512,
+			"verifiedAt": "2026-11-14T13:02:12.488Z",
+			"metadataPreserved": true
+		}
+	},
+	"preserved": {
+		"cover": {
+			"key": "cover",
+			"preservation": "metadata-only-403",
+			"metadata": {
+				"url": "https://s3.fr-par.scw.cloud/bgs-assets/assets/fuji/cover/df0b4a4f138e355d/cover.webp",
+				"contentType": "image/webp",
+				"size": 146872,
+				"uploadedAt": "2026-09-10T12:35:00.729Z",
+				"name": "Box cover"
+			},
+			"status": 403
+		},
+		"pictogram": {
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/assets/fuji/pictogram/9782c16d5c00c7e4/pictogram.webp",
+			"sha256": "9782c16d5c00c7e43e1caea5fe0418db90b51715ae84a14794507dcd4f0cc5ab",
+			"size": 13480,
+			"format": "webp",
+			"width": 256,
+			"height": 256,
+			"verifiedAt": "2026-11-14T13:02:12.596Z",
+			"metadata": {
+				"url": "https://s3.fr-par.scw.cloud/bgs-assets/assets/fuji/pictogram/9782c16d5c00c7e4/pictogram.webp",
+				"contentType": "image/webp",
+				"size": 13480,
+				"uploadedAt": "2026-09-28T23:30:11.158Z",
+				"name": "Game pictogram"
+			}
+		},
+		"rules-en": {
+			"key": "rules-en",
+			"preservation": "metadata-only-403",
+			"metadata": {
+				"url": "https://s3.fr-par.scw.cloud/bgs-assets/assets/fuji/rules-en/cfda1656d6483445/rules-en.pdf",
+				"contentType": "application/pdf",
+				"size": 3861655,
+				"uploadedAt": "2026-09-10T12:35:00.176Z",
+				"name": "Official rules (English)"
+			},
+			"status": 403
+		},
+		"screenshot-showcase-1": {
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/assets/fuji/screenshot-showcase-1/ab459fa5712551f5/screenshot-showcase-1.webp",
+			"sha256": "ab459fa5712551f52248afbd6c5e7bdcd6f2693fc48f40a6815c36dcc9dc13e1",
+			"size": 149352,
+			"format": "webp",
+			"width": 1536,
+			"height": 993,
+			"verifiedAt": "2026-11-14T13:02:12.705Z",
+			"metadata": {
+				"url": "https://s3.fr-par.scw.cloud/bgs-assets/assets/fuji/screenshot-showcase-1/ab459fa5712551f5/screenshot-showcase-1.webp",
+				"contentType": "image/webp",
+				"size": 149352,
+				"name": "Plan a route away from the erupting volcano",
+				"uploadedAt": "2026-10-04T21:59:51.712Z"
+			}
+		},
+		"screenshot-showcase-2": {
+			"url": "https://s3.fr-par.scw.cloud/bgs-assets/assets/fuji/screenshot-showcase-2/632bc56bfb4bf6c1/screenshot-showcase-2.webp",
+			"sha256": "632bc56bfb4bf6c16e8971622e27b587df74d7bb1c4c693eff6a841404fc0f4e",
+			"size": 47508,
+			"format": "webp",
+			"width": 430,
+			"height": 875,
+			"verifiedAt": "2026-11-14T13:02:12.760Z",
+			"metadata": {
+				"url": "https://s3.fr-par.scw.cloud/bgs-assets/assets/fuji/screenshot-showcase-2/632bc56bfb4bf6c1/screenshot-showcase-2.webp",
+				"contentType": "image/webp",
+				"size": 47508,
+				"name": "The expedition on a smaller screen",
+				"uploadedAt": "2026-10-04T21:59:51.846Z"
+			}
+		}
+	},
+	"planSha256": "71af4d86de8084244f9283327415b3dc329803f10eb21f159502b3b57ad63eba",
+	"activationReceiptSha256": "08939853d31d47a632856e0f5819af1e79c7e783b8a10a6c2618fd9bd010d36e",
+	"tgzSha256": "43d83325e06002e1d982ff7925590d22e77e621d27018389cd895b22e290dfa8",
+	"package": {
+		"name": "fuji-engine",
+		"version": "0.1.14",
+		"url": "https://s3.fr-par.scw.cloud/bgs-assets/games/fuji/1/engine/43d83325e06002e1/fuji-engine-0.1.14.tgz"
+	},
+	"hostedPackage": {
+		"url": "https://s3.fr-par.scw.cloud/bgs-assets/games/fuji/1/engine/43d83325e06002e1/fuji-engine-0.1.14.tgz",
+		"size": 40357,
+		"sha256": "43d83325e06002e1d982ff7925590d22e77e621d27018389cd895b22e290dfa8"
+	},
+	"manifest": {
+		"revision": 2,
+		"achievements": [
+			{
+				"id": "escape-together",
+				"name": "Escape Together",
+				"description": "Win an expedition together.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-escape-together"
+				}
+			},
+			{
+				"id": "scenario-1-escape",
+				"name": "Scenario 1 Escape",
+				"description": "Win scenario 1 at any difficulty.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-scenario-1-escape"
+				}
+			},
+			{
+				"id": "scenario-2-escape",
+				"name": "Scenario 2 Escape",
+				"description": "Win scenario 2 at any difficulty.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-scenario-2-escape"
+				}
+			},
+			{
+				"id": "scenario-3-escape",
+				"name": "Scenario 3 Escape",
+				"description": "Win scenario 3 at any difficulty.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-scenario-3-escape"
+				}
+			},
+			{
+				"id": "scenario-4-escape",
+				"name": "Scenario 4 Escape",
+				"description": "Win scenario 4 at any difficulty.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-scenario-4-escape"
+				}
+			},
+			{
+				"id": "scenario-5-escape",
+				"name": "Scenario 5 Escape",
+				"description": "Win scenario 5 at any difficulty.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-scenario-5-escape"
+				}
+			},
+			{
+				"id": "scenario-6-escape",
+				"name": "Scenario 6 Escape",
+				"description": "Win scenario 6 at any difficulty.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-scenario-6-escape"
+				}
+			},
+			{
+				"id": "scenario-7-escape",
+				"name": "Scenario 7 Escape",
+				"description": "Win scenario 7 at any difficulty.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-scenario-7-escape"
+				}
+			},
+			{
+				"id": "difficulty-2-escape",
+				"name": "Difficulty 2 Escape",
+				"description": "Win at difficulty 2 or higher.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-difficulty-2-escape"
+				}
+			},
+			{
+				"id": "difficulty-3-escape",
+				"name": "Difficulty 3 Escape",
+				"description": "Win at difficulty 3 or higher.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-difficulty-3-escape"
+				}
+			},
+			{
+				"id": "difficulty-4-escape",
+				"name": "Difficulty 4 Escape",
+				"description": "Win at difficulty 4.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-difficulty-4-escape"
+				}
+			},
+			{
+				"id": "strength-to-spare",
+				"name": "Strength to Spare",
+				"description": "Win with every explorer having at least 11 stamina remaining.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-strength-to-spare"
+				}
+			},
+			{
+				"id": "unscathed-team",
+				"name": "Unscathed Team",
+				"description": "Win with no explorer having an injury or an injury awaiting selection.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-unscathed-team"
+				}
+			},
+			{
+				"id": "narrow-escape",
+				"name": "Narrow Escape",
+				"description": "Win with at least one explorer having 5 or less stamina remaining.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-narrow-escape"
+				}
+			},
+			{
+				"id": "well-equipped",
+				"name": "Well Equipped",
+				"description": "Win with every explorer still carrying at least one equipment card.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-well-equipped"
+				}
+			},
+			{
+				"id": "four-to-safety",
+				"name": "Four to Safety",
+				"description": "Win as a team of four explorers.",
+				"icon": {
+					"type": "asset",
+					"key": "achievement-four-to-safety"
+				}
+			}
+		]
+	},
+	"verification": {
+		"publicCatalog": true,
+		"allAssets": true,
+		"unchangedMetadata": true
+	}
+}

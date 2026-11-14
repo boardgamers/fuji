@@ -61,8 +61,8 @@ all 16 awards, comparing packed hooks to the tested build.
 
 ## Release gate
 
-This is a review candidate, not a publication receipt. No upload, activation or
-release-branch push is performed by generation or tests. Parent-coordinated fresh
+The original review candidate has now been activated; see the publication receipt
+below. No upload, activation or release-branch push is performed by generation or tests. Parent-coordinated fresh
 independent code **and actual visual** approval is required first. Use only the
 approved current engine-only publication mechanism, never `publish-private.mjs`.
 Recheck the live catalog before publication, back up metadata, upload exactly the
@@ -70,3 +70,46 @@ Recheck the live catalog before publication, back up metadata, upload exactly th
 package. Record sanitized receipts and push source plus receipts non-force to
 Codeberg `boardgamers/fuji` main and GitHub `boardgamers/fuji` main mirror.
 Do not change viewer/settings/visibility or protocol.
+
+## Verified publication: 0.1.14 / revision 2
+
+[Sanitized combined activation receipt](activation-receipt-0.1.14.json) records
+16 newly published achievement assets and the exact hosted engine package.
+Reviewed source: `98035e6eac79cd6a9db4eff47bd05a7031f7bcde`.
+Independent code/actual-visual approval reference:
+`sub-1794658430705-190d54f2` (issue 595 coordination).
+The receipt contains only public asset/package metadata and audit hashes, not
+credentials, private metadata snapshots, or publisher authorization material.
+
+Read-only source-delivery checks on 2026-11-14 at approximately 13:06 UTC:
+
+- Anonymous GET of `https://boardgamers.space/api/boardgame/fuji/info/latest`
+  matched engine 0.1.14, the complete revision-2 manifest, and all 16 asset refs.
+- All 16 new public WebP downloads matched receipt SHA-256 and byte sizes.
+  The preserved pictogram and two screenshots also matched hashes and sizes.
+- Cover and English rules PDF still returned **403**: their complete preexisting
+  metadata objects matched exactly. These are metadata-only preservation checks,
+  **not** claims of readable bytes or verified content hashes.
+- Compared the full live catalog against the preactivation version snapshot
+  in memory, without copying it into this repository. Only `engine` and
+  `achievementManifest` differed. Viewer, settings, visibility, options,
+  preferences, tutorial, all assets, and all other fields remained unchanged.
+- Original local tarball, approved envelope copy, and anonymous hosted tarball
+  all matched SHA-256
+  `43d83325e06002e1d982ff7925590d22e77e621d27018389cd895b22e290dfa8`
+  (hosted size 40,357 bytes). No rebuild or repack was performed.
+- `node scripts/verify-achievement-art.mjs` passed all 16 source artwork hashes,
+  decoding, manifest references, topology/contact-sheet checks and the unchanged
+  award definitions/predicates/evaluator comparison.
+- `node scripts/test-packed-achievements.mjs` passed 11 legal winning expeditions,
+  all 16 awards, and exact packed/source hook agreement.
+- `node --test packages/engine/dist-test/src/*.spec.js` passed 102 tests using the
+  retained compiled test output. The original approved-source `pnpm check` log
+  remains in ignored work output; it was not rerun because it rebuilds artifacts.
+
+Source delivery adds only this documentation and the sanitized receipt on top of
+the approved source. Both fetched release tips were already ancestors (including
+the GitHub `.pnpm-store` ignore baseline); no code reconciliation was needed.
+Canonical delivery is Codeberg `boardgamers/fuji` main with required GitHub
+`boardgamers/fuji` main mirror, using non-force pushes. This delivery performs no
+production upload, POST, viewer publication, or private-publisher invocation.

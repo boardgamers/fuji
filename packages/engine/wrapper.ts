@@ -11,6 +11,7 @@ import {
 } from "./src/game.js";
 import type { State } from "./src/types.js";
 export { stripSecret };
+export { achievementDefinitions, achievements } from "./src/achievements.js";
 export { moveAI } from "./src/ai.js";
 export const hashSeed = true;
 // State sharing and time awards are independent.
@@ -62,6 +63,7 @@ export function createAnalysis(s: State, { to }: { to: number; sourceEnded: bool
 	copy.players.forEach((player, seat) => {
 		player.name = s.players[seat]!.name;
 	});
+	copy.initOptions.analysis = true;
 	delete copy.chatMessages;
 	return copy;
 }

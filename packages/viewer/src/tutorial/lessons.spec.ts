@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createTutorial } from "@boardgamers/protocol/tutorial";
+import { achievements } from "fuji-engine/wrapper";
 import { applyMove, cell, paths, stripSecret, terrain, threatened } from "fuji-engine";
 import {
 	equipmentLesson,
@@ -126,6 +127,8 @@ test("all three explorers reach the village and win before another eruption", as
 	assert.equal(c.snapshot.state.phase, "equipment");
 	assert.equal(await c.play({ action: "ready" }), true, c.snapshot.error);
 	assert.equal(c.snapshot.state.outcome, "won");
+	assert.equal(c.snapshot.state.initOptions.tutorial, true);
+	assert.deepEqual(achievements(c.snapshot.state), []);
 	assert.ok(
 		c.snapshot.state.players.every((p) => terrain(cell(c.snapshot.state, p.position).terrain).kind === "village")
 	);

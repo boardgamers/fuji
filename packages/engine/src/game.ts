@@ -1245,7 +1245,7 @@ export function rewind(s: State, logTo: number): State {
 /** Start a manual sandbox from only the requesting seat's visible information. */
 export function createAnalysisScenario(data: State, { player, seed }: { player?: number; seed: string }): State {
 	const { deckCount, ...visible } = stripSecret(data, player);
-	const s: State = { ...visible, seed, counter: 0, deck: [], history: [], initOptions: {} };
+	const s: State = { ...visible, seed, counter: 0, deck: [], history: [], initOptions: { analysis: true } };
 	const used = new Set([...s.discard, ...s.players.flatMap((p) => p.cards.map((c) => c.id))]);
 	s.deck = shuffle(
 		s,

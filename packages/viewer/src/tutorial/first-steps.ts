@@ -19,6 +19,7 @@ export function firstStepsState(): State {
 	let state = initGame(
 		3,
 		{
+			tutorial: true,
 			skillAssignment: "fixed",
 			skills: ["buddy", "scout", "manager"],
 			difficulty: 1,

@@ -12,7 +12,9 @@ cd packages/engine
 pnpm pack
 ```
 
-Upload the engine tarball and viewer JS/CSS together. The draft registration file intentionally contains empty URLs until real uploads exist. Do not run a publication operation without the user's supplied admin token. Keep `public: false` and `replayable: false` for the first private test.
+The original first-private-test workflow uploaded the engine tarball and viewer JS/CSS together with `public: false` and `replayable: false`. The draft registration file retains that initial configuration and empty URLs; it is not a snapshot of the live deployment. Do not run a publication operation without the user's supplied admin token.
+
+For the authorized engine 0.1.13 achievement update, live BGS version 1 was verified as an existing **public beta** (`public: true`, `status: beta`, `viewer.replayable: false`, `tableMode: async`, `settings: []`). This engine-only update preserves the actual configuration and existing viewer; it must not apply the draft or run the initial registration script. It does not change gameplay, rankings, or clocks, and does not claim to resolve the pre-existing cooperative result/rating and live-validation concerns below.
 
 ## Live updates and remaining timed-beta work
 

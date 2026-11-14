@@ -2,7 +2,7 @@
 
 A playable first implementation of Wolfgang Warsch’s cooperative game for Boardgamers, with artwork by Weberson Santiago supplied by Feuerland.
 
-This is a **private playtest alpha**, not a publisher-approved final adaptation. It implements all seven scenarios, two to four players (two-player variant A), all four difficulty levels, six skills and fifteen equipment effects. The visual direction uses the original illustrations as an interactive landscape, with private dice totals, route previews, revealed comparisons and state-driven lava.
+This is an **existing public beta on BGS**, not a publisher-approved final adaptation. The original private-test draft is historical; current integration caveats and engine-only update scope are recorded in [BGS integration](docs/bgs-integration.md). It implements all seven scenarios, two to four players (two-player variant A), all four difficulty levels, six skills and fifteen equipment effects. The visual direction uses the original illustrations as an interactive landscape, with private dice totals, route previews, revealed comparisons and state-driven lava.
 
 Canonical source: [codeberg.org/boardgamers/fuji](https://codeberg.org/boardgamers/fuji).
 
@@ -70,7 +70,7 @@ pnpm test:browser
 
 If Chromium is already installed in a non-default location, set `FUJI_CHROMIUM_EXECUTABLE` to its executable path. Screenshots are written under the ignored `work/browser` directory. The second smoke test loads the actual production bundle with a minimal BGS emitter host, checks readiness and state refresh, verifies the move payload, and confirms that Wireless exposes the correct dice without loading the local harness.
 
-Private release: build with `pnpm check`, pack the engine with `pnpm --filter fuji-engine pack --pack-destination ../..`, then run `BGS_TOKEN_FILE=/path/to/token node scripts/publish-private.mjs`. The script registers private version 1, uploads bundles and rules, and grants Spock and AlphaZero access. It refuses to overwrite an existing game without review.
+Historical initial private registration (not an update command for the existing deployment): build with `pnpm check`, pack the engine with `pnpm --filter fuji-engine pack --pack-destination ../..`, then run `BGS_TOKEN_FILE=/path/to/token node scripts/publish-private.mjs`. The script registers private version 1, uploads bundles and rules, and grants Spock and AlphaZero access. It refuses to overwrite an existing game without review.
 
 Run `FUJI_ALL_SCENARIOS=1 pnpm simulate` for 1,050 seeded expeditions across all seven maps.
 

@@ -1,7 +1,11 @@
 # Fuji achievements — revision 1
 
-Private-playtest feature only. This does not change visibility, resolve the BGS
-publication gates, or authorize a release. The engine and viewer use the published
+Engine 0.1.13 adds achievements to the existing BGS version 1 public beta under
+explicit engine-only update authorization. Live configuration was verified as
+`public: true`, `status: beta`, `viewer.replayable: false`, `tableMode: async`, and
+`settings: []`; the update preserves those fields and the existing viewer.
+This does not resolve the pre-existing clock, cooperative result/rating, or live
+validation concerns in `bgs-integration.md`. The engine and viewer source use the published
 `@boardgamers/protocol` 0.11.0 package. The wrapper exports the optional
 `achievementDefinitions()` and `achievements(state)` hooks from its engine contract.
 The latter accepts the persisted JSON-compatible engine state (not a JSON string).
